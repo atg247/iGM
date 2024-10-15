@@ -1,1 +1,1 @@
-web: unicorn app_v1.py
+web: python app_v1.py
