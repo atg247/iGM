@@ -209,8 +209,7 @@ def send_selected_games():
 
 # Start the Flask app in debug mode.
 if __name__ == '__main__':
-    # Bind to the PORT environment variable if defined, otherwise use 5000 for local development.
+    print(f"Running in debug mode: {debug_mode}")
     port = int(os.environ.get('PORT', 5000))
-    # Set debug mode based on environment variable
     debug_mode = os.environ.get('DEBUG', 'False') == 'True'
     app.run(host='0.0.0.0', port=port, debug=debug_mode)
