@@ -211,5 +211,5 @@ def send_selected_games():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug_mode = os.environ.get('DEBUG', 'False') == 'True'
-    print(f"Running in debug mode: {debug_mode}")
+    print(f"Running in debug mode: {debug_mode}", flush=True)
     app.run(host='0.0.0.0', port=port, debug=debug_mode)
