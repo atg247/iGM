@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, jsonify
+import os
+from flask import Flask, render_template, request, jsonify # type: ignore
 import requests
 import pandas as pd
 
@@ -197,7 +198,7 @@ def send_selected_games():
     
     print(selected_game_details)
 
-    return jsonify({"message": "Selected games forwarded successfully.", "games": selected_game_details})
+    return jsonify({"message": "Tämä toiminto ei vielä ole käytössä.", "games": selected_game_details})
 
 # Start the Flask app in debug mode.
 if __name__ == '__main__':
