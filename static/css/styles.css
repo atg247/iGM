@@ -58,3 +58,18 @@ h1,h2 {
 .highlight-red {
     background-color: #ff4c4c !important; /* Red color for more than two teams, different rinks */
 }
+
+/* Highlight color for the same age group */
+.highlight-green {
+    background-color: #90ee90 !important; /* Light green for the same age group */
+}
+
+/* Highlight color for adjacent age groups */
+.highlight-blue {
+    background-color: #add8e6 !important; /* Light blue for adjacent age groups */
+}
+
+/* Optionally, a different color for highlighting rows that do not match */
+.highlight-yellow {
+    background-color: #ffff99 !important; /* Light yellow for custom highlighting */
+}

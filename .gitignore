@@ -1,6 +1,6 @@
 # Ignore the virtual environment folder
 .venv/
 
-.vscode/
+.vscode
 # Ignore environment variables
 .env
