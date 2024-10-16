@@ -178,7 +178,7 @@ def send_selected_games():
             selected_game_details.append(game)
 
         # Send success response
-        return jsonify({"message": "Selected games forwarded successfully.", "games": selected_game_details}), 200
+        return jsonify({"message": "Tämä toiminto ei ikävä kyllä ole vielä käytössä.", "games": selected_game_details}), 200
 
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
@@ -198,7 +198,7 @@ def send_selected_games():
     
     print(selected_game_details)
 
-    return jsonify({"message": "Tämä toiminto ei vielä ole käytössä.", "games": selected_game_details})
+    return jsonify({"message": "Selected games forwarded successfully.", "games": selected_game_details})
 
 # Start the Flask app in debug mode.
 if __name__ == '__main__':
