@@ -2,6 +2,13 @@ import os
 from flask import Flask, render_template, request, jsonify # type: ignore
 import requests
 import pandas as pd
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+if os.path.exists('.env'):
+    load_dotenv()
+
+
 
 # Initialize the Flask app
 app = Flask(__name__)
@@ -202,6 +209,8 @@ def send_selected_games():
 
 # Start the Flask app in debug mode.
 if __name__ == '__main__':
-    # Bind to the $PORT if defined, otherwise use 5000 for local development.
+    # Bind to the PORT environment variable if defined, otherwise use 5000 for local development.
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    # Set debug mode based on environment variable
+    debug_mode = os.environ.get('DEBUG', 'False') == 'True'
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
