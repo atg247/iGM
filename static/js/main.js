@@ -84,7 +84,7 @@ $(document).ready(function () {
             
             $('#selectedTeamsList').show();
         } else if (selectedTeamsList.length === 0) {
-            $('selectedTeamsList').hide();
+            $('#selectedTeamsList').hide();
         }
     }
 
@@ -103,9 +103,9 @@ $(document).ready(function () {
                 alert(data.error);
                 return;
             }
-
+                
             // Filter out duplicate games using Game ID
-            const seenGameIds = new Set();
+            const seenGameIds = new Set(allGamesData.map(game => game['Game ID']));
             const uniqueGames = data.filter(function (game) {
                 if (!seenGameIds.has(game['Game ID'])) {
                     seenGameIds.add(game['Game ID']);
@@ -114,20 +114,21 @@ $(document).ready(function () {
                 return false;
             });
 
-            // Update date formatting for the unique games
-            uniqueGames.forEach(function (game) {
-                if (game.Date) {
-                    const dateObj = new Date(game.Date);
-                    if (!isNaN(dateObj)) {
-                        const day = String(dateObj.getDate()).padStart(2, '0');
-                        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                        const year = dateObj.getFullYear();
-                        game.Date = `${day}.${month}.${year}`;
-                        game.SortableDate = dateObj;
+                // Check if there are new games to add
+            if (uniqueGames.length > 0) {
+                // Update date formatting for the unique games
+                uniqueGames.forEach(function (game) {
+                    if (game.Date) {
+                        const dateObj = new Date(game.Date);
+                        if (!isNaN(dateObj)) {
+                            const day = String(dateObj.getDate()).padStart(2, '0');
+                            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                            const year = dateObj.getFullYear();
+                            game.Date = `${day}.${month}.${year}`;
+                            game.SortableDate = dateObj;
                     }
                 }
             });
-
             // Concatenate unique games to the existing list of games
             allGamesData = allGamesData.concat(uniqueGames);
 
@@ -175,6 +176,7 @@ $(document).ready(function () {
                 searching: false,
                 info: true,
             });
+        }
         }).fail(function () {
             alert('Unexpected response format. Please try again.');
         });
