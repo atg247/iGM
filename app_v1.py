@@ -72,7 +72,7 @@ class GameFetcher:
             return None  # No error
         except requests.RequestException as e:
             return f"Error fetching games: {str(e)}"
-
+        
     def display_games(self):
         if not self.games:
             return pd.DataFrame()  # Return an empty DataFrame if no games are found
@@ -97,9 +97,9 @@ class GameFetcher:
                     'Away Goals': game.get('AwayGoals', 'N/A'),
                     'Location': game.get('RinkName', 'N/A'),
                     'Level Name': level_data.get('LevelName', 'N/A'),
+                    'Small Area Game':game.get('SmallAreaGame','N/A')
                 }
                 games_info.append(game_info)
-
         games_df = pd.DataFrame(games_info)
         # Ensure Date column is in datetime format to allow proper sorting
         games_df['Date'] = pd.to_datetime(games_df['Date'], format='%d.%m.%Y', errors='coerce', dayfirst=True)
@@ -164,7 +164,6 @@ def fetch_games():
         return jsonify(all_games_data)
     except Exception as e:
         return jsonify({"error": f"Error processing games data: {str(e)}"})
-
 # Route to forward selected games.
 @app.route('/send_selected_games', methods=['POST'])
 def send_selected_games():

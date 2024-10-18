@@ -1,3 +1,6 @@
+//Muistiinpanoja: Pienpelit, Jos lisää kaksi kertaa saman joukkueen, niin tulee tuplana taulukkoon.
+
+
 $(document).ready(function () {
     let isHighlightOn = false; // Initialize this variable here
     let selectedTeamsList = []; // Initialize selectedTeamsList as an empty array
@@ -74,11 +77,14 @@ $(document).ready(function () {
 
         selectedTeamsList = selectedTeamsList.concat(newTeamNames);
 
-        if (selectedTeamsList.length > 0) {
-            $('#teamsNames').text(selectedTeamsList.join(', '));
+        if (newTeamNames.length > 0) {
+            newTeamNames.forEach(team => {
+                $('#teamsNames').append($('<div>').text(team));    
+            });
+            
             $('#selectedTeamsList').show();
-        } else {
-            $('#selectedTeamsList').hide();
+        } else if (selectedTeamsList.length === 0) {
+            $('selectedTeamsList').hide();
         }
     }
 
@@ -154,6 +160,10 @@ $(document).ready(function () {
                     { data: 'Time' },
                     { data: 'Home Team' },
                     { data: 'Away Team' },
+                    { 
+                        data: 'Small Area Game',
+                        render: (data) => data === '1' ? 'p' : ' '
+                    },
                     { data: 'Home Goals' },
                     { data: 'Away Goals' },
                     { data: 'Location' },
@@ -291,10 +301,11 @@ $(document).ready(function () {
                 time: row.find('td:eq(4)').text(),
                 home_team: row.find('td:eq(5)').text(),
                 away_team: row.find('td:eq(6)').text(),
-                home_goals: row.find('td:eq(7)').text(),
-                away_goals: row.find('td:eq(8)').text(),
-                location: row.find('td:eq(9)').text(),
-                level_name: row.find('td:eq(10)').text()
+                SmallAreaGame: row.find('td:eq(7)').text(),
+                home_goals: row.find('td:eq(8)').text(),
+                away_goals: row.find('td:eq(9)').text(),
+                location: row.find('td:eq(10)').text(),
+                level_name: row.find('td:eq(11)').text()
             };
             selectedGames.push(gameData);
         });
