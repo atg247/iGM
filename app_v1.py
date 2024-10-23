@@ -174,9 +174,7 @@ def send_selected_games():
         # Check if 'selected_games' is in the received data
         if not data or 'selected_games' not in data:
             return jsonify({"error": "No games selected. Please choose at least one game."}), 400
-
         selected_games = data['selected_games']
-
         # Print the selected game details to the console (for debugging/demo purposes)
         selected_game_details = []
         for game in selected_games:
