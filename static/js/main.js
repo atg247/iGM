@@ -12,7 +12,7 @@ $(document).ready(function () {
     $('#season').change(function () {
         const season = $(this).val();
         if (season) {
-            $.get(`/get_levels/${season}`, function (data) {
+            $.get(`/gamefetcher/get_levels/${season}`, function (data) {
                 let levelOptions = '<option value="">Valitse taso</option>';
                 data.forEach(function (level) {
                     levelOptions += `<option value="${level.LevelID}">${level.LevelName}</option>`;
@@ -32,7 +32,7 @@ $(document).ready(function () {
         const levelId = $(this).val();
         const season = $('#season').val();
         if (levelId) {
-            $.get(`/get_statgroups/${season}/${levelId}/0`, function (data) {
+            $.get(`/gamefetcher/get_statgroups/${season}/${levelId}/0`, function (data) {
                 let statGroupOptions = '<option value="">Valitse sarja/lohko</option>';
                 data.forEach(function (statGroup) {
                     statGroupOptions += `<option value="${statGroup.StatGroupID}">${statGroup.StatGroupName}</option>`;
@@ -50,7 +50,7 @@ $(document).ready(function () {
         let selectedStatGroupName = $('#statgroups option:selected').text(); // Get selected stat group name
 
         if (statGroupId) {
-            $.get(`/get_teams/${season}/${statGroupId}`, function (data) {
+            $.get(`/gamefetcher/get_teams/${season}/${statGroupId}`, function (data) {
                 if (Array.isArray(data.Teams)) {
                     let teamOptions = '';
                     data.Teams.forEach(function (team) {
@@ -102,7 +102,7 @@ $(document).ready(function () {
 
         const formData = $(this).serialize();
 
-        $.post('/fetch_games', formData, function (data) {
+        $.post('/gamefetcher/fetch_games', formData, function (data) {
             if (data.error) {
                 alert(data.error);
                 return;
@@ -323,7 +323,7 @@ $(document).ready(function () {
         }
 
         $.ajax({
-            url: '/send_selected_games',
+            url: '/gamefetcher/send_selected_games',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ selected_games: selectedGames }),

@@ -1,5 +1,41 @@
-Flask==3.0.3
-pandas==2.2.2
-requests==2.32.2
-gunicorn==20.1.0
-python-dotenv==1.0.1
+# Core Flask framework and related dependencies
+Flask==3.0.3                # Core framework for web application
+Werkzeug==3.0.4             # WSGI utility library, crucial for Flask stability
+Jinja2==3.1.4               # Templating engine used by Flask
+itsdangerous==2.2.0         # Secure data signing support used by Flask
+
+# SQLAlchemy and database handling
+Flask-SQLAlchemy==3.1.1     # Integration of SQLAlchemy with Flask
+SQLAlchemy==2.0.36          # Core ORM library used by Flask-SQLAlchemy
+greenlet==3.1.1             # Required by SQLAlchemy for efficient session management
+
+# Utility and supporting packages
+click==8.1.7                # Used by Flask for CLI commands
+python-dotenv>=1.0.1        # Environment variable management, allows configuration outside of code
+typing_extensions>=4.12.2   # Provides additional type hints for development, helps with compatibility
+
+# Data fetching and manipulation
+requests>=2.32.3            # For making HTTP requests to external APIs
+pandas==2.2.3               # Data manipulation library, crucial for handling game data
+numpy>=2.1.2                # Provides numerical operations, required by Pandas
+
+# Date and Time handling
+python-dateutil==2.9.0.post0 # Date and time manipulation, used heavily with Pandas
+pytz>=2024.2                # Timezone handling for Pandas
+DateTime==5.5
+
+# Security and encoding related
+certifi>=2024.8.30          # SSL certificates for secure HTTPS connections
+charset-normalizer>=3.4.0   # Proper character encoding in HTTP responses
+idna>=3.10                  # Handling international domain names, required by requests
+urllib3>=2.2.3              # HTTP connection pooling for requests, important for API calls
+Flask-Bcrypt==1.0.1
+Flask-Login==0.6.3
+Flask-WTF==1.2.2
+email_validator==2.2.0
+
+# Flask signals (optional but recommended)
+blinker>=1.8.2              # Signals for Flask, useful for event-driven features
+
+# Optional but useful timezone data
+tzdata>=2024.2              # Timezone information (for compatibility with pytz and dateutil)
