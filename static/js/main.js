@@ -1,6 +1,3 @@
-//Muistiinpanoja: Pienpelit, Jos lisää kaksi kertaa saman joukkueen, niin tulee tuplana taulukkoon.
-
-
 $(document).ready(function () {
     let isHighlightOn = false; // Initialize this variable here
     let selectedTeamsList = []; // Initialize selectedTeamsList as an empty array
@@ -50,12 +47,14 @@ $(document).ready(function () {
     $('#statgroups').change(function () {
         const statGroupId = $(this).val();
         const season = $('#season').val();
+        let selectedStatGroupName = $('#statgroups option:selected').text(); // Get selected stat group name
+
         if (statGroupId) {
             $.get(`/get_teams/${season}/${statGroupId}`, function (data) {
                 if (Array.isArray(data.Teams)) {
                     let teamOptions = '';
                     data.Teams.forEach(function (team) {
-                        teamOptions += `<option value="${team.TeamID}">${team.TeamAbbrv}</option>`;
+                        teamOptions += `<option value="${team.TeamID}" data-statgroup="${selectedStatGroupName}">${team.TeamAbbrv}</option>`;
                     });
                     $('#teams').html(teamOptions);
                 }
@@ -66,24 +65,29 @@ $(document).ready(function () {
     // Function to update selectedTeamsList
     function updateSelectedTeamsList() {
         let newSelectedTeams = $('#teams').find('option:selected');
-        let newTeamNames = [];
+        let newTeamEntries = [];
 
         newSelectedTeams.each(function () {
             let teamName = $(this).text();
-            if (!selectedTeamsList.includes(teamName)) {
-                newTeamNames.push(teamName);
-            }
+            let statGroupName = $(this).data('statgroup'); // Get the stat group name from the data attribute
+            let formattedTeamName = `${teamName} : (${statGroupName})`;
+
+            if (!selectedTeamsList.includes(formattedTeamName)) {
+                newTeamEntries.push(formattedTeamName);
+                }
         });
 
-        selectedTeamsList = selectedTeamsList.concat(newTeamNames);
+        selectedTeamsList = selectedTeamsList.concat(newTeamEntries);
 
-        if (newTeamNames.length > 0) {
-            newTeamNames.forEach(team => {
-                $('#teamsNames').append($('<div>').text(team));    
+        if (newTeamEntries.length > 0) {
+            newTeamEntries.forEach(teamEntry => {
+                $('#teamsNames').append($('<div>').text(teamEntry));
             });
             
+            // Show the selected teams container if there are new entries
             $('#selectedTeamsList').show();
         } else if (selectedTeamsList.length === 0) {
+            // Hide the selected teams container if there are no teams in the list
             $('#selectedTeamsList').hide();
         }
     }
@@ -288,6 +292,7 @@ $(document).ready(function () {
         allGamesData = [];
         selectedTeamsList = [];
         $('#selectedTeamsList').hide();
+        $('#teamsNames').empty();
         $('#highlightButton').text('Korosta päällekkäiset');
         isHighlightOn = false;
     });

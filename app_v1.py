@@ -108,7 +108,7 @@ class GameFetcher:
 # Home page route.
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('gamefetcher.html')
 
 # Route to fetch levels for a given season.
 @app.route('/get_levels/<season>')
