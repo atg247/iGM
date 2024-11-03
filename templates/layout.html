@@ -31,7 +31,7 @@
                         <a class="nav-link" href="/gamefetcher">Otteluhaku</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('jopox_ottelut') }}">Jopoxin ottelut</a>
+                        <a class="nav-link" href="/jopox_ottelut">Jopoxin ottelut</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('dashboard') }}">Omien joukkueiden valinta</a>
@@ -75,6 +75,8 @@
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
     <!-- Custom Script (Load after all dependencies) -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jopoxhaku.js') }}"></script>
+
 </body>
 
 </html>

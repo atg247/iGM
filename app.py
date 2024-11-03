@@ -3,7 +3,7 @@ import pandas as pd
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
-from helpers.data_fetcher import get_levels, get_stat_groups, get_teams
+from helpers.data_fetcher import get_levels, get_stat_groups, get_teams, hae_kalenteri
 from helpers.game_fetcher import GameFetcher
 from models.user import db, User
 from forms.registration_form import RegistrationForm
@@ -105,10 +105,23 @@ def logout():
 def dashboard():
     return render_template('dashboard.html', username=current_user.username)
 
+
 @app.route('/jopox_ottelut')
-@login_required
 def jopox_ottelut():
-    return render_template('jopox_ottelut.html', username=current_user.username)
+    return render_template('jopox_ottelut.html')
+
+@app.route('/jopox_ottelut/hae_kalenteri', methods=['GET'])
+@login_required
+def hae_kalenteri_endpoint():
+    try:
+        # Fetch the events using the helper function
+        events = hae_kalenteri()
+        return jsonify(events)  # Return the data as JSON
+    except Exception as e:
+        return jsonify({"error": f"Error processing games data: {str(e)}"})
+
+
+
 
 
 # Home page route.
