@@ -32,12 +32,12 @@ def get_jopox_events():
     pass
     url = "https://s-kiekko-app.jopox.fi/www/ajax/calendar.aspx/LoadMoreEvents"
     cookies = {
-        'ASP.NET_SessionId': '31gf0lqvwzqchtuwksnqxi30',   # Replace with your actual ASP.NET_SessionId value
-        '_utma': '109879070.1919602242.1729010159.1729010159.1729010159.1',                         # Replace with your actual _utma value
-        '_utmz': '109879070.1729010159.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided)',                         # Replace with your actual _utmz value
-        '_fbp': 'fb.1.1729010158214.465600806662753604',                           # Replace with your actual _fbp value
+        'ASP.NET_SessionId': '-------',   # Replace with your actual ASP.NET_SessionId value
+        '_utma': '-------',                         # Replace with your actual _utma value
+        '_utmz': '------',                         # Replace with your actual _utmz value
+        '_fbp': '------',                           # Replace with your actual _fbp value
         'jpx_team_select': '8787',     # Replace with your actual jpx_team_select value
-        'jpxapp': 'D9C458EE4082F21572117FD83A57F2754A32F022E7D898D16EA6785C7EC8FF181A6075247EE5776A9A90FADA25ACE50AD730BBD0A42CCA815930EB815BC67E70ED06C442F91A384EB802BB4A6014B384D55EE3DE382506556D09C8B32AF408DAE45B42A41B99E83A2017E67FD2199E8BF6FF1D21ED01487896680C1D53B10E1CFEEE4F5138D1C0512ADEC6CDAF58B399'
+        'jpxapp': '---------'
        }
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
