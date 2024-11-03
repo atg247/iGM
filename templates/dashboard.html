@@ -1,7 +1,79 @@
 {% extends "layout.html" %}
 {% block content %}
+   
+<p class="text-center">Ohjeteksti tähän.</p>
+
+<h4>Your Managed Teams:</h4>
+    <ul>
+        {% for team in managed_teams %}
+            <li>{{ team }}</li>
+        {% else %}
+            <p>No managed teams yet.</p>
+        {% endfor %}
+    </ul>
+
+    <!-- Display Followed Teams -->
+    <h4>Your Followed Teams:</h4>
+    <ul>
+        {% for team in followed_teams %}
+            <li>{{ team }}</li>
+        {% else %}
+            <p>No followed teams yet.</p>
+        {% endfor %}
+    </ul>
+
+    <!-- Form for fetching games -->
+<form id="dashboardForm" method="POST" action="{{ url_for('update_teams') }}" class="mt-4">
     <div class="container">
         <h2>Welcome, {{ username }}!</h2>
         <p>Here you can manage your favorite teams and schedules.</p>
+        
+        <div class="form-group row">
+            <label for="season" class="col-sm-2 col-form-label">Kausi:</label>
+            <div class="col-sm-10">
+                <select id="season" name="season" class="form-control" required>
+                    <option value="2025">2024-2025</option>
+                    <option value="2024">2023-2024</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label for="levels" class="col-sm-2 col-form-label">Taso:</label>
+            <div class="col-sm-10">
+                <select id="levels" name="level_id" class="form-control" required>
+                    <option value="">Valitse taso</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stat Groups Dropdown -->
+        <div class="form-group row">
+            <label for="statgroups" class="col-sm-2 col-form-label">Sarja/lohko:</label>
+            <div class="col-sm-10">
+                <select id="statgroups" name="statgroup" class="form-control" required>
+                    <option value="">Valitse sarja/lohko</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Teams Dropdown (Multiple Selection) -->
+        <div class="form-group row">
+            <label for="teams" class="col-sm-2 col-form-label">Joukkueet:</label>
+            <div class="col-sm-10">
+                <select id="teams" name="teams" class="form-control" multiple required>
+                    <option value="">Valitse joukkueet</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="form-group row">
+            <div class="col-sm-12 text-center">
+                <button name="action" value="manage" type="submit" class="btn btn-primary">Lisää joukkue hallinnoitavaksi</button>
+                <button name="action" value="follow" type="submit" class="btn btn-secondary">Lisää joukkue seurattavaksi</button>
+            </div>
+        </div>
+    </form>
     </div>
 {% endblock %}

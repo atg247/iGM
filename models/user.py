@@ -8,6 +8,8 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(150), unique=True, nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    managed_teams = db.Column(db.String(512), nullable=True)
+    followed_teams = db.Column(db.String(512), nullable=True)
 
     def set_password(self, password):
         from flask_bcrypt import generate_password_hash

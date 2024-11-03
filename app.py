@@ -9,7 +9,7 @@ from models.user import db, User
 from forms.registration_form import RegistrationForm
 from forms.login_form import LoginForm
 from dotenv import load_dotenv
-
+from flask_migrate import Migrate
 
 # Load environment variables from .env file if it exists
 # Load environment variables from .env file if it exists
@@ -24,6 +24,8 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key_here') 
 # Initialize necessary extensions
 db.init_app(app)
 bcrypt = Bcrypt(app)
+
+migrate = Migrate(app, db)
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # Redirect to 'login' if trying to access a page without being logged in
@@ -103,8 +105,42 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html', username=current_user.username)
+    managed_teams = current_user.managed_teams.split(",") if current_user.managed_teams else []
+    followed_teams = current_user.followed_teams.split(",") if current_user.followed_teams else []
+    return render_template('dashboard.html', 
+                           username=current_user.username, 
+                           managed_teams=managed_teams, 
+                           followed_teams=followed_teams)
 
+
+@app.route('/dashboard/update_teams', methods=['POST'])
+@login_required
+def update_teams():
+    action = request.form['action']
+    selected_teams = request.form.getlist('teams')
+    print(selected_teams)
+
+    if not selected_teams:
+        flash("No teams selected. Please choose at least one team.", "warning")
+        return redirect(url_for('dashboard'))
+
+    if action == 'manage':
+        existing_teams = current_user.managed_teams.split(",") if current_user.managed_teams else []
+        updated_teams = list(set(existing_teams + selected_teams))  # Avoid duplicate entries
+        current_user.managed_teams = ",".join(updated_teams)
+    elif action == 'follow':
+        existing_teams = current_user.followed_teams.split(",") if current_user.followed_teams else []
+        updated_teams = list(set(existing_teams + selected_teams))  # Avoid duplicate entries
+        current_user.followed_teams = ",".join(updated_teams)
+
+    try:
+        db.session.commit()
+        flash("Teams updated successfully!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"An error occurred while updating teams: {str(e)}", "danger")
+
+    return redirect(url_for('dashboard'))
 
 @app.route('/jopox_ottelut')
 def jopox_ottelut():
@@ -119,10 +155,6 @@ def hae_kalenteri_endpoint():
         return jsonify(events)  # Return the data as JSON
     except Exception as e:
         return jsonify({"error": f"Error processing games data: {str(e)}"})
-
-
-
-
 
 # Home page route.
 @app.route('/')
@@ -148,7 +180,7 @@ def get_statgroups(season, level_id, district_id=0):
 # Route to fetch teams for a given statistic group.
 @app.route('/gamefetcher/get_teams/<season>/<stat_group_id>')
 def get_teams_endpoint(season, stat_group_id):
-    teams = get_teams(season, stat_group_id) 
+    teams = get_teams(season, stat_group_id) # Teams': [{'TeamID': '1368627612', 'TeamAbbrv': 'Diskos Punainen', 'TeamAssociation': '10113767', 'TeamImg': '2025/10113767.png'} 
     return jsonify(teams)
 
 # Route to handle form data submission to fetch games.
@@ -163,7 +195,6 @@ def fetch_games():
     selected_teams = request.form.getlist('teams')
 
     all_games_df = pd.DataFrame()
-
     if not selected_teams:
         return jsonify({"error": "No teams selected. Please choose at least one team."})
 

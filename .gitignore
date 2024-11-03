@@ -10,3 +10,29 @@ __pycache__/
 *.db
 selenium*
 instance/
+
+# Logs and debugging files
+*.log
+logs/
+
+# Flask-Migrate (Alembic)
+migrations/alembic.ini
+migrations/env.py
+migrations/script.py.mako
+*.pyc
+*.pyo
+
+# Migration scripts should be kept, ignore other files if needed
+!migrations/versions/
+
+# IDE/editor-specific files
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# Compiled static assets
+node_modules/
+dist/
+build/
+*.map

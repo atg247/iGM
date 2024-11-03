@@ -29,7 +29,7 @@ def get_teams(season, stat_group_id):
     return response.json()
 
 def get_jopox_events():
-    pass
+    pass#<----------Alla jopox-haun runko
     url = "https://s-kiekko-app.jopox.fi/www/ajax/calendar.aspx/LoadMoreEvents"
     cookies = {
         'ASP.NET_SessionId': '-------',   # Replace with your actual ASP.NET_SessionId value
@@ -39,7 +39,7 @@ def get_jopox_events():
         'jpx_team_select': '8787',     # Replace with your actual jpx_team_select value
         'jpxapp': '---------'
        }
-    headers = {
+    headers = { 
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
         'Referer': 'https://s-kiekko-app.jopox.fi/home/club/8787?web=1',   # Adjust referer if needed, to the page where the request originates from
         'Content-Type': 'application/x-www-form-urlencoded'
