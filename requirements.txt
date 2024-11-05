@@ -24,6 +24,7 @@ numpy>=2.1.2                # Provides numerical operations, required by Pandas
 python-dateutil==2.9.0.post0 # Date and time manipulation, used heavily with Pandas
 pytz>=2024.2                # Timezone handling for Pandas
 DateTime==5.5
+ics==0.7.2                  # Kalenteri
 
 # Security and encoding related
 certifi>=2024.8.30          # SSL certificates for secure HTTPS connections
