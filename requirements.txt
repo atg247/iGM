@@ -8,6 +8,7 @@ itsdangerous==2.2.0         # Secure data signing support used by Flask
 Flask-SQLAlchemy==3.1.1     # Integration of SQLAlchemy with Flask
 SQLAlchemy==2.0.36          # Core ORM library used by Flask-SQLAlchemy
 greenlet==3.1.1             # Required by SQLAlchemy for efficient session management
+psycopg2-binary==2.9.7      # adapter to set Up PostgreSQL Database on Heroku
 
 # Utility and supporting packages
 click==8.1.7                # Used by Flask for CLI commands
