@@ -40,3 +40,5 @@ blinker>=1.8.2              # Signals for Flask, useful for event-driven feature
 
 # Optional but useful timezone data
 tzdata>=2024.2              # Timezone information (for compatibility with pytz and dateutil)
+
+gunicorn==23.0.0
