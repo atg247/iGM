@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 from flask_migrate import Migrate
 
 # Load environment variables from .env file if it exists
-# Load environment variables from .env file if it exists
 if os.path.exists('.env'):
     load_dotenv()
 

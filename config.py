@@ -1,13 +1,13 @@
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 class Config:
-    SECRET_KEY = os.getenv('SECRET_KEY', 'supersecretkey')  # Get from environment for security
-    #SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///hockey_data.db')
-    #SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
+    SECRET_KEY = os.getenv('SECRET_KEY', 'supersecretkey')  # Fallback for development
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///local_database.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-    REMEMBER_COOKIE_DURATION = timedelta(days=3)  # User session will be remembered for 7 days
-    REMEMBER_COOKIE_SECURE = True  # Set to True if you have HTTPS enabled
+    REMEMBER_COOKIE_DURATION = timedelta(days=3)
+    REMEMBER_COOKIE_SECURE = True  # TRUE Herokussa, False paikallisesti

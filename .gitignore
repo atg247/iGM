@@ -36,3 +36,4 @@ node_modules/
 dist/
 build/
 *.map
+muistilista*
