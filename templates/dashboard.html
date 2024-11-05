@@ -1,32 +1,15 @@
 {% extends "layout.html" %}
 {% block content %}
    
-<p class="text-center">Ohjeteksti tähän.</p>
-
-<h4>Your Managed Teams:</h4>
-    <ul>
-        {% for team in managed_teams %}
-            <li>{{ team }}</li>
-        {% else %}
-            <p>No managed teams yet.</p>
-        {% endfor %}
-    </ul>
-
-    <!-- Display Followed Teams -->
-    <h4>Your Followed Teams:</h4>
-    <ul>
-        {% for team in followed_teams %}
-            <li>{{ team }}</li>
-        {% else %}
-            <p>No followed teams yet.</p>
-        {% endfor %}
-    </ul>
+<p class="text-center">Tällä sivulla voit lisätä hallinnoitavia ja seurattavia joukkueita. 
+    Hallinoitavilla joukkueilla tarkoitetaan joukkueita, joiden Jopox-ylläpitäjä olet tai joiden otteluohjelman haluat näyttää oletuksena.
+    Seurattavilla joukkueilla tarkoitetaan joukkueita, joiden otteluohjelman haluat näyttää taulukossa lainapelaajien suunnittelemiseksi.</p>
 
     <!-- Form for fetching games -->
 <form id="dashboardForm" method="POST" action="{{ url_for('update_teams') }}" class="mt-4">
     <div class="container">
-        <h2>Welcome, {{ username }}!</h2>
-        <p>Here you can manage your favorite teams and schedules.</p>
+        <h2>Welcome, {{ current_user.username }}!</h2>
+        <p>Valitse joukkueet/peliryhmät, jotka haluat lisätä hallinnoitavaksi tai seurattavaksi.</p>
         
         <div class="form-group row">
             <label for="season" class="col-sm-2 col-form-label">Kausi:</label>
@@ -74,6 +57,74 @@
                 <button name="action" value="follow" type="submit" class="btn btn-secondary">Lisää joukkue seurattavaksi</button>
             </div>
         </div>
+        
     </form>
+    <h2>Hallinnoimasi joukkueet:</h2>
+    <ul>
+        {% for team in managed_teams %}
+            <li>{{ team.team_name }} (Stat Group: {{ team.stat_group }})</li>
+        {% else %}
+            <p>No managed teams yet.</p>
+        {% endfor %}
+    </ul>
+
+    <!-- Display Followed Teams -->
+    <h2>Seuraamasi joukkueet:</h2>
+    <ul>
+        {% for team in followed_teams %}
+            <li>{{ team.team_name }} (Stat Group: {{ team.stat_group }})</li>
+        {% else %}
+            <p>No followed teams yet.</p>
+        {% endfor %}
+    </ul>
+    <div class="text-center mt-4">
+        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#removeTeamsModal">
+            Poista hallinnoitavia/seurattavia joukkueita
+        </button>
+    </div>
+<!-- Remove Teams Modal -->
+<div class="modal fade" id="removeTeamsModal" tabindex="-1" role="dialog" aria-labelledby="removeTeamsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="removeTeamsModalLabel">Poista Joukkueita</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="removeTeamsForm">
+                    <h5>Hallinnoimasi Joukkueet</h5>
+                    <ul>
+                        {% for team in managed_teams %}
+                            <li>
+                                <input type="checkbox" name="teams" value="{{ team.id }}" data-relationship="manage">
+                                {{ team.team_name }} (Stat Group: {{ team.stat_group }})
+                            </li>
+                        {% else %}
+                            <p>No managed teams available.</p>
+                        {% endfor %}
+                    </ul>
+                    <h5>Seuraamasi Joukkueet</h5>
+                    <ul>
+                        {% for team in followed_teams %}
+                            <li>
+                                <input type="checkbox" name="teams" value="{{ team.id }}" data-relationship="follow">
+                                {{ team.team_name }} (Stat Group: {{ team.stat_group }})
+                            </li>
+                        {% else %}
+                            <p>No followed teams available.</p>
+                        {% endfor %}
+                    </ul>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Peruuta</button>
+                <button type="button" class="btn btn-danger" id="confirmRemoveTeams">Poista valitut joukkueet</button>
+            </div>
+        </div>
+    </div>
+</div>
+        
     </div>
 {% endblock %}

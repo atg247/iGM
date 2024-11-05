@@ -1,13 +1,5 @@
 $(document).ready(function () {
-    let isHighlightOn = false; // Initialize this variable here
-    let selectedTeamsList = []; // Initialize selectedTeamsList as an empty array
-
-    // Helper function to check if two rinks are equivalent based on prefix length
-    function areRinksEquivalent(rinkA, rinkB) {
-        const prefixLength = 3;
-        return rinkA.substring(0, prefixLength).toLowerCase() === rinkB.substring(0, prefixLength).toLowerCase();
-    }
-
+   
     // Fetch levels based on season selection
     $('#season').change(function () {
         const season = $(this).val();
@@ -323,19 +315,16 @@ $(document).ready(function () {
         }
 
         $.ajax({
-            url: '/gamefetcher/send_selected_games',
+            url: '/dashboard/update_teams',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ selected_games: selectedGames }),
+            data: JSON.stringify(data),
             success: function (response) {
-                if (response.error) {
-                    alert(response.error);
-                } else {
-                    alert(response.message);
-                }
+                alert(response.message);
             },
-            error: function () {
-                alert('Failed to forward the selected games. Please try again.');
+            error: function (xhr) {
+                console.error('AJAX error:', xhr.responseText); // Add more info on the error
+                alert('An error occurred: ' + xhr.responseText);
             }
         });
     });

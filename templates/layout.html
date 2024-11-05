@@ -90,7 +90,12 @@
     <!-- DataTables JS (Make sure it's loaded after jQuery) -->
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
     <!-- Custom Script (Load after all dependencies) -->
+    {% if 'dashboard' in request.path %}
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    {% elif 'gamefetcher' in request.path %}
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% endif %}
+
     <script src="{{ url_for('static', filename='js/jopoxhaku.js') }}"></script>
 
 </body>

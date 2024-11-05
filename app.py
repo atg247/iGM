@@ -5,7 +5,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_bcrypt import Bcrypt
 from helpers.data_fetcher import get_levels, get_stat_groups, get_teams, hae_kalenteri
 from helpers.game_fetcher import GameFetcher
-from models.user import db, User
+from models.user import db, User, Team, UserTeam
 from forms.registration_form import RegistrationForm
 from forms.login_form import LoginForm
 from dotenv import load_dotenv
@@ -105,42 +105,110 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    managed_teams = current_user.managed_teams.split(",") if current_user.managed_teams else []
-    followed_teams = current_user.followed_teams.split(",") if current_user.followed_teams else []
-    return render_template('dashboard.html', 
-                           username=current_user.username, 
-                           managed_teams=managed_teams, 
-                           followed_teams=followed_teams)
+    # Get managed and followed teams for the current user
+    managed_teams = db.session.query(Team).join(UserTeam).filter(
+        UserTeam.user_id == current_user.id,
+        UserTeam.relationship_type == 'manage'
+    ).all()
+
+    followed_teams = db.session.query(Team).join(UserTeam).filter(
+        UserTeam.user_id == current_user.id,
+        UserTeam.relationship_type == 'follow'
+    ).all()
+
+    return render_template('dashboard.html', managed_teams=managed_teams, followed_teams=followed_teams)
+
 
 
 @app.route('/dashboard/update_teams', methods=['POST'])
 @login_required
 def update_teams():
-    action = request.form['action']
-    selected_teams = request.form.getlist('teams')
-    print(selected_teams)
-
-    if not selected_teams:
-        flash("No teams selected. Please choose at least one team.", "warning")
-        return redirect(url_for('dashboard'))
-
-    if action == 'manage':
-        existing_teams = current_user.managed_teams.split(",") if current_user.managed_teams else []
-        updated_teams = list(set(existing_teams + selected_teams))  # Avoid duplicate entries
-        current_user.managed_teams = ",".join(updated_teams)
-    elif action == 'follow':
-        existing_teams = current_user.followed_teams.split(",") if current_user.followed_teams else []
-        updated_teams = list(set(existing_teams + selected_teams))  # Avoid duplicate entries
-        current_user.followed_teams = ",".join(updated_teams)
-
     try:
-        db.session.commit()
+        data = request.get_json()
+        print("Received data:", data)  # Log incoming data for debugging
+        
+        action = data.get('action')  # Either "manage" or "follow"
+        selected_teams = data.get('teams', [])
+        season = data.get('season')
+        level_id = data.get('level_id')
+        statgroup = data.get('statgroup')
+
+        # Check for missing fields and handle as necessary
+        if not selected_teams:
+            flash("No teams selected. Please choose at least one team.", "warning")
+            return jsonify({"message": "No teams selected. Please choose at least one team."}), 400
+
+        # Process each selected team
+        for team_data in selected_teams:
+            print("Processing team:", team_data)  # Log each team data for debugging
+            
+            # Extract team data
+            team_id = team_data.get('TeamID')
+            team_abbrv = team_data.get('TeamAbbrv')
+            team_association = team_data.get('TeamAssociation')
+            stat_group = team_data.get('stat_group')
+            
+            # Check if the team already exists in the Team table; if not, add it
+            team = Team.query.filter_by(team_id=team_id).first()
+            if not team:
+                team = Team(team_id=team_id, team_name=team_abbrv, stat_group=stat_group)
+                db.session.add(team)
+                db.session.commit()  # Commit here to generate the `team.id` for relationships
+
+            # Check if the relationship already exists in the UserTeam table
+            existing_relationship = UserTeam.query.filter_by(
+                user_id=current_user.id,
+                team_id=team.id,
+                relationship_type=action
+            ).first()
+
+            # If no existing relationship, create a new one
+            if not existing_relationship:
+                new_relationship = UserTeam(
+                    user_id=current_user.id,
+                    team_id=team.id,
+                    relationship_type=action  # Either "managed" or "followed"
+                )
+                db.session.add(new_relationship)
+
+        db.session.commit()  # Commit all new relationships in bulk
         flash("Teams updated successfully!", "success")
+        return jsonify({"message": "Teams updated successfully!"}), 200
+
     except Exception as e:
+        print("Error during update:", e)  # Log the error
         db.session.rollback()
         flash(f"An error occurred while updating teams: {str(e)}", "danger")
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
 
-    return redirect(url_for('dashboard'))
+@app.route('/dashboard/remove_teams', methods=['POST'])
+@login_required
+def remove_teams():
+    data = request.get_json()
+    selected_teams = data.get('teams', [])
+
+    try:
+        for team in selected_teams:
+            team_id = team['team_id']
+            relationship_type = team['relationship_type']
+
+            # Find and delete the specific UserTeam relationship
+            user_team = UserTeam.query.filter_by(
+                user_id=current_user.id,
+                team_id=team_id,
+                relationship_type=relationship_type
+            ).first()
+            if user_team:
+                db.session.delete(user_team)
+
+        db.session.commit()
+        return jsonify({"message": "Selected teams removed successfully!"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print("Error during team removal:", e)
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
 
 @app.route('/jopox_ottelut')
 def jopox_ottelut():
