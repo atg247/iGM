@@ -74,23 +74,20 @@ $(document).ready(function () {
     
     
     $('#dashboardForm').submit(function (e) {
-        e.preventDefault(); // Prevent default form submission
-    
+        e.preventDefault();
+
         const selectedTeams = [];
-        const action = $(document.activeElement).val(); // Get the action from the clicked button
-    
-        // Collect selected teams and their information
+        const action = $(document.activeElement).val();
+
         $('#teams option:selected').each(function () {
-     
             selectedTeams.push({
                 TeamID: $(this).val(),
-                TeamAbbrv: $(this).data('abbrv'),        // Captures TeamAbbrv
-                team_association: $(this).data('association'), // Captures TeamAssociation
+                TeamAbbrv: $(this).data('abbrv'),
+                team_association: $(this).data('association'),
                 team_name: $(this).data('name'),
                 stat_group: $(this).data('statgroup')
             });
         });
-        console.log(selectedTeams); // This will confirm if the event is firing
 
         const data = {
             action: action,
@@ -99,21 +96,62 @@ $(document).ready(function () {
             level_id: $('#levels').val(),
             statgroup: $('#statgroups').val()
         };
-    
-        // Send data as JSON to the update_teams route
+
         $.ajax({
             url: '/dashboard/update_teams',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(data),
             success: function (response) {
-                alert(response.message);
+                alert(response.message);  // Notify the user of success
+
+                // Update the managed teams list
+                const managedTeamsList = $('#managedTeamsList');
+                managedTeamsList.empty();  // Clear current list
+                response.managed_teams.forEach(team => {
+                    managedTeamsList.append(`<li>${team.team_name} (Stat Group: ${team.stat_group})</li>`);
+                });
+
+                // Update the followed teams list
+                const followedTeamsList = $('#followedTeamsList');
+                followedTeamsList.empty();  // Clear current list
+                response.followed_teams.forEach(team => {
+                    followedTeamsList.append(`<li>${team.team_name} (Stat Group: ${team.stat_group})</li>`);
+                });
+                updateRemoveTeamsModal(response.managed_teams, response.followed_teams);
             },
             error: function (xhr) {
                 alert('An error occurred: ' + xhr.responseText);
             }
         });
     });
+
+     // Function to update Remove Teams Modal content
+     function updateRemoveTeamsModal(managedTeams, followedTeams) {
+        const managedTeamsModalList = $('#removeTeamsModal .modal-body ul:first');
+        const followedTeamsModalList = $('#removeTeamsModal .modal-body ul:last');
+
+        managedTeamsModalList.empty();
+        managedTeams.forEach(team => {
+            managedTeamsModalList.append(`
+                <li>
+                    <input type="checkbox" name="teams" value="${team.id}" data-relationship="manage">
+                    ${team.team_name} (Stat Group: ${team.stat_group})
+                </li>
+            `);
+        });
+
+        followedTeamsModalList.empty();
+        followedTeams.forEach(team => {
+            followedTeamsModalList.append(`
+                <li>
+                    <input type="checkbox" name="teams" value="${team.id}" data-relationship="follow">
+                    ${team.team_name} (Stat Group: ${team.stat_group})
+                </li>
+            `);
+        });
+    }
+
 
     // Handle remove teams confirmation
     $('#confirmRemoveTeams').click(function () {
@@ -135,15 +173,30 @@ $(document).ready(function () {
             data: JSON.stringify({ teams: selectedTeams }),
             success: function (response) {
                 alert(response.message);
-                location.reload(); // Reload the page to update the list of teams
+
+                // Update the managed and followed teams lists on the dashboard
+                const managedTeamsList = $('#managedTeamsList');
+                managedTeamsList.empty();
+                response.managed_teams.forEach(team => {
+                    managedTeamsList.append(`<li>${team.team_name} (Stat Group: ${team.stat_group})</li>`);
+                });
+
+                const followedTeamsList = $('#followedTeamsList');
+                followedTeamsList.empty();
+                response.followed_teams.forEach(team => {
+                    followedTeamsList.append(`<li>${team.team_name} (Stat Group: ${team.stat_group})</li>`);
+                });
+
+                // Update the Remove Teams Modal
+                updateRemoveTeamsModal(response.managed_teams, response.followed_teams);
+
+                // Close the modal
+                $('#removeTeamsModal').modal('hide');
             },
             error: function (xhr) {
                 alert('An error occurred: ' + xhr.responseText);
             }
         });
-
-        // Close the modal after submitting
-        $('#removeTeamsModal').modal('hide');
     });
 });
 

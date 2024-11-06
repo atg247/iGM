@@ -1,11 +1,11 @@
 {% extends "layout.html" %}
 {% block content %}
-   
+
 <p class="text-center">Tällä sivulla voit lisätä hallinnoitavia ja seurattavia joukkueita. 
     Hallinoitavilla joukkueilla tarkoitetaan joukkueita, joiden Jopox-ylläpitäjä olet tai joiden otteluohjelman haluat näyttää oletuksena.
     Seurattavilla joukkueilla tarkoitetaan joukkueita, joiden otteluohjelman haluat näyttää taulukossa lainapelaajien suunnittelemiseksi.</p>
 
-    <!-- Form for fetching games -->
+<!-- Form for fetching games -->
 <form id="dashboardForm" method="POST" action="{{ url_for('update_teams') }}" class="mt-4">
     <div class="container">
         <h2>Welcome, {{ current_user.username }}!</h2>
@@ -58,30 +58,35 @@
             </div>
         </div>
         
-    </form>
-    <h2>Hallinnoimasi joukkueet:</h2>
-    <ul>
-        {% for team in managed_teams %}
-            <li>{{ team.team_name }} (Stat Group: {{ team.stat_group }})</li>
-        {% else %}
-            <p>No managed teams yet.</p>
-        {% endfor %}
-    </ul>
-
-    <!-- Display Followed Teams -->
-    <h2>Seuraamasi joukkueet:</h2>
-    <ul>
-        {% for team in followed_teams %}
-            <li>{{ team.team_name }} (Stat Group: {{ team.stat_group }})</li>
-        {% else %}
-            <p>No followed teams yet.</p>
-        {% endfor %}
-    </ul>
-    <div class="text-center mt-4">
-        <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#removeTeamsModal">
-            Poista hallinnoitavia/seurattavia joukkueita
-        </button>
     </div>
+</form>
+
+<!-- Managed Teams List -->
+<h2>Hallinnoimasi joukkueet:</h2>
+<ul id="managedTeamsList">
+    {% for team in managed_teams %}
+        <li>{{ team.team_name }} (Stat Group: {{ team.stat_group }})</li>
+    {% else %}
+        <p>No managed teams yet.</p>
+    {% endfor %}
+</ul>
+
+<!-- Followed Teams List -->
+<h2>Seuraamasi joukkueet:</h2>
+<ul id="followedTeamsList">
+    {% for team in followed_teams %}
+        <li>{{ team.team_name }} (Stat Group: {{ team.stat_group }})</li>
+    {% else %}
+        <p>No followed teams yet.</p>
+    {% endfor %}
+</ul>
+
+<div class="text-center mt-4">
+    <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#removeTeamsModal">
+        Poista hallinnoitavia/seurattavia joukkueita
+    </button>
+</div>
+
 <!-- Remove Teams Modal -->
 <div class="modal fade" id="removeTeamsModal" tabindex="-1" role="dialog" aria-labelledby="removeTeamsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
@@ -125,6 +130,5 @@
         </div>
     </div>
 </div>
-        
-    </div>
+
 {% endblock %}
