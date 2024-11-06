@@ -65,7 +65,7 @@
 <h2>Hallinnoimasi joukkueet:</h2>
 <ul id="managedTeamsList">
     {% for team in managed_teams %}
-        <li>{{ team.team_name }} (Stat Group: {{ team.stat_group }})</li>
+        <li>{{ team.team_name }} ({{ team.stat_group }})</li>
     {% else %}
         <p>No managed teams yet.</p>
     {% endfor %}
@@ -75,7 +75,7 @@
 <h2>Seuraamasi joukkueet:</h2>
 <ul id="followedTeamsList">
     {% for team in followed_teams %}
-        <li>{{ team.team_name }} (Stat Group: {{ team.stat_group }})</li>
+        <li>{{ team.team_name }} ({{ team.stat_group }})</li>
     {% else %}
         <p>No followed teams yet.</p>
     {% endfor %}

@@ -135,7 +135,6 @@ def dashboard():
 def update_teams():
     try:
         data = request.get_json()
-        print("Received data:", data)  # Log incoming data for debugging
         
         action = data.get('action')  # Either "manage" or "follow"
         selected_teams = data.get('teams', [])
@@ -150,7 +149,6 @@ def update_teams():
 
         # Process each selected team
         for team_data in selected_teams:
-            print("Processing team:", team_data)  # Log each team data for debugging
             
             # Extract team data
             team_id = team_data.get('TeamID')
@@ -185,16 +183,15 @@ def update_teams():
 
          # Fetch the updated lists of managed and followed teams
         managed_teams = [
-            {"team_name": team.team_name, "stat_group": team.stat_group}
+            {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
             for team in current_user.teams if team.team_user_entries[0].relationship_type == 'manage'
         ]
         followed_teams = [
-            {"team_name": team.team_name, "stat_group": team.stat_group}
+            {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
             for team in current_user.teams if team.team_user_entries[0].relationship_type == 'follow'
         ]
 
         return jsonify({
-            "message": "Teams updated successfully!",
             "managed_teams": managed_teams,
             "followed_teams": followed_teams
         }), 200
@@ -202,10 +199,6 @@ def update_teams():
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
-
-        flash("Teams updated successfully!", "success")
-        return jsonify({"message": "Teams updated successfully!"}), 200
-    
 
     except Exception as e:
         print("Error during update:", e)  # Log the error

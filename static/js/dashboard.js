@@ -56,17 +56,9 @@ $(document).ready(function () {
                                         data-statgroup="${selectedStatGroupName || ''}">
                                         ${team.TeamAbbrv}</option>`;
                     });
-    
-                    console.log('Generated team options HTML:', teamOptions); // Debugging: Check generated HTML
-                    
+                        
                     // Populate the teams dropdown
                     $('#teams').html(teamOptions);
-    
-                    // Log each team option individually for verification
-                    $('#teams option').each(function () {
-                        console.log('Option value:', $(this).val(), 'data-abbrv:', $(this).data('abbrv'), 
-                                    'data-association:', $(this).data('association'), 'data-img:', $(this).data('img'));
-                    });
                 }
             });
         }
@@ -103,22 +95,31 @@ $(document).ready(function () {
             contentType: 'application/json',
             data: JSON.stringify(data),
             success: function (response) {
-                alert(response.message);  // Notify the user of success
 
                 // Update the managed teams list
                 const managedTeamsList = $('#managedTeamsList');
                 managedTeamsList.empty();  // Clear current list
                 response.managed_teams.forEach(team => {
-                    managedTeamsList.append(`<li>${team.team_name} (Stat Group: ${team.stat_group})</li>`);
+                    managedTeamsList.append(`
+                        <li data-team-id="${team.team_id}">
+                            ${team.team_name} (${team.stat_group})
+                        </li>
+                    `);
                 });
+
 
                 // Update the followed teams list
                 const followedTeamsList = $('#followedTeamsList');
                 followedTeamsList.empty();  // Clear current list
                 response.followed_teams.forEach(team => {
-                    followedTeamsList.append(`<li>${team.team_name} (Stat Group: ${team.stat_group})</li>`);
+                    followedTeamsList.append(`
+                        <li data-team-id="${team.team_id}">
+                            ${team.team_name} (${team.stat_group})
+                        </li>
+                    `);
                 });
                 updateRemoveTeamsModal(response.managed_teams, response.followed_teams);
+
             },
             error: function (xhr) {
                 alert('An error occurred: ' + xhr.responseText);
@@ -127,7 +128,7 @@ $(document).ready(function () {
     });
 
      // Function to update Remove Teams Modal content
-     function updateRemoveTeamsModal(managedTeams, followedTeams) {
+    function updateRemoveTeamsModal(managedTeams, followedTeams) {
         const managedTeamsModalList = $('#removeTeamsModal .modal-body ul:first');
         const followedTeamsModalList = $('#removeTeamsModal .modal-body ul:last');
 
@@ -135,7 +136,7 @@ $(document).ready(function () {
         managedTeams.forEach(team => {
             managedTeamsModalList.append(`
                 <li>
-                    <input type="checkbox" name="teams" value="${team.id}" data-relationship="manage">
+                    <input type="checkbox" name="teams" value="${team.team_id}" data-relationship="manage">
                     ${team.team_name} (Stat Group: ${team.stat_group})
                 </li>
             `);
@@ -145,7 +146,7 @@ $(document).ready(function () {
         followedTeams.forEach(team => {
             followedTeamsModalList.append(`
                 <li>
-                    <input type="checkbox" name="teams" value="${team.id}" data-relationship="follow">
+                    <input type="checkbox" name="teams" value="${team.team_id}" data-relationship="follow">
                     ${team.team_name} (Stat Group: ${team.stat_group})
                 </li>
             `);
