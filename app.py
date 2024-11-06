@@ -10,6 +10,7 @@ from forms.registration_form import RegistrationForm
 from forms.login_form import LoginForm
 from dotenv import load_dotenv
 from flask_migrate import Migrate
+import logging
 
 # Load environment variables from .env file if it exists
 if os.path.exists('.env'):
@@ -19,6 +20,12 @@ if os.path.exists('.env'):
 app = Flask(__name__)
 app.config.from_object('config.Config')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key_here')  # Add secret key for sessions
+
+#MUISTA POISTAA TÄMÄ VALMIISTA VERSIOSTA!!!!!!!!!!!!!!!!!!!!!!!!
+# Set logging level to DEBUG
+app.logger.setLevel(logging.DEBUG)
+#MUISTA POISTAA TÄMÄ VALMIISTA VERSIOSTA!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 # Initialize necessary extensions
 db.init_app(app)
@@ -110,12 +117,14 @@ def dashboard():
         UserTeam.relationship_type == 'manage'
     ).all()
     app.logger.info(f"Managed teams: {managed_teams}")
+    app.logger.debug(f"Managed teams raw data: {managed_teams}")
 
     followed_teams = db.session.query(Team).join(UserTeam).filter(
         UserTeam.user_id == current_user.id,
         UserTeam.relationship_type == 'follow'
     ).all()
     app.logger.info(f"Followed teams: {followed_teams}")
+    app.logger.debug(f"Followed teams raw data: {followed_teams}")
 
     return render_template('dashboard.html', managed_teams=managed_teams, followed_teams=followed_teams)
 
