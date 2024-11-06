@@ -19,5 +19,11 @@ class Config:
     REMEMBER_COOKIE_DURATION = timedelta(days=3)
     REMEMBER_COOKIE_SECURE = os.getenv('COOKIE_SECURE')  # True for Heroku, False locally
 
-print("Database URL:", os.getenv('DATABASE_URL'))
+    MAIL_SERVER = 'smtp.gmail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = os.getenv('EMAIL_USERNAME')
+    MAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
 
+    print(MAIL_PASSWORD)
+    print(MAIL_USERNAME)

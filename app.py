@@ -8,9 +8,14 @@ from helpers.game_fetcher import GameFetcher
 from models.user import db, User, Team, UserTeam
 from forms.registration_form import RegistrationForm
 from forms.login_form import LoginForm
+from forms.forgot_password import ForgotPasswordForm, send_reset_email
+from forms.reset_password import ResetPasswordForm  
+from helpers.extensions import mail  # Import mail from extensions
 from dotenv import load_dotenv
 from flask_migrate import Migrate
 import logging
+from flask_mail import Mail
+
 
 # Load environment variables from .env file if it exists
 if os.path.exists('.env'):
@@ -20,6 +25,7 @@ if os.path.exists('.env'):
 app = Flask(__name__)
 app.config.from_object('config.Config')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key_here')  # Add secret key for sessions
+mail.init_app(app)
 
 #MUISTA POISTAA TÄMÄ VALMIISTA VERSIOSTA!!!!!!!!!!!!!!!!!!!!!!!!
 # Set logging level to DEBUG
@@ -106,6 +112,34 @@ def logout():
     logout_user()
     flash('You have successfully logged out.', 'info')
     return redirect(url_for('index'))
+
+@app.route("/forgot_password", methods=['GET', 'POST'])
+def forgot_password():
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            send_reset_email(user)
+            flash('An email has been sent with instructions to reset your password.', 'info')
+        else:
+            flash('No account with that email exists.', 'warning')
+        return redirect(url_for('login'))
+    return render_template('forgot_password.html', form=form)
+
+@app.route("/reset_password/<token>", methods=['GET', 'POST'])
+def reset_token(token):
+    user = User.verify_reset_token(token)
+    if user is None:
+        flash('That is an invalid or expired token', 'warning')
+        return redirect(url_for('forgot_password'))
+    
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db.session.commit()
+        flash('Your password has been updated! You can now log in.', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_password.html', form=form)
 
 # Dashboard route (requires login)
 @app.route('/dashboard')
