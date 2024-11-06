@@ -9,7 +9,7 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'supersecretkey')  # Fallback for development
 
     # Get the DATABASE_URL and modify if necessary
-    uri = os.getenv('DATABASE_URL', 'sqlite:///local_database.db')
+    uri = os.getenv('DATABASE_URL', 'sqlite:///hockey_data.db')
     if uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
     
@@ -17,4 +17,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     REMEMBER_COOKIE_DURATION = timedelta(days=3)
-    REMEMBER_COOKIE_SECURE = True  # True for Heroku, False locally
+    REMEMBER_COOKIE_SECURE = os.getenv('COOKIE_SECURE')  # True for Heroku, False locally
+
+print("Database URL:", os.getenv('DATABASE_URL'))
+

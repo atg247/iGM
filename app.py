@@ -109,11 +109,13 @@ def dashboard():
         UserTeam.user_id == current_user.id,
         UserTeam.relationship_type == 'manage'
     ).all()
+    app.logger.info(f"Managed teams: {managed_teams}")
 
     followed_teams = db.session.query(Team).join(UserTeam).filter(
         UserTeam.user_id == current_user.id,
         UserTeam.relationship_type == 'follow'
     ).all()
+    app.logger.info(f"Followed teams: {followed_teams}")
 
     return render_template('dashboard.html', managed_teams=managed_teams, followed_teams=followed_teams)
 
