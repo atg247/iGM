@@ -167,57 +167,52 @@ def dashboard():
 @app.route('/dashboard/update_teams', methods=['POST'])
 @login_required
 def update_teams():
-    print('update_teams started')
-
     try:
         data = request.get_json()
-        
         action = data.get('action')  # Either "manage" or "follow"
         selected_teams = data.get('teams', [])
         season = data.get('season')
         level_id = data.get('level_id')
         statgroup = data.get('statgroup')
 
-        # Check for missing fields and handle as necessary
+        # Check for missing fields
         if not selected_teams:
             flash("No teams selected. Please choose at least one team.", "warning")
             return jsonify({"message": "No teams selected. Please choose at least one team."}), 400
 
         # Process each selected team
         for team_data in selected_teams:
-            
-            # Extract team data
             team_id = team_data.get('TeamID')
             team_abbrv = team_data.get('TeamAbbrv')
             team_association = team_data.get('TeamAssociation')
             stat_group = team_data.get('stat_group')
-            
-            # Check if the team already exists in the Team table; if not, add it
+
+            # Check if the team exists in the Team table; if not, add it
             team = Team.query.filter_by(team_id=team_id).first()
             if not team:
                 team = Team(team_id=team_id, team_name=team_abbrv, stat_group=stat_group)
                 db.session.add(team)
-                db.session.commit()  # Commit here to generate the `team.id` for relationships
+                db.session.commit()  # Commit here to generate `team.id` for relationships
 
-            # Check if the relationship already exists in the UserTeam table
+            # Check if the relationship exists in the UserTeam table
             existing_relationship = UserTeam.query.filter_by(
                 user_id=current_user.id,
                 team_id=team.id,
                 relationship_type=action
             ).first()
 
-            # If no existing relationship, create a new one
+            # Create a new relationship if none exists
             if not existing_relationship:
                 new_relationship = UserTeam(
                     user_id=current_user.id,
                     team_id=team.id,
-                    relationship_type=action  # Either "managed" or "followed"
+                    relationship_type=action
                 )
                 db.session.add(new_relationship)
 
         db.session.commit()  # Commit all new relationships in bulk
 
-         # Fetch the updated lists of managed and followed teams
+        # Fetch the updated lists of managed and followed teams
         managed_teams = [
             {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
             for team in current_user.teams if team.team_user_entries[0].relationship_type == 'manage'
@@ -226,7 +221,6 @@ def update_teams():
             {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
             for team in current_user.teams if team.team_user_entries[0].relationship_type == 'follow'
         ]
-
         return jsonify({
             "managed_teams": managed_teams,
             "followed_teams": followed_teams
@@ -234,12 +228,7 @@ def update_teams():
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
-
-    except Exception as e:
-        print("Error during update:", e)  # Log the error
-        db.session.rollback()
-        flash(f"An error occurred while updating teams: {str(e)}", "danger")
+        print("Error during update:", e)
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
 
 @app.route('/dashboard/remove_teams', methods=['POST'])
@@ -273,7 +262,7 @@ def remove_teams():
             {"team_name": team.team_name, "stat_group": team.stat_group, "id": team.id}
             for team in current_user.teams if team.team_user_entries[0].relationship_type == 'follow'
         ]
-
+      
         return jsonify({
             "message": "Selected teams removed successfully!",
             "managed_teams": managed_teams,
@@ -284,6 +273,35 @@ def remove_teams():
         db.session.rollback()
         print("Error during team removal:", e)
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/dashboard/get_ManagedFollowed', methods=['GET'])
+@login_required
+def get_ManagedFollowed():
+    
+   # Retrieves the latest managed and followed teams for the current user.
+    try:
+        # Fetch the managed teams
+        managed_teams = [
+            {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
+            for team in Team.query.join(UserTeam)
+            .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'manage').all()
+        ]
+
+        # Fetch the followed teams
+        followed_teams = [
+            {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
+            for team in Team.query.join(UserTeam)
+            .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'follow').all()
+        ]
+
+        return jsonify({
+            "managed_teams": managed_teams,
+            "followed_teams": followed_teams
+        }), 200
+
+    except Exception as e:
+        print("Error fetching teams:", e)
+        return jsonify({"message": f"An error occurred while fetching teams: {str(e)}"}), 500
 
 
 @app.route('/jopox_ottelut')
