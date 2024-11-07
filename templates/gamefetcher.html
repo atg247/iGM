@@ -8,7 +8,7 @@
         Voit hakea useita peliryhmiä eri lohkoista ja lisätä ne yksitellen taulukkoon.</p>
 
         <!-- Form for fetching games -->
-    <form id="fetchForm" action="/fetch_games" method="POST" class="mt-4">
+    <form id="fetchForm" action="{{ url_for('fetch_games') }}" method="POST" class="mt-4">
         <!-- Season Dropdown -->
         <div class="form-group row">
             <label for="season" class="col-sm-2 col-form-label">Kausi:</label>

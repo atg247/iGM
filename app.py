@@ -167,6 +167,8 @@ def dashboard():
 @app.route('/dashboard/update_teams', methods=['POST'])
 @login_required
 def update_teams():
+    print('update_teams started')
+
     try:
         data = request.get_json()
         
@@ -328,6 +330,7 @@ def get_teams_endpoint(season, stat_group_id):
 # Route to handle form data submission to fetch games.
 @app.route('/gamefetcher/fetch_games', methods=['POST'])
 def fetch_games():
+    print('game fetcher started')
     dwl = 0
     season = request.form['season']
     stat_group_id = request.form['statgroup']
