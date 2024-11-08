@@ -133,7 +133,7 @@ $('#dashboardForm').submit(function (e) {
 
 
     const selectedTeams = [];
-    const action = $(document.activeElement).val();
+    const action = $(this).find('button[type=submit]').val();
 
     $('#teams option:selected').each(function () {
         selectedTeams.push({
