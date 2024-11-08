@@ -186,7 +186,7 @@ $(document).ready(function () {
             alert('Unexpected response format. Please try again.');
         });
     });
-
+       //--------------------------------------------------//
     // Add styles for highlighting
     $('<style>')
         .prop('type', 'text/css')
