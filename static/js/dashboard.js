@@ -129,6 +129,8 @@ loadTeams();
 // Handle add/update teams submission
 $('#dashboardForm').submit(function (e) {
     e.preventDefault();
+    console.log('Form submitted'); // Log form submission
+
 
     const selectedTeams = [];
     const action = $(document.activeElement).val();
@@ -151,12 +153,15 @@ $('#dashboardForm').submit(function (e) {
         statgroup: $('#statgroups').val()
     };
 
+    console.log('Form data:', data); // Log form data
+
     $.ajax({
         url: '/dashboard/update_teams',
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(data),
         success: function (response) {
+            console.log('Success:', response); // Log success response
             loadTeams(); // Refresh lists and modal with latest data after update
         },
         error: function (xhr) {
