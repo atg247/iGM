@@ -209,44 +209,52 @@ $(document).ready(function () {
     // Highlight overlap button functionality
     $('#highlightButton').click(function () {
         let table = $('#gamesTable').DataTable();
-
+    
         if (isHighlightOn) {
             table.rows().nodes().each(function (row) {
-                $(row).find('td:eq(3)').removeClass('highlight-same-day highlight-orange highlight-red');
+                $(row).find('td:eq(2)').removeClass('highlight-same-day highlight-orange highlight-red');
             });
-
+    
             $('#highlightButton').text('Korosta päällekkäiset');
             isHighlightOn = false;
         } else {
             let dateGroups = {};
-
+    
             // Group rows by date
             table.rows().every(function () {
                 let data = this.data();
                 let date = data.Date;
-
+    
                 if (!dateGroups[date]) {
                     dateGroups[date] = [];
                 }
                 dateGroups[date].push(this.node());
             });
-
+    
+            // Extract team names from selectedTeamsList
+            let selectedTeamNames = selectedTeamsList.map(entry => entry.split(' : ')[0]);
+    
             // Iterate through each date group
             $.each(dateGroups, function (date, rows) {
                 if (rows.length > 1) {
                     let rinkGroups = {};
                     let selectedTeamsPlaying = 0;
-
+                    console.log('Selected Teams List:', selectedTeamsList);
+    
                     rows.forEach(function (row) {
-                        let rink = $(row).find('td:eq(9)').text(); // Assuming rink info is in column 9
+                        let rink = $(row).find('td:eq(10)').text(); // Assuming rink info is in column 9
                         let homeTeam = $(row).find('td:eq(5)').text(); // Assuming home team is in column 5
                         let awayTeam = $(row).find('td:eq(6)').text(); // Assuming away team is in column 6
-
+    
+                        // Debugging statements
+                        console.log(`Home Team: ${homeTeam}`);
+                        console.log(`Away Team: ${awayTeam}`);
+    
                         // Count how many selected teams are playing on that date
-                        if (Array.isArray(selectedTeamsList) && selectedTeamsList.includes(homeTeam) || selectedTeamsList.includes(awayTeam)) {
+                        if (Array.isArray(selectedTeamNames) && (selectedTeamNames.includes(homeTeam) || selectedTeamNames.includes(awayTeam))) {
                             selectedTeamsPlaying++;
                         }
-
+    
                         // Group rows by rink
                         let foundEquivalentRink = false;
                         for (let normalizedRink in rinkGroups) {
@@ -260,15 +268,21 @@ $(document).ready(function () {
                             rinkGroups[rink] = [row];
                         }
                     });
-
+    
                     let uniqueRinksCount = Object.keys(rinkGroups).length;
-
+    
+                    // Debugging statements
+                    console.log(`Date: ${date}`);
+                    console.log(`Selected Teams Playing: ${selectedTeamsPlaying}`);
+                    console.log(`Unique Rinks Count: ${uniqueRinksCount}`);
+                    console.log(`Rink Groups:`, rinkGroups);
+        
                     // Apply different highlights based on the conditions
-                    if (selectedTeamsPlaying >= 3 && uniqueRinksCount > 1) {
+                    if (selectedTeamsPlaying >= 3 && uniqueRinksCount > 2) {
                         rows.forEach(function (row) {
                             $(row).find('td:eq(3)').addClass('highlight-red');
                         });
-                    } else if (selectedTeamsPlaying >= 2 && uniqueRinksCount > 1) {
+                    } else if (selectedTeamsPlaying >= 3 && uniqueRinksCount > 1) {
                         rows.forEach(function (row) {
                             $(row).find('td:eq(3)').addClass('highlight-orange');
                         });
@@ -279,7 +293,7 @@ $(document).ready(function () {
                     }
                 }
             });
-
+    
             $('#highlightButton').text('Älä näytä päällekkäisiä');
             isHighlightOn = true;
         }
@@ -297,6 +311,35 @@ $(document).ready(function () {
         $('#highlightButton').text('Korosta päällekkäiset');
         isHighlightOn = false;
     });
+// Function to remove selected teams
+$('#confirmRemoveTeams').click(function () {
+    const selectedTeams = [];
+
+    // Collect selected teams with their relationship type
+    $('#removeTeamsForm input[name="teams"]:checked').each(function () {
+        selectedTeams.push({
+            team_id: $(this).val(),
+            relationship_type: $(this).data('relationship')
+        });
+    });
+
+    // Send the selected teams to the server
+    $.ajax({
+        url: '/dashboard/remove_teams',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ teams: selectedTeams }),
+        success: function (response) {
+            loadTeams(); // Refresh lists and modal with latest data after removal
+
+            // Close the modal
+            $('#removeTeamsModal').modal('hide');
+        },
+        error: function (xhr) {
+            alert('An error occurred: ' + xhr.responseText);
+        }
+    });
+});
 
     $('#forwardGamesButton').click(function () {
         const selectedGames = [];
@@ -339,5 +382,6 @@ $(document).ready(function () {
                 alert('Failed to forward the selected games. Please try again.');
             }
         });
-    });
-});
+}); 
+}); 
+
