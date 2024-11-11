@@ -24,6 +24,3 @@ class Config:
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.getenv('EMAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
-
-    print(MAIL_PASSWORD)
-    print(MAIL_USERNAME)
