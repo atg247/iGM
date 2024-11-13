@@ -129,28 +129,26 @@ loadTeams();
 // Handle add/update teams submission
 $('#dashboardForm').submit(function (e) {
     e.preventDefault();
-    console.log('Form submitted'); // Log form submission
-
 
     const selectedTeams = [];
-    const action = $(this).find('button[type=submit]').val();
-
+    const action = $(document.activeElement).val(); // Get the value of the active element (button pressed)
+    console.log('Action:', action); // Log the action
     $('#teams option:selected').each(function () {
         selectedTeams.push({
             TeamID: $(this).val(),
             TeamAbbrv: $(this).data('abbrv'),
             team_association: $(this).data('association'),
             team_name: $(this).data('name'),
-            stat_group: $(this).data('statgroup')
+            stat_group: $(this).data('statgroup'),
+            season: $('#season').val(),
+            level_id: $('#levels').val(),
+            statgroup: $('#statgroups').val()    
         });
     });
 
     const data = {
         action: action,
         teams: selectedTeams,
-        season: $('#season').val(),
-        level_id: $('#levels').val(),
-        statgroup: $('#statgroups').val()
     };
 
     console.log('Form data:', data); // Log form data
