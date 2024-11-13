@@ -46,6 +46,10 @@ class Team(db.Model):
     team_id = db.Column(db.String(100), unique=True, nullable=False)  # The team's unique identifier
     team_name = db.Column(db.String(150), nullable=False)
     stat_group = db.Column(db.String(150), nullable=True)
+    season = db.Column(db.String(50), nullable=True)
+    level_id = db.Column(db.String(50), nullable=True)
+    team_association = db.Column(db.String(50), nullable=True)
+    statgroup = db.Column(db.String(50), nullable=True)
 
     # Relationship to users through UserTeam table
     users = db.relationship('User', secondary='user_team', back_populates='teams', overlaps="user_team_entries,team_user_entries")

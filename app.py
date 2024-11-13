@@ -169,11 +169,9 @@ def dashboard():
 def update_teams():
     try:
         data = request.get_json()
+        print('This is data:', data)
         action = data.get('action')  # Either "manage" or "follow"
         selected_teams = data.get('teams', [])
-        season = data.get('season')
-        level_id = data.get('level_id')
-        statgroup = data.get('statgroup')
 
         # Check for missing fields
         if not selected_teams:
@@ -184,13 +182,17 @@ def update_teams():
         for team_data in selected_teams:
             team_id = team_data.get('TeamID')
             team_abbrv = team_data.get('TeamAbbrv')
-            team_association = team_data.get('TeamAssociation')
+            team_association = team_data.get('team_association')
             stat_group = team_data.get('stat_group')
+            season = team_data.get('season')
+            level_id = team_data.get('level_id')
+            statgroup = team_data.get('statgroup')
 
             # Check if the team exists in the Team table; if not, add it
             team = Team.query.filter_by(team_id=team_id).first()
+            
             if not team:
-                team = Team(team_id=team_id, team_name=team_abbrv, stat_group=stat_group)
+                team = Team(team_id=team_id, team_name=team_abbrv, stat_group=stat_group, team_association=team_association, season=season, level_id=level_id, statgroup=statgroup)
                 db.session.add(team)
                 db.session.commit()  # Commit here to generate `team.id` for relationships
 
