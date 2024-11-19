@@ -3,39 +3,23 @@
 
 {% block content %}
 
-<!--    <h1 class="text-center">Welcome to the Hockey Data Fetcher!</h1> -->
-    <p class="text-center">Tarkastele hallinnoimiesi ja seuraamiesi joukkueiden otteluohjelmia.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otteluohjelmien tarkastelu</title>
+    <!-- Link to your existing styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <!-- Add Vue via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3"></script>
+</head>
+<body>
+    <!-- Vue App Mount Point -->
+    <div id="schedule-app"></div>
 
-        <div class="d-flex justify-content-center mt-4">  
-        <!-- Clear Button -->
-        <button type="button" id="clear" class="btn btn-danger mx-2">Tyhjennä taulukko</button>
-        <!-- Highlight Games Button -->
-        <button type="button" id="highlightButton" class="btn btn-info mx-2">Korosta päällekkäiset</button>
-    </div>
-npm
-    <!-- Games Table -->
-    <h2 class="text-center mt-5">Otteluluettelo</h2>
-    <div class="table-responsive">
-        <form id="forwardGamesForm">
-            <table id="gamesTable" class="display table table-striped table-bordered mt-3" style="width:100%">
-                <thead class="thead-dark">
-                    <tr>
-                        <th>Select</th>
-                        <th>Team ID</th>
-                        <th>Game ID</th>
-                        <th>Pvm</th>
-                        <th>Klo</th>
-                        <th>Kotijoukkue</th>
-                        <th>Vierasjoukkue</th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
-                        <th>Halli</th>
-                        <th>Sarjataso</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </form>
-    </div>
+    <!-- Include the Vue Component -->
+    <script src="{{ url_for('static', filename='js/schedulePage.js') }}"></script>
+</body>
+</html>
 {% endblock %}
