@@ -73,3 +73,35 @@ h1,h2 {
 .highlight-yellow {
     background-color: #ffff99 !important; /* Light yellow for custom highlighting */
 }
+
+.sticky-team-selector {
+    position: sticky;
+    top: 0; /* Adjust this value to fit your page layout */
+    background-color: white;
+    z-index: 1000; /* Ensure it stays above other elements */
+    padding: 10px;
+    border-bottom: 2px solid #ddd; /* Optional: Add a bottom border for visual separation */
+    border: 4px solid #ccc; /* Light gray border for better visibility */
+    border-radius: 4px; /* Slightly rounded corners for better aesthetics */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
+}
+
+.btn-group button {
+    flex: 1; /* Restore original width behavior */
+    min-width: auto; /* Prevent buttons from stretching */
+    margin: 7px; /* Add consistent spacing */
+    border: 2px solid #ccc; /* Light gray border for better visibility */
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s; /* Smooth effects */
+    box-shadow: 0 3px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
+
+}
+
+.selected-team {
+    font-weight: bold;
+    transition: outline 0.3s ease-in-out; /* Smooth transition for outline */
+}
+
+.unselected-team {
+    outline: none; /* No frame for unselected buttons */
+    font-weight: normal; /* Normal text for unselected buttons */
+}

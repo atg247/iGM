@@ -361,27 +361,27 @@ def get_user_teams():
 @app.route('/api/schedules')
 def get_all_schedules():
     """
-    Fetch schedules for all managed and followed teams using the fetch_games helper.
+    Fetch schedules for all managed and followed teams, sorted by date and time.
     """
     try:
         # Fetch managed teams
         managed_teams = [
-            {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "statgroup":team.stat_group, "type": 'manage'}
+            {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "type": 'manage'}
             for team in Team.query.join(UserTeam)
             .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'manage').all()
         ]
 
         # Fetch followed teams
         followed_teams = [
-            {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "statgroup":team.stat_group, "type": 'follow'}
+            {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "type": 'follow'}
             for team in Team.query.join(UserTeam)
             .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'follow').all()
         ]
 
         all_teams = managed_teams + followed_teams
-        print('all_teams:', all_teams)
-        # Fetch schedules for all teams
-        games = {}
+        all_games = []
+
+        # Fetch games for each team
         for team in all_teams:
             fetcher = GameFetcher(
                 dwl=0,  # Replace with actual value
@@ -394,20 +394,30 @@ def get_all_schedules():
             )
             error = fetcher.fetch_games()
 
-
             if error:
-                games[team['team_name']] = {"error": error}
-            
-            else:
-                games[team['team_name']] = fetcher.games  # Assuming `fetch_games` populates `games` attribute
+                app.logger.error(f"Error fetching games for {team['team_name']}: {error}")
+                continue
 
+            # Format the games using display_games helper
+            games_df = fetcher.display_games()
+            if not games_df.empty:
+                games_df['Team Name'] = team['team_name']
+                games_df['Type'] = team['type']  # Manage or Follow
 
+                # Add formatted and sortable dates
+                games_df['SortableDate'] = games_df['Date']
+                games_df['Date'] = games_df['Date'].dt.strftime('%d.%m.%Y')  # Format for display
+                all_games.extend(games_df.to_dict(orient='records'))
 
-        return jsonify(schedules), 200
+        # Sort all games by sortable date and time
+        all_games = sorted(all_games, key=lambda game: (game['SortableDate'], game['Time']))
+
+        return jsonify(all_games), 200
 
     except Exception as e:
         app.logger.error(f"Error fetching schedules: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
+
 
 @app.route('/jopox_ottelut')
 @login_required
@@ -450,7 +460,7 @@ def get_statgroups(season, level_id, district_id=0):
 # Route to fetch teams for a given statistic group.
 @app.route('/gamefetcher/get_teams/<season>/<stat_group_id>')
 def get_teams_endpoint(season, stat_group_id):
-    teams = get_teams(season, stat_group_id) 
+    teams = get_teams(season, stat_group_id)
     return jsonify(teams)
 
 # Route to handle form data submission to fetch games.
