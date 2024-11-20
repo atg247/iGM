@@ -40,11 +40,17 @@ const app = Vue.createApp({
                     // Select managed teams by default
                     this.selectedTeams = data.managed_teams.map(team => team.team_name);
                     this.filterGames(); // Immediately filter games based on managed teams
+                    
+                    // Log data after assignment
+                    console.log("Managed Teams:", this.managedTeams);
+                    console.log("Followed Teams:", this.followedTeams);
                 })
                 .catch(error => {
                     console.error('Error fetching teams:', error);
                 });
         },
+        
+
         toggleTeam(teamName) {
             // Add or remove team from selectedTeams
             if (this.selectedTeams.includes(teamName)) {
@@ -123,14 +129,18 @@ const app = Vue.createApp({
 
     template: `
         <div class="container my-4">
-            <h1>Team Game Schedule Viewer</h1>
+            <div>
+                <h1>Valittujen joukkueiden ohjelma Tulospalvelusta.</h1>
+                <p> Tässä näkymässä esitetään oletuksena hallinnoimiesi joukkueiden otteluohjelma.</p>
+                <p> Valitse näytettävät joukkueet painikkeista.</p>
+                <br>
+            </div>
+
             
             <!-- Sticky Team Selector -->
-            <div class="sticky-team-selector">
-                <h3>Team Selection</h3>
-                
+            <div class="sticky-team-selector">              
                 <!-- Managed Teams -->
-                <h4>Managed Teams</h4>
+                <h1>Hallinnoimasi joukkueet</h1>
                 <div class="btn-group">
                     <button
                         v-for="team in managedTeams"
@@ -152,7 +162,7 @@ const app = Vue.createApp({
                 </div>
                 
                 <!-- Followed Teams -->
-                <h4>Followed Teams</h4>
+                <h1>Seuraamasi joukkueet</h1>
                 <div class="btn-group">
                     <button
                         v-for="team in followedTeams"

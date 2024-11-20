@@ -323,7 +323,7 @@ def get_user_teams():
             {
                 "team_name": team.team_name,
                 "stat_group": team.stat_group,
-                "team_id": team.id,
+                "team_id": team.team_id,
                 "season": team.season,
                 "level_id": team.level_id,
                 "statgroup": team.statgroup,
@@ -337,7 +337,7 @@ def get_user_teams():
             {
                 "team_name": team.team_name,
                 "stat_group": team.stat_group,
-                "team_id": team.id,
+                "team_id": team.team_id,
                 "season": team.season,
                 "level_id": team.level_id,
                 "statgroup": team.statgroup,
