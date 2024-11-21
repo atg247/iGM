@@ -18,6 +18,7 @@ const app = Vue.createApp({
                 .then(data => {
                     if (Array.isArray(data)) {
                         this.allGames = data; // Dates are already formatted and sorted by the backend
+                        console.log('All Games Structure:', this.allGames);
                         this.filterGames(); // Filter to default managed teams
                     } else {
                         console.error('Unexpected response:', data);
@@ -31,19 +32,14 @@ const app = Vue.createApp({
                 });
         },
         fetchTeams() {
-            // Fetch all teams (managed and followed) from the backend
             fetch('/api/teams')
                 .then(response => response.json())
                 .then(data => {
-                    this.managedTeams = data.managed_teams;
-                    this.followedTeams = data.followed_teams;
-                    // Select managed teams by default
-                    this.selectedTeams = data.managed_teams.map(team => team.team_name);
+                    this.managedTeams = data.managed_teams; // Includes 'team_id'
+                    this.followedTeams = data.followed_teams; // Includes 'team_id'
+                    // Default selection uses 'team_id'
+                    this.selectedTeams = data.managed_teams.map(team => team.team_id);
                     this.filterGames(); // Immediately filter games based on managed teams
-                    
-                    // Log data after assignment
-                    console.log("Managed Teams:", this.managedTeams);
-                    console.log("Followed Teams:", this.followedTeams);
                 })
                 .catch(error => {
                     console.error('Error fetching teams:', error);
@@ -51,26 +47,34 @@ const app = Vue.createApp({
         },
         
 
-        toggleTeam(teamName) {
-            // Add or remove team from selectedTeams
-            if (this.selectedTeams.includes(teamName)) {
-                this.selectedTeams = this.selectedTeams.filter(name => name !== teamName);
+        toggleTeam(team_id) {
+            console.log('toggleTeam called for team_id:', team_id); // Add this log
+            if (this.selectedTeams.includes(team_id)) {
+                this.selectedTeams = this.selectedTeams.filter(id => id !== team_id);
             } else {
-                this.selectedTeams.push(teamName);
+                this.selectedTeams.push(team_id);
             }
+            console.log('Selected Teams:', this.selectedTeams); // Debugging
             this.filterGames(); // Update the table with new selection
         },
         filterGames() {
-            // If no teams are selected, clear the filteredGames array
+            console.log('Filtering games with selectedTeams:', this.selectedTeams);
+            console.log('All Games:', this.allGames);
+        
             if (this.selectedTeams.length === 0) {
+                console.log('No teams selected. Clearing filteredGames.');
                 this.filteredGames = [];
                 return;
             }
-
-            // Otherwise, filter games by selected teams
-            this.filteredGames = this.allGames.filter(game =>
-                this.selectedTeams.includes(game['Team Name'])
-            );
+        
+            // Filter games based on selected teams
+            this.filteredGames = this.allGames.filter(game => {
+                const isMatch = this.selectedTeams.includes(String(game['Team ID']));
+                console.log(`Checking Game ID ${game['Game ID']} with Team ID ${game['Team ID']}: Match = ${isMatch}`);
+                return isMatch;
+            });
+        
+            console.log('Filtered Games:', this.filteredGames);
         },
         getButtonColor(teamName) {
             // Map Finnish color words to lighter versions of colors
@@ -145,12 +149,12 @@ const app = Vue.createApp({
                     <button
                         v-for="team in managedTeams"
                         :key="team.team_id"
-                        @click="toggleTeam(team.team_name)"
+                        @click="toggleTeam(team.team_id)"
                         :style="{
                             backgroundColor: getButtonColor(team.team_name),
-                            color: getTextColor(getButtonColor(team.team_name), isTeamSelected(team.team_name)),
+                            color: getTextColor(getButtonColor(team.team_name), isTeamSelected(team.team_id)),
                             }"
-                        :class="['btn', isTeamSelected(team.team_name) ? 'selected-team' : 'unselected-team']"
+                        :class="['btn', isTeamSelected(team.team_id) ? 'selected-team' : 'unselected-team']"
                     >
                         {{ team.team_name }}<br>{{ team.stat_group}}
                     </button>
@@ -166,15 +170,17 @@ const app = Vue.createApp({
                 <div class="btn-group">
                     <button
                         v-for="team in followedTeams"
-                        @click="toggleTeam(team.team_name)"
+                        :key="team.team_id"
+                        @click="toggleTeam(team.team_id)"
                         :style="{
                             backgroundColor: getButtonColor(team.team_name),
-                            color: getTextColor(getButtonColor(team.team_name), isTeamSelected(team.team_name)),
-                            }"
-                        :class="['btn', isTeamSelected(team.team_name) ? 'selected-team' : 'unselected-team']"                    >
+                            color: getTextColor(getButtonColor(team.team_name), isTeamSelected(team.team_id)),
+                        }"
+                        :class="['btn', isTeamSelected(team.team_id) ? 'selected-team' : 'unselected-team']"
+                    >
                         {{ team.team_name }}<br>{{ team.stat_group }}
                     </button>
-                </div>
+                </div> 
             </div>
 
 
