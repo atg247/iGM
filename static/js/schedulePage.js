@@ -117,6 +117,17 @@ const app = Vue.createApp({
             const isManaged = this.managedTeams.some(team => team.team_id === game['Team ID']);
             const isFollowed = this.followedTeams.some(team => team.team_id === game['Team ID']);
             
+            const isBetweenManagedTeams =
+                this.managedTeams.some(team => team.team_id === game['Home Team ID']) &&
+                this.managedTeams.some(team => team.team_id === game['Away Team ID']);
+
+            if (isBetweenManagedTeams) {
+                return {
+                    backgroundColor: '#ffffcc', // Highlight color for games between managed teams
+                    color: '#000000',
+                };
+            }
+            
             if (isManaged) {
                 // Use the team-specific color for managed teams
                 const backgroundColor = this.getButtonColor(game['Team Name']);
@@ -227,7 +238,7 @@ const app = Vue.createApp({
                     <tbody>
                         <tr
                             v-for="game in filteredGames"
-                            :key="game['Game ID']"
+                            :key="game['Game ID'] + '-' + game['Team ID']"
                             :style="getRowStyle(game)"
                         >
                             <td :style="{ backgroundColor: '#ffffff', color: '#000000' }">{{ game.Date }}</td>
