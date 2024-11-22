@@ -31,6 +31,7 @@ const app = Vue.createApp({
                     this.isLoading = false;
                 });
         },
+
         fetchTeams() {
             fetch('/api/teams')
                 .then(response => response.json())
@@ -54,15 +55,11 @@ const app = Vue.createApp({
             } else {
                 this.selectedTeams.push(team_id);
             }
-            console.log('Selected Teams:', this.selectedTeams); // Debugging
             this.filterGames(); // Update the table with new selection
         },
         filterGames() {
-            console.log('Filtering games with selectedTeams:', this.selectedTeams);
-            console.log('All Games:', this.allGames);
-        
+                
             if (this.selectedTeams.length === 0) {
-                console.log('No teams selected. Clearing filteredGames.');
                 this.filteredGames = [];
                 return;
             }
@@ -70,34 +67,30 @@ const app = Vue.createApp({
             // Filter games based on selected teams
             this.filteredGames = this.allGames.filter(game => {
                 const isMatch = this.selectedTeams.includes(String(game['Team ID']));
-                console.log(`Checking Game ID ${game['Game ID']} with Team ID ${game['Team ID']}: Match = ${isMatch}`);
                 return isMatch;
             });
         
             console.log('Filtered Games:', this.filteredGames);
         },
         getButtonColor(teamName) {
-            // Map Finnish color words to lighter versions of colors
             const colorMap = {
                 musta: '#282828', // Light Gray
                 punainen: '#ff5151', // Light Red
                 sininen: '#2c778f', // Light Blue
                 keltainen: '#ffff08', // Light Yellow
-                valkoinen: '#cccccc', // White
+                valkoinen: '#cccccc', // Light White
                 vihreä: '#137f13', // Light Green
             };
         
-            // Check for color in team name
             const lowerCaseName = teamName.toLowerCase();
             for (const [key, value] of Object.entries(colorMap)) {
                 if (lowerCaseName.includes(key)) {
-                    return value; // Return the light color if found
+                    return value; // Return the color if found
                 }
             }
-        
-            // Default light gray if no keyword found
-            return '#E0E0E0';
+            return '#E0E0E0'; // Default light gray
         },
+        
         getTextColor(backgroundColor, isSelected) {
             // Explicit override for very dark colors like black
             if (backgroundColor === '#282828') {
@@ -118,8 +111,35 @@ const app = Vue.createApp({
         
             // Return white for dark backgrounds and black for light backgrounds when selected
             return brightness > 155 ? 'black' : 'white';
-        },  
+        },
+        getRowStyle(game) {
+            // Check if the game belongs to a managed team
+            const isManaged = this.managedTeams.some(team => team.team_id === game['Team ID']);
+            const isFollowed = this.followedTeams.some(team => team.team_id === game['Team ID']);
+            
+            if (isManaged) {
+                // Use the team-specific color for managed teams
+                const backgroundColor = this.getButtonColor(game['Team Name']);
+                const textColor = this.getTextColor(backgroundColor, true); // Adjust text color for contrast
+                return {
+                    backgroundColor: backgroundColor,
+                    color: textColor,
+                };
+            } else if (isFollowed) {
+                // Default color for followed teams
+                return {
+                    backgroundColor: '##ffffff', // Default light gray for followed teams
+                    color: '#000000', // Black text for better contrast
+                };
+            }
         
+            // Default styles if no match
+            return {
+                backgroundColor: 'transparent',
+                color: '#000000',
+            };
+        },
+                
                 
         isTeamSelected(teamName) {
             // Check if a team is selected
@@ -192,7 +212,7 @@ const app = Vue.createApp({
 
                 <!-- Games Table -->
                 <h3 class="mt-4">Game Schedule</h3>
-                <table v-if="filteredGames.length > 0" class="table table-striped">
+                <table v-if="filteredGames.length > 0" class="table">
                     <thead>
                         <tr>
                             <th>Date</th>
@@ -205,8 +225,12 @@ const app = Vue.createApp({
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="game in filteredGames" :key="game['Game ID']">
-                            <td>{{ game.Date }}</td>
+                        <tr
+                            v-for="game in filteredGames"
+                            :key="game['Game ID']"
+                            :style="getRowStyle(game)"
+                        >
+                            <td :style="{ backgroundColor: '#ffffff', color: '#000000' }">{{ game.Date }}</td>
                             <td>{{ game.Time }}</td>
                             <td>{{ game['Home Team'] }}</td>
                             <td>{{ game['Away Team'] }}</td>
