@@ -18,7 +18,6 @@ const app = Vue.createApp({
                 .then(data => {
                     if (Array.isArray(data)) {
                         this.allGames = data; // Dates are already formatted and sorted by the backend
-                        console.log('All Games Structure:', this.allGames);
                         this.filterGames(); // Filter to default managed teams
                     } else {
                         console.error('Unexpected response:', data);
@@ -49,7 +48,6 @@ const app = Vue.createApp({
         
 
         toggleTeam(team_id) {
-            console.log('toggleTeam called for team_id:', team_id); // Add this log
             if (this.selectedTeams.includes(team_id)) {
                 this.selectedTeams = this.selectedTeams.filter(id => id !== team_id);
             } else {
@@ -150,7 +148,6 @@ const app = Vue.createApp({
 
         getDayName(sortableDate) {
             if (!sortableDate || typeof sortableDate !== 'string') {
-                console.error('Invalid SortableDate:', sortableDate);
                 return 'Invalid Day';
             }
         
@@ -183,7 +180,6 @@ const app = Vue.createApp({
         
             this.filteredGames.forEach(game => {
                 const date = game.SortableDate; // Use SortableDate for grouping
-                console.log('Grouping Game with SortableDate:', date); // Debugging
                 if (!groups[date]) {
                     groups[date] = [];
                 }
