@@ -1,14 +1,13 @@
 {% extends "layout.html" %}
 {% block content %}
     <div class="container">
-        <h2>Tähän tulee Jopox-ottelut </h2>
-        <p>Tekstiä.</p>
+        <h2>Tällä sivulla näytetään Jopoxin tapahtumat. </h2>
+        <p>Toistaiseksi käytössä on vain demo-toiminto, joka esittää S-kiekko U12:n Jopox-tapahtumat.</p>
     </div>
 
     <div class="container mt-5">
-        <h2>Launch Jopox Events</h2>
         <form id="jpxkalenteri" action="{{ url_for('hae_kalenteri_endpoint') }}" method="get">
-            <button type="button" id="fetchEventsButton" class="btn btn-primary">Fetch Jopox Events</button>
+            <button type="button" id="fetchEventsButton" class="btn btn-primary">Hae ottelut Jopoxista</button>
         </form>
     </div>
 
