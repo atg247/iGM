@@ -58,20 +58,17 @@ const app = Vue.createApp({
             this.filterGames(); // Update the table with new selection
         },
         filterGames() {
-                
             if (this.selectedTeams.length === 0) {
                 this.filteredGames = [];
                 return;
             }
         
             // Filter games based on selected teams
-            this.filteredGames = this.allGames.filter(game => {
-                const isMatch = this.selectedTeams.includes(String(game['Team ID']));
-                return isMatch;
-            });
-        
-            console.log('Filtered Games:', this.filteredGames);
+            this.filteredGames = this.allGames.filter(game =>
+                this.selectedTeams.includes(String(game['Team ID']))
+            );
         },
+
         getButtonColor(teamName) {
             const colorMap = {
                 musta: '#282828', // Light Gray
@@ -127,7 +124,7 @@ const app = Vue.createApp({
                     color: '#000000',
                 };
             }
-            
+
             if (isManaged) {
                 // Use the team-specific color for managed teams
                 const backgroundColor = this.getButtonColor(game['Team Name']);
@@ -150,110 +147,142 @@ const app = Vue.createApp({
                 color: '#000000',
             };
         },
-                
+
+        getDayName(sortableDate) {
+            if (!sortableDate || typeof sortableDate !== 'string') {
+                console.error('Invalid SortableDate:', sortableDate);
+                return 'Invalid Day';
+            }
+        
+            // Map English day abbreviations to Finnish
+            const dayMap = {
+                Sat: 'La', // Saturday
+                Sun: 'Su', // Sunday
+                Mon: 'Ma', // Monday
+                Tue: 'Ti', // Tuesday
+                Wed: 'Ke', // Wednesday
+                Thu: 'To', // Thursday
+                Fri: 'Pe', // Friday
+            };
+        
+            // Extract the day abbreviation (first three characters)
+            const englishDay = sortableDate.split(',')[0];
+            return dayMap[englishDay] || 'Invalid Day'; // Use the map or return a fallback
+        },
+                       
                 
         isTeamSelected(teamName) {
             // Check if a team is selected
             return this.selectedTeams.includes(teamName);
         },
     },
+    
+    computed: {
+        groupedGames() {
+            const groups = {};
+        
+            this.filteredGames.forEach(game => {
+                const date = game.SortableDate; // Use SortableDate for grouping
+                console.log('Grouping Game with SortableDate:', date); // Debugging
+                if (!groups[date]) {
+                    groups[date] = [];
+                }
+                groups[date].push(game);
+            });
+        
+            return groups;
+        },
+    },
+    
+    
     mounted() {
         this.fetchTeams(); // Fetch teams first
         this.fetchGames(); // Then fetch all games
     },
 
-    template: `
-        <div class="container my-4">
-            <div>
-                <h1>Valittujen joukkueiden ohjelma Tulospalvelusta.</h1>
-                <p> Tässä näkymässä esitetään oletuksena hallinnoimiesi joukkueiden otteluohjelma.</p>
-                <p> Valitse näytettävät joukkueet painikkeista.</p>
-                <br>
-            </div>
+template: `{
+<div class="container my-4">
+    <div>
+        <h1>Valittujen joukkueiden ohjelma Tulospalvelusta.</h1>
+        <p> Tässä näkymässä esitetään oletuksena hallinnoimiesi joukkueiden otteluohjelma.</p>
+        <p> Valitse näytettävät joukkueet painikkeista.</p>
+    </div>
 
-            
-            <!-- Sticky Team Selector -->
-            <div class="sticky-team-selector">              
-                <!-- Managed Teams -->
-                <h1>Hallinnoimasi joukkueet</h1>
-                <div class="btn-group">
-                    <button
-                        v-for="team in managedTeams"
-                        :key="team.team_id"
-                        @click="toggleTeam(team.team_id)"
-                        :style="{
-                            backgroundColor: getButtonColor(team.team_name),
-                            color: getTextColor(getButtonColor(team.team_name), isTeamSelected(team.team_id)),
-                            }"
-                        :class="['btn', isTeamSelected(team.team_id) ? 'selected-team' : 'unselected-team']"
-                    >
-                        {{ team.team_name }}<br>{{ team.stat_group}}
-                    </button>
+    
+    <!-- Sticky Team Selector -->
+<div class="sticky-team-selector">              
+    <!-- Managed Teams -->
+    <h1>Hallinnoimasi joukkueet</h1>
+    <div class="btn-group">
+        <button
+            v-for="team in managedTeams"
+            :key="team.team_id"
+            @click="toggleTeam(team.team_id)"
+            :style="{
+                backgroundColor: getButtonColor(team.team_name),
+                color: getTextColor(getButtonColor(team.team_name), isTeamSelected(team.team_id)),
+                }"
+            :class="['btn', isTeamSelected(team.team_id) ? 'selected-team' : 'unselected-team']"
+        >
+            {{ team.team_name }}<br>{{ team.stat_group}}
+        </button>
+    </div>
+    
+    <!-- Followed Teams -->
+    <h1>Seuraamasi joukkueet</h1>
+    <div class="btn-group">
+        <button
+            v-for="team in followedTeams"
+            :key="team.team_id"
+            @click="toggleTeam(team.team_id)"
+            :style="{
+                backgroundColor: getButtonColor(team.team_name),
+                color: getTextColor(getButtonColor(team.team_name), isTeamSelected(team.team_id)),
+            }"
+            :class="['btn', isTeamSelected(team.team_id) ? 'selected-team' : 'unselected-team']"
+        >
+            {{ team.team_name }}<br>{{ team.stat_group }}
+        </button>
+    </div> 
+</div>
 
+<!-- Loading Indicator -->
+<div v-if="isLoading" class="my-4">
+    <p>Loading games...</p>
+</div>
 
+<div
+    v-for="(games, date) in groupedGames"
+    :key="date"
+    class="game-window"
+>
+    <!-- Card Header -->
+    <div class="window-header">
+        {{ getDayName(date) }} {{ games[0].Date }}
+    </div>
 
-
-
+    <!-- Game Info Cards -->
+    <div class="game-cards">
+        <div
+            v-for="game in games"
+            :key="game['Game ID'] + '-' + game['Team ID']"
+            class="game-card"
+            :style="getRowStyle(game)"
+        >
+            <div class="gameInfo">
+                <div>
+                    <p class="gameTeams">{{ game['Home Team'] }} - {{ game['Away Team'] }}</p>
+                    <p class="gameTime"> Klo {{ game.Time }}</p>
                 </div>
-                
-                <!-- Followed Teams -->
-                <h1>Seuraamasi joukkueet</h1>
-                <div class="btn-group">
-                    <button
-                        v-for="team in followedTeams"
-                        :key="team.team_id"
-                        @click="toggleTeam(team.team_id)"
-                        :style="{
-                            backgroundColor: getButtonColor(team.team_name),
-                            color: getTextColor(getButtonColor(team.team_name), isTeamSelected(team.team_id)),
-                        }"
-                        :class="['btn', isTeamSelected(team.team_id) ? 'selected-team' : 'unselected-team']"
-                    >
-                        {{ team.team_name }}<br>{{ team.stat_group }}
-                    </button>
-                </div> 
-            </div>
-
-
-
-            <!-- Loading Indicator -->
-            <div v-if="isLoading" class="my-4">
-                <p>Loading games...</p>
-            </div>
-
-                <!-- Games Table -->
-                <h3 class="mt-4">Game Schedule</h3>
-                <table v-if="filteredGames.length > 0" class="table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Time</th>
-                            <th>Home Team</th>
-                            <th>Away Team</th>
-                            <th>Location</th>
-                            <th>Level</th>
-                            <th>Team</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr
-                            v-for="game in filteredGames"
-                            :key="game['Game ID'] + '-' + game['Team ID']"
-                            :style="getRowStyle(game)"
-                        >
-                            <td :style="{ backgroundColor: '#ffffff', color: '#000000' }">{{ game.Date }}</td>
-                            <td>{{ game.Time }}</td>
-                            <td>{{ game['Home Team'] }}</td>
-                            <td>{{ game['Away Team'] }}</td>
-                            <td>{{ game.Location }}</td>
-                            <td>{{ game['Level Name'] }}</td>
-                            <td>{{ game['Team Name'] }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <p v-else>No games to display. Please select a team.</p>
-            </div>
-                `,
+                <div>
+                    <p class="gameLocation"> {{ game.Location }}</p>
+                    <p class="gameStatgroup">{{ game['Level Name'] }}</p>
+                </div>
+        </div>    
+    </div>
+</div>
+</div>
+}`
 });
 
 // Mount the Vue app

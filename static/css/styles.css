@@ -106,3 +106,87 @@ h1,h2 {
     outline: none; /* No frame for unselected buttons */
     font-weight: normal; /* Normal text for unselected buttons */
 }
+
+.game-windows {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* Space between windows */
+}
+
+.game-window {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    margin-top: 0.6rem; ;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    padding-bottom: 0.4rem;
+}
+
+.window-header {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    background-color: #007bff;
+    color: #ffffff;
+    padding: 0.5rem;
+    border-radius: 8px 8px 0 0;
+}
+
+.game-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; /* Space between cards */
+}
+
+.game-card {
+    padding: 0.2rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    color: #333;
+    font-size: 0.7rem;
+    margin-left: 0.3rem;
+    margin-right: 0.3rem;
+}
+
+.gameInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.1rem;
+}
+
+.gameTime {
+    font-weight: bold;
+    display: flex;
+    margin-bottom: 0.1rem;
+
+}
+.gameTeams {
+    font-weight: bold;
+    text-align: right;
+    margin-bottom: 0.1rem;
+}
+.gameLocation {
+    margin-bottom: 0.1rem;
+}
+.gameStatgroup {
+    margin-bottom: 0.1rem;
+}
+
+
+
+/* Mobile-specific optimizations */
+@media (max-width: 600px) {
+    .game-window {
+        padding: 0;
+    }
+
+    .window-header {
+        font-size: 1rem;
+    }
+
+    .game-card {
+        font-size: 0.8rem;
+    }
+}
