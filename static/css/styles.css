@@ -77,15 +77,16 @@ h1,h2 {
 .sticky-team-selector {
     position: sticky;
     top: 0; /* Adjust this value to fit your page layout */
-    background-color: white;
+    background-color: #f4fff8;
     z-index: 1000; /* Ensure it stays above other elements */
     padding: 4px;
     border-bottom: 2px solid #ddd; /* Optional: Add a bottom border for visual separation */
-    border: 4px solid #ccc; /* Light gray border for better visibility */
-    border-radius: 4px; /* Slightly rounded corners for better aesthetics */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
-
+    border: 3px solid #35463a;
+    border-radius: 6px; /* Apply border radius to the entire window */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
+
+
 
 .btn-group button {
     flex: 1; /* Restore original width behavior */
@@ -114,40 +115,46 @@ h1,h2 {
 }
 
 .game-window {
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-    margin-top: 0.6rem; ;
+    border: 3px solid #35463a;
+    border-radius: 6px; /* Apply border radius to the entire window */
+    background-color: #f4fff8;
+    margin-top: 0.6rem;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
     padding-bottom: 0.4rem;
+    overflow: hidden; /* Ensure content does not overflow the border */
 }
 
 .window-header {
-    font-size: 1.2rem;
-    font-weight: bold;
+    font-size: 1em; /* Adjust font size for better visibility */
     margin-bottom: 0.5rem;
-    background-color: #007bff;
-    color: #ffffff;
-    padding: 0.5rem;
-    border-radius: 8px 8px 0 0;
+    background-color: #35463a;
+    color: #dfeae2;
+    padding: 0.3rem;
+    border-radius: 2px 2px 0 0; /* Match the border radius of the game-window */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
 
 .game-cards {
     display: flex;
     flex-direction: column;
     gap: 0.5rem; /* Space between cards */
+    padding-bottom: 0.5rem;
 }
 
 .game-card {
-    padding: 0.2rem;
+    padding: 0.2rem; /* Increase padding for better spacing */
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 8px; /* Increase border radius for a softer look */
     background-color: white;
     color: #333;
-    font-size: 0.7rem;
-    margin-left: 0.3rem;
-    margin-right: 0.3rem;
+    font-size: 0.8rem; /* Slightly increase font size for better readability */
+    box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.3); /* Add a subtle box shadow */
+    transition: transform 0.2s, box-shadow 0.2s; /* Add transition for smooth hover effect */
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
 }
+
+
 
 .gameInfo {
     display: flex;
@@ -174,7 +181,44 @@ h1,h2 {
     margin-bottom: 0.1rem;
 }
 
+.gameInfo1 {
+    display: flex;
+    flex-direction: column; /* Stack child elements vertically */
+}
 
+.topRow {
+    display: flex;
+    justify-content: left; /* Center the gameTeams element */
+    margin-bottom: 0.5rem; /* Add some spacing below the top row */
+}
+
+.bottomRow {
+    display: flex;
+    justify-content: space-between; /* Distribute space between the child elements */
+}
+
+.gameInfo1 > div {
+    margin: 0 10px; /* Add some spacing between the elements */
+}
+
+.gameTime {
+    margin-bottom: 0.1rem;
+}
+
+.gameTeams {
+    font-weight: bold;
+    text-align: left;
+    margin-bottom: 0.1rem;
+}
+
+.gameLocation {
+    margin-bottom: 0.1rem;
+    text-align: left;
+}
+
+.gameStatgroup {
+    margin-bottom: 0.1rem;
+}
 
 /* Mobile-specific optimizations */
 @media (max-width: 600px) {

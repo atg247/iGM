@@ -200,7 +200,8 @@ const app = Vue.createApp({
         this.fetchGames(); // Then fetch all games
     },
 
-template: `{
+template: 
+`
 <div class="container my-4">
     <div>
         <h1>Valittujen joukkueiden ohjelma Tulospalvelusta.</h1>
@@ -263,26 +264,26 @@ template: `{
 
     <!-- Game Info Cards -->
     <div class="game-cards">
-        <div
-            v-for="game in games"
-            :key="game['Game ID'] + '-' + game['Team ID']"
-            class="game-card"
-            :style="getRowStyle(game)"
+        <div v-for="game in games"
+             :key="game['Game ID'] + '-' + game['Team ID']"
+             class="game-card"
+             :style="getRowStyle(game)"
         >
-            <div class="gameInfo">
-                <div>
+            <div class="gameInfo1">
+                <div class="topRow">
                     <p class="gameTeams">{{ game['Home Team'] }} - {{ game['Away Team'] }}</p>
-                    <p class="gameTime"> Klo {{ game.Time }}</p>
                 </div>
-                <div>
+                <div class="bottomRow">
+                    <p class="gameTime"> Klo {{ game.Time }}</p>
                     <p class="gameLocation"> {{ game.Location }}</p>
                     <p class="gameStatgroup">{{ game['Level Name'] }}</p>
                 </div>
-        </div>    
+            </div>    
+        </div>
     </div>
 </div>
 </div>
-}`
+`
 });
 
 // Mount the Vue app
