@@ -437,9 +437,12 @@ def hae_kalenteri_endpoint():
 # Home page route.
 @app.route('/')
 @login_required
-def index():
+def index_logged():
     return render_template('index_logged.html')
 
+@app.route('/aloitus')
+def index():
+    return render_template('index.html')
 
 @app.route('/gamefetcher')
 def gamefetcher():
