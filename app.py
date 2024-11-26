@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import requests
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
@@ -15,6 +16,7 @@ from dotenv import load_dotenv
 from flask_migrate import Migrate
 import logging
 from flask_mail import Mail
+
 
 
 # Load environment variables from .env file if it exists
@@ -93,14 +95,14 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user and bcrypt.check_password_hash(user.password_hash, form.password.data):
             login_user(user, remember=form.remember.data)  # Pass "remember" flag to login_user()
             flash('You have successfully logged in!', 'success')
-            return redirect(url_for('index'))
+            return redirect(url_for('dashboard'))
         else:
             flash('Login failed. Check your username and password.', 'danger')
     return render_template('login.html', form=form)
@@ -305,8 +307,120 @@ def get_ManagedFollowed():
         print("Error fetching teams:", e)
         return jsonify({"message": f"An error occurred while fetching teams: {str(e)}"}), 500
 
+@app.route('/schedule')
+@login_required
+def schedule():
+
+    return render_template('otteluhaku.html')
+
+@app.route('/api/teams')
+def get_user_teams():
+    """
+    Fetch managed and followed teams for the current user.
+    """
+    try:
+        managed_teams = [
+            {
+                "team_name": team.team_name,
+                "stat_group": team.stat_group,
+                "team_id": team.team_id,
+                "season": team.season,
+                "level_id": team.level_id,
+                "statgroup": team.statgroup,
+                "type": "manage"
+            }
+            for team in Team.query.join(UserTeam)
+            .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'manage').all()
+        ]
+
+        followed_teams = [
+            {
+                "team_name": team.team_name,
+                "stat_group": team.stat_group,
+                "team_id": team.team_id,
+                "season": team.season,
+                "level_id": team.level_id,
+                "statgroup": team.statgroup,
+                "type": "follow"
+            }
+            for team in Team.query.join(UserTeam)
+            .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'follow').all()
+        ]
+
+        return jsonify({
+            "managed_teams": managed_teams,
+            "followed_teams": followed_teams
+        }), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching teams: {str(e)}")
+        return jsonify({"error": "Failed to fetch teams", "details": str(e)}), 500
+
+
+    
+@app.route('/api/schedules')
+def get_all_schedules():
+    """
+    Fetch schedules for all managed and followed teams, sorted by date and time.
+    """
+    try:
+        # Fetch managed teams
+        managed_teams = [
+            {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "type": 'manage'}
+            for team in Team.query.join(UserTeam)
+            .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'manage').all()
+        ]
+
+        # Fetch followed teams
+        followed_teams = [
+            {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "type": 'follow'}
+            for team in Team.query.join(UserTeam)
+            .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'follow').all()
+        ]
+
+        all_teams = managed_teams + followed_teams
+        all_games = []
+
+        # Fetch games for each team
+        for team in all_teams:
+            fetcher = GameFetcher(
+                dwl=0,  # Replace with actual value
+                season=team['season'],
+                stat_group_id=team['stat_group_id'],
+                team_id=team['team_id'],
+                distr_id=0,  # Replace with actual value if needed
+                GameDates=3,  # Replace with actual value if needed
+                dog='2024-10-12'  # Replace with actual date logic if needed
+            )
+            error = fetcher.fetch_games()
+
+            if error:
+                app.logger.error(f"Error fetching games for {team['team_name']}: {error}")
+                continue
+
+            # Format the games using display_games helper
+            games_df = fetcher.display_games()
+            if not games_df.empty:
+                games_df['Team Name'] = team['team_name']
+                games_df['Type'] = team['type']  # Manage or Follow
+
+                # Add formatted and sortable dates
+                games_df['SortableDate'] = games_df['Date']
+                games_df['Date'] = games_df['Date'].dt.strftime('%d.%m.%Y')  # Format for display
+                all_games.extend(games_df.to_dict(orient='records'))
+
+        # Sort all games by sortable date and time
+        all_games = sorted(all_games, key=lambda game: (game['SortableDate'], game['Time']))
+
+        return jsonify(all_games), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching schedules: {str(e)}")
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
+
 
 @app.route('/jopox_ottelut')
+@login_required
 def jopox_ottelut():
     return render_template('jopox_ottelut.html')
 
@@ -322,8 +436,10 @@ def hae_kalenteri_endpoint():
 
 # Home page route.
 @app.route('/')
+@login_required
 def index():
-    return render_template('index.html')
+    return render_template('index_logged.html')
+
 
 @app.route('/gamefetcher')
 def gamefetcher():
@@ -344,7 +460,7 @@ def get_statgroups(season, level_id, district_id=0):
 # Route to fetch teams for a given statistic group.
 @app.route('/gamefetcher/get_teams/<season>/<stat_group_id>')
 def get_teams_endpoint(season, stat_group_id):
-    teams = get_teams(season, stat_group_id) # Teams': [{'TeamID': '1368627612', 'TeamAbbrv': 'Diskos Punainen', 'TeamAssociation': '10113767', 'TeamImg': '2025/10113767.png'} 
+    teams = get_teams(season, stat_group_id)
     return jsonify(teams)
 
 # Route to handle form data submission to fetch games.

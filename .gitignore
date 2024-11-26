@@ -17,7 +17,6 @@ logs/
 
 # Flask-Migrate (Alembic)
 migrations/alembic.ini
-migrations/env.py
 migrations/script.py.mako
 *.pyc
 *.pyo

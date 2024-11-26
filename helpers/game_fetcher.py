@@ -23,6 +23,7 @@ class GameFetcher:
             'gamedays': self.GameDates,
             'dog': self.dog            
         }
+
         try:
             response = requests.post(url, data=payload)
             response.raise_for_status()
