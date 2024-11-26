@@ -212,7 +212,7 @@ $(document).ready(function () {
     
         if (isHighlightOn) {
             table.rows().nodes().each(function (row) {
-                $(row).find('td:eq(2)').removeClass('highlight-same-day highlight-orange highlight-red');
+                $(row).find('td:eq(3)').removeClass('highlight-same-day highlight-orange highlight-red');
             });
     
             $('#highlightButton').text('Korosta päällekkäiset');
