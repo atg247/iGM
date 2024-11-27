@@ -6,6 +6,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_bcrypt import Bcrypt
 from helpers.data_fetcher import get_levels, get_stat_groups, get_teams, hae_kalenteri
 from helpers.game_fetcher import GameFetcher
+from helpers.game_comparison import compare_games
 from models.user import db, User, Team, UserTeam
 from forms.registration_form import RegistrationForm
 from forms.login_form import LoginForm
@@ -411,12 +412,50 @@ def get_all_schedules():
 
         # Sort all games by sortable date and time
         all_games = sorted(all_games, key=lambda game: (game['SortableDate'], game['Time']))
-
         return jsonify(all_games), 200
 
     except Exception as e:
         app.logger.error(f"Error fetching schedules: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
+
+@app.route('/api/jopox_games')
+@login_required
+def get_jopox_games():
+
+    try:
+        # Fetch games from Jopox
+        jopox_games = hae_kalenteri()
+
+        # Ensure a valid response is returned
+        return jsonify({"status": "success", "data": jopox_games}), 200
+
+    except Exception as e:
+        # Log the error for debugging
+        app.logger.error(f"Error fetching Jopox games: {e}")
+
+        # Return an error response
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
+@app.route('/api/compare', methods=['POST'])
+@login_required
+def compare_games_endpoint():
+
+    try:
+        # Receive datasets from the frontend
+        data = request.get_json()
+        tulospalvelu_games = data.get('tulospalvelu_games', [])
+        jopox_games = data.get('jopox_games', [])
+        print("tulospalvelu_games:", tulospalvelu_games[0])
+        print("jopox_games:", jopox_games[0])   
+        # Perform the comparison
+        comparison_results = compare_games(jopox_games, tulospalvelu_games)
+
+        # Return comparison results
+        return jsonify(comparison_results), 200
+
+    except Exception as e:
+        app.logger.error(f"Error in game comparison: {e}")
+        return jsonify({"error": "Comparison failed", "details": str(e)}), 500
 
 
 @app.route('/jopox_ottelut')

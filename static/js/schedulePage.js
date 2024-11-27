@@ -7,28 +7,60 @@ const app = Vue.createApp({
             followedTeams: [], // Followed teams
             selectedTeams: [], // Teams selected for inclusion in the table
             isLoading: true, // Show a loading indicator while fetching games
+            showReasonPopup: false, // Controls popup visibility
+            popupReason: "", // Stores the reason to display in the popup
+
         };
     },
     methods: {
-        fetchGames() {
-            // Fetch all schedules from the backend
+        fetchGamesAndCompare() {
             this.isLoading = true;
-            fetch('/api/schedules')
-                .then(response => response.json())
-                .then(data => {
-                    if (Array.isArray(data)) {
-                        this.allGames = data; // Dates are already formatted and sorted by the backend
-                        this.filterGames(); // Filter to default managed teams
-                    } else {
-                        console.error('Unexpected response:', data);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching games:', error);
-                })
-                .finally(() => {
-                    this.isLoading = false;
+    
+            // Fetch Tulospalvelu.fi and Jopox data in parallel
+            Promise.all([
+                fetch('/api/schedules').then(response => response.json()),
+                fetch('/api/jopox_games').then(response => response.json())
+            ])
+            .then(([tulospalveluGames, jopoxGames]) => {
+                // Save Tulospalvelu.fi data for rendering game cards
+                if (Array.isArray(tulospalveluGames)) {
+                    this.allGames = tulospalveluGames;
+                } else {
+                    console.error('Unexpected Tulospalvelu response:', tulospalveluGames);
+                }
+    
+                // Send data to backend for comparison
+                return fetch('/api/compare', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tulospalvelu_games: tulospalveluGames,
+                        jopox_games: jopoxGames.data, // Assuming Jopox data is in `.data`
+                    }),
                 });
+            })
+            .then(response => response.json())
+            .then(comparisonResults => {
+                // Update game cards with comparison results
+                this.allGames = this.allGames.map(game => {
+                    const match = comparisonResults.find(
+                        result => result.game['Game ID'] === game['Game ID']
+                    );
+                    return {
+                        ...game,
+                        match_status: match?.match_status || 'red', // Default to red if no match
+                        reason: match?.reason || 'No match found',
+                    };
+                });
+                this.filterGames();
+            })
+            .catch(error => {
+                console.error('Error during fetching or comparison:', error);
+            })
+            .finally(() => {
+                this.isLoading = false;
+            });
+    
         },
 
         fetchTeams() {
@@ -55,6 +87,7 @@ const app = Vue.createApp({
             }
             this.filterGames(); // Update the table with new selection
         },
+        
         filterGames() {
             if (this.selectedTeams.length === 0) {
                 this.filteredGames = [];
@@ -66,7 +99,13 @@ const app = Vue.createApp({
                 this.selectedTeams.includes(String(game['Team ID']))
             );
         },
-
+        
+        showReason(reason) {
+            if (reason) {
+                alert(reason); // Display the reason for yellow or red status
+            }
+        },
+    
         getButtonColor(teamName) {
             const colorMap = {
                 musta: '#282828', // Light Gray
@@ -172,6 +211,26 @@ const app = Vue.createApp({
             // Check if a team is selected
             return this.selectedTeams.includes(teamName);
         },
+        toggleReason(game) {
+            if (game.reason) {
+                this.popupReason = game.reason.replace(/\. /g, '<br>'); // Format the reason
+                this.showReasonPopup = true; // Show modal
+            }
+        },
+        closePopup() {
+            this.showReasonPopup = false; // Hide modal
+            this.popupReason = ""; // Clear the reason
+        },
+    
+
+        formatReason(reason) {
+            if (reason) {
+                // Replace ". " with a line break
+                return reason.replace(/\. /g, '<br>');
+            }
+            return '';
+        },
+
     },
     
     computed: {
@@ -193,7 +252,8 @@ const app = Vue.createApp({
     
     mounted() {
         this.fetchTeams(); // Fetch teams first
-        this.fetchGames(); // Then fetch all games
+        this.fetchGamesAndCompare(); // Fetch games and run comparison
+
     },
 
 template: 
@@ -267,8 +327,28 @@ template:
         >
             <div class="gameInfo1">
                 <div class="topRow">
-                    <p class="gameTeams">{{ game['Home Team'] }} - {{ game['Away Team'] }}</p>
+                    <p class="gameTeams">
+                        {{ game['Home Team'] }} - {{ game['Away Team'] }}
+                        <span
+                            :class="{
+                                'circle-green': game.match_status === 'green',
+                                'circle-yellow': game.match_status === 'yellow',
+                                'circle-red': game.match_status === 'red',
+                            }"
+                            @click="toggleReason(game)"
+                        ></span>
+                    </p>
+                    <!-- Show reasons if clicked -->
+                        <div v-if="showReasonPopup" class="modal-overlay">
+                            <div class="modal-window">
+                                <span class="modal-close" @click="closePopup">&times;</span>
+                                <h3>Match Details</h3>
+                                <p v-html="popupReason"></p>
+                            </div>
+                        </div>
+                    </div>    
                 </div>
+
                 <div class="bottomRow">
                     <p class="gameTime"> Klo {{ game.Time }}</p>
                     <p class="gameLocation"> {{ game.Location }}</p>
@@ -277,7 +357,6 @@ template:
             </div>    
         </div>
     </div>
-</div>
 </div>
 `
 });

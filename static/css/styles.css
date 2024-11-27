@@ -220,17 +220,82 @@ h1,h2 {
     margin-bottom: 0.1rem;
 }
 
-/* Mobile-specific optimizations */
-@media (max-width: 600px) {
-    .game-window {
-        padding: 0;
-    }
+.circle-green {
+    width: 10px;
+    height: 10px;
+    background-color: green;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 10px;
+}
 
-    .window-header {
-        font-size: 1rem;
-    }
+.circle-yellow {
+    width: 10px;
+    height: 10px;
+    background-color: yellow;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 10px;
+}
 
-    .game-card {
-        font-size: 0.8rem;
+.circle-red {
+    width: 10px;
+    height: 10px;
+    background-color: red;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 10px;
+}
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* Modal Window */
+.modal-window {
+    background: #ffffff; /* Clean white background */
+    color: #333; /* Neutral dark text */
+    padding: 20px;
+    border-radius: 12px; /* Smooth corners */
+    box-shadow: 0 5px 5px rgba(106, 106, 106, 0.2); /* Subtle shadow for depth */
+    width: 300px; /* Compact width */
+    max-width: 90%; /* Mobile responsive */
+    text-align: left;
+    animation: slideIn 0.3s ease-in-out; /* Smooth slide-in effect */
+    position: relative;
+}
+
+/* Modal Close Button */
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.5em;
+    color: #aaa;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.modal-close:hover {
+    color: #333; /* Darker hover effect */
+}
+
+/* Modal Animation */
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }
