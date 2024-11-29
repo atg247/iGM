@@ -24,17 +24,26 @@ const app = Vue.createApp({
             .then(([tulospalveluGames, jopoxGames]) => {
                 // Save Tulospalvelu.fi data for rendering game cards
                 if (Array.isArray(tulospalveluGames)) {
-                    this.allGames = tulospalveluGames;
+                    // Filter out duplicate Game IDs
+                    const uniqueGames = [];
+                    const seenGameIDs = new Set();
+                    for (const game of tulospalveluGames) {
+                        if (!seenGameIDs.has(game['Game ID'])) {
+                            seenGameIDs.add(game['Game ID']);
+                            uniqueGames.push(game);
+                        }
+                    }
+                    this.allGames = uniqueGames;
                 } else {
                     console.error('Unexpected Tulospalvelu response:', tulospalveluGames);
                 }
-    
+        
                 // Send data to backend for comparison
                 return fetch('/api/compare', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        tulospalvelu_games: tulospalveluGames,
+                        tulospalvelu_games: this.allGames, // Only unique games sent for comparison
                         jopox_games: jopoxGames.data, // Assuming Jopox data is in `.data`
                     }),
                 });
@@ -60,7 +69,6 @@ const app = Vue.createApp({
             .finally(() => {
                 this.isLoading = false;
             });
-    
         },
 
         fetchTeams() {
@@ -320,16 +328,22 @@ template:
 
     <!-- Game Info Cards -->
     <div class="game-cards">
-        <div v-for="game in games"
-             :key="game['Game ID'] + '-' + game['Team ID']"
-             class="game-card"
-             :style="getRowStyle(game)"
+        <div
+            v-for="game in games"
+            :key="game['Game ID'] + '-' + game['Team ID']"
+            class="game-card"
+            :style="getRowStyle(game)"
         >
             <div class="gameInfo1">
                 <div class="topRow">
                     <p class="gameTeams">
                         {{ game['Home Team'] }} - {{ game['Away Team'] }}
+                    </p>
+                    <!-- Circle positioned to the right -->
+                    <div class="status-box">
+                        <span class="status-text">Jopox:</span>
                         <span
+                            class="status-circle"
                             :class="{
                                 'circle-green': game.match_status === 'green',
                                 'circle-yellow': game.match_status === 'yellow',
@@ -337,26 +351,26 @@ template:
                             }"
                             @click="toggleReason(game)"
                         ></span>
-                    </p>
-                    <!-- Show reasons if clicked -->
-                        <div v-if="showReasonPopup" class="modal-overlay">
-                            <div class="modal-window">
-                                <span class="modal-close" @click="closePopup">&times;</span>
-                                <h3>Match Details</h3>
-                                <p v-html="popupReason"></p>
-                            </div>
-                        </div>
-                    </div>    
+                    </div>
                 </div>
+                <!-- Show reasons if clicked -->
+                <div v-if="showReasonPopup" class="modal-overlay">
+                    <div class="modal-window">
+                        <span class="modal-close" @click="closePopup">&times;</span>
+                        <h3>Match Details</h3>
+                        <p v-html="popupReason"></p>
+                    </div>
+                </div>
+            </div>
 
-                <div class="bottomRow">
-                    <p class="gameTime"> Klo {{ game.Time }}</p>
-                    <p class="gameLocation"> {{ game.Location }}</p>
-                    <p class="gameStatgroup">{{ game['Level Name'] }}</p>
-                </div>
-            </div>    
+            <div class="bottomRow">
+                <p class="gameTime"> Klo {{ game.Time || 'Aika ei saatavilla' }}</p>
+                <p class="gameLocation">{{ game.Location || 'Paikka ei saatavilla' }}</p>
+                <p class="gameStatgroup">{{ game['Level Name'] }}</p>
+            </div>
         </div>
     </div>
+
 </div>
 `
 });

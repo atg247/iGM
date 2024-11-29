@@ -5,6 +5,17 @@ body {
     padding: 3px;
 }
 
+.my-4
+{
+ padding: 0.3rem;
+}
+
+.mt-4
+{
+ padding: 0.3rem;
+}
+
+
 /* Make form labels, selects, and inputs smaller */
 .form-group label,
 .form-group select,
@@ -154,55 +165,22 @@ h1,h2 {
     margin-right: 0.5rem;
 }
 
-
-
-.gameInfo {
+.topRow {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.1rem;
-}
-
-.gameTime {
-    font-weight: bold;
-    display: flex;
-    margin-bottom: 0.1rem;
-
-}
-.gameTeams {
-    font-weight: bold;
-    text-align: right;
-    margin-bottom: 0.1rem;
-}
-.gameLocation {
-    margin-bottom: 0.1rem;
-}
-.gameStatgroup {
-    margin-bottom: 0.1rem;
-}
-
-.gameInfo1 {
-    display: flex;
-    flex-direction: column; /* Stack child elements vertically */
-}
-
-.topRow {
-    display: flex;
-    justify-content: left; /* Center the gameTeams element */
-    margin-bottom: 0.5rem; /* Add some spacing below the top row */
 }
 
 .bottomRow {
     display: flex;
     justify-content: space-between; /* Distribute space between the child elements */
-}
-
-.gameInfo1 > div {
-    margin: 0 10px; /* Add some spacing between the elements */
+    padding-left: 0.2rem;
+    padding-right: 0.2rem;
 }
 
 .gameTime {
     margin-bottom: 0.1rem;
+    text-align:left;
 }
 
 .gameTeams {
@@ -220,32 +198,59 @@ h1,h2 {
     margin-bottom: 0.1rem;
 }
 
-.circle-green {
-    width: 10px;
-    height: 10px;
-    background-color: green;
+
+/* Status box container */
+.status-box {
+    display: flex; /* Flexbox to align circle and text */
+    align-items:center;
+    gap: 0.2rem; /* Space between circle and text */
+    padding-left: 0.2rem; /* Add padding inside the box */
+    padding-right: 0.2rem; /* Add padding inside the box */
+/*    background-color: #f4fff8;*/
+    background: linear-gradient(to bottom, #f9f9f9, #e0e0e0); /* Light gradient for depth */
+
+    border: 1px solid #35463a; /* Border around the box */
+    border-radius: 3px; /* Rounded corners */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1), 0px 1px 2px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth animation */
+    
+}
+
+/* Circle styles */
+.status-circle {
+    width: 0.9em; /* Diameter of the circle */
+    height: 0.9em;
     border-radius: 50%;
-    display: inline-block;
-    margin-left: 10px;
+    cursor: pointer;
+    display: inline-block; /* Ensures the element is treated as a box */
+    box-shadow: inset 3px 3px 2px rgba(0, 0, 0, 0.3); /* Inner shadow for depth */
+}
+
+/* Color coding for the circle */
+.circle-green {
+    background-color: green;
+    border: 1px solid #35463a; /* Correct border declaration */
+
 }
 
 .circle-yellow {
-    width: 10px;
-    height: 10px;
-    background-color: yellow;
-    border-radius: 50%;
-    display: inline-block;
-    margin-left: 10px;
+    background-color: rgb(255, 230, 0);
+    border: 1px solid #35463a; /* Correct border declaration */
+
 }
 
 .circle-red {
-    width: 10px;
-    height: 10px;
     background-color: red;
-    border-radius: 50%;
-    display: inline-block;
-    margin-left: 10px;
+    border: 1px solid #35463a; /* Correct border declaration */
+
 }
+
+/* Text inside the status box */
+.status-text {
+    font-size: 0.9em; /* Text size */
+    color: #35463a; /* Text color */
+}
+
 /* Modal Overlay */
 .modal-overlay {
     position: fixed;
