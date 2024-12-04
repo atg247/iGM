@@ -258,24 +258,34 @@ h1,h2 {
     left: 0;
     width: 100%;
     height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    background: rgba(0, 0, 0, 0.5); /* Optional dimming */
     z-index: 1000;
 }
 
-/* Modal Window */
+/* Modal Window (Popover Style) */
 .modal-window {
+    position: absolute; /* Dynamically positioned */
     background: #ffffff; /* Clean white background */
     color: #333; /* Neutral dark text */
     padding: 20px;
     border-radius: 12px; /* Smooth corners */
-    box-shadow: 0 5px 5px rgba(106, 106, 106, 0.2); /* Subtle shadow for depth */
-    width: 300px; /* Compact width */
-    max-width: 90%; /* Mobile responsive */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Depth effect */
+    width: 300px; /* Default width */
+    max-width: 90%; /* Responsive width */
     text-align: left;
-    animation: slideIn 0.3s ease-in-out; /* Smooth slide-in effect */
-    position: relative;
+    transform: translate(-50%, -100%); /* Default position: above and centered */
+}
+
+/* Arrow */
+.modal-window::after {
+    content: '';
+    position: absolute;
+    bottom: -10px; /* Arrow below the modal */
+    left: 50%;
+    transform: translateX(-50%); /* Center the arrow horizontally */
+    border-width: 10px; /* Arrow size */
+    border-style: solid;
+    border-color: #ffffff transparent transparent transparent; /* White arrow pointing down */
 }
 
 /* Modal Close Button */
