@@ -66,7 +66,6 @@ def hae_kalenteri():
 
     # Step 3: Parse the ICS file
     calendar = Calendar(ics_content)
-    
         # Step 4: Extract events into a structured format
     for event in calendar.events:
         # Extract details about each event

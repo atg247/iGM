@@ -9,7 +9,7 @@ const app = Vue.createApp({
             isLoading: true, // Show a loading indicator while fetching games
             showReasonPopup: false, // Controls popup visibility
             popupReason: "", // Stores the reason to display in the popup
-
+            selectedGame: null, // To store the game details for the modal
         };
     },
     methods: {
@@ -225,11 +225,79 @@ const app = Vue.createApp({
                 this.showReasonPopup = true; // Show modal
             }
         },
-        closePopup() {
-            this.showReasonPopup = false; // Hide modal
-            this.popupReason = ""; // Clear the reason
+        
+        showModal(event, reason) {
+            if (!reason) {
+                console.error("No reason provided for modal");
+                return;
+            }
+        
+            this.popupReason = reason;
+        
+            this.$nextTick(() => {
+                const modal = document.querySelector(".modal-window");
+        
+                if (!modal) {
+                    console.error("Modal element not found");
+                    return;
+                }
+
+                if (this.showReasonPopup && this.popupReason === reason) {
+                    this.closeModal();
+                    return;
+                }
+            
+        
+                // Hanki kursorin sijainti
+                const cursorX = event.clientX;
+                const cursorY = event.clientY;
+                console.log("Cursor position:", cursorX, cursorY);
+        
+                // Näytä modal-ikkuna tilapäisesti mittojen laskemista varten
+                modal.style.visibility = "hidden";
+                modal.style.display = "block";
+        
+                const modalWidth = modal.offsetWidth;
+                const modalHeight = modal.offsetHeight;
+        
+                // Lasketaan modalin sijainti
+                const scrollX = window.scrollX || window.pageXOffset;
+                const scrollY = window.scrollY || window.pageYOffset;
+        
+                const arrowOffsetX = 0.05 * modalWidth; // Nuolen 5% offset modalin oikeasta reunasta
+                const arrowOffsetY = 0.2 * modalHeight; // Nuolen 10% offset modalin alareunasta
+                const topPosition = cursorY + scrollY + arrowOffsetY + 8 ; // Modalin alareuna siirtyy ylöspäin
+                const leftPosition = cursorX + scrollX - (modalWidth - arrowOffsetX); // Modalin sijainti suhteessa nuoleen
+                
+                modal.style.position = "absolute";
+                modal.style.top = `${topPosition}px`;
+                modal.style.left = `${leftPosition}px`;
+        
+                // Näytä modal
+                modal.style.visibility = "visible";
+                modal.style.display = "block";
+                this.showReasonPopup = true;
+        
+                console.log("Modal positioned at:", modal.style.top, modal.style.left);
+            });
         },
-    
+        
+        toggleModal(event, reason) {
+            // Jos modal on jo auki ja syy on sama, sulje modal
+            if (this.showReasonPopup && this.popupReason === reason) {
+                this.closeModal();
+            } else {
+                // Muuten avaa modal uudelleen
+                this.showModal(event, reason);
+            }
+        },             
+                
+        closeModal() {
+            console.log("Close button clicked"); // Add this to debug
+            this.showReasonPopup = false; // Hide the modal
+            this.popupReason = ''; // Clear the reason text
+        },
+            
 
         formatReason(reason) {
             if (reason) {
@@ -272,6 +340,7 @@ template:
         <p> Tässä näkymässä esitetään oletuksena hallinnoimiesi joukkueiden otteluohjelma.</p>
         <p> Valitse näytettävät joukkueet painikkeista.</p>
     </div>
+</div>
 
     
     <!-- Sticky Team Selector -->
@@ -328,50 +397,50 @@ template:
 
     <!-- Game Info Cards -->
     <div class="game-cards">
-        <div
-            v-for="game in games"
-            :key="game['Game ID'] + '-' + game['Team ID']"
-            class="game-card"
-            :style="getRowStyle(game)"
-        >
-            <div class="gameInfo1">
-                <div class="topRow">
-                    <p class="gameTeams">
-                        {{ game['Home Team'] }} - {{ game['Away Team'] }}
-                    </p>
-                    <!-- Circle positioned to the right -->
-                    <div class="status-box">
-                        <span class="status-text">Jopox:</span>
-                        <span
-                            class="status-circle"
-                            :class="{
-                                'circle-green': game.match_status === 'green',
-                                'circle-yellow': game.match_status === 'yellow',
-                                'circle-red': game.match_status === 'red',
-                            }"
-                            @click="toggleReason(game)"
-                        ></span>
-                    </div>
-                </div>
-                <!-- Show reasons if clicked -->
-                <div v-if="showReasonPopup" class="modal-overlay">
-                    <div class="modal-window">
-                        <span class="modal-close" @click="closePopup">&times;</span>
-                        <h3>Match Details</h3>
-                        <p v-html="popupReason"></p>
-                    </div>
+    <div
+        v-for="game in games"
+        :key="game['Game ID'] + '-' + game['Team ID']"
+        class="game-card"
+        :style="getRowStyle(game)"
+    >
+        <div class="gameInfo1">
+            <div class="topRow">
+                <p class="gameTeams">
+                    {{ game['Home Team'] }} - {{ game['Away Team'] }}
+                </p>
+                <div class="status-box" @click.stop="toggleModal($event, game.reason)">
+                    <span class="status-text">Jopox:</span>
+                    <!-- Circle to indicate game status -->
+                    <span
+                        class="status-circle"
+                        :class="{
+                            'circle-green': game.match_status === 'green',
+                            'circle-yellow': game.match_status === 'yellow',
+                            'circle-red': game.match_status === 'red',
+                        }"
+                    ></span>
                 </div>
             </div>
-
             <div class="bottomRow">
                 <p class="gameTime"> Klo {{ game.Time || 'Aika ei saatavilla' }}</p>
                 <p class="gameLocation">{{ game.Location || 'Paikka ei saatavilla' }}</p>
                 <p class="gameStatgroup">{{ game['Level Name'] }}</p>
-            </div>
+            </div>    
         </div>
     </div>
-
 </div>
+</div>
+
+<!-- Modal -->
+<div v-show="showReasonPopup" class="modal-window">
+    <div class="modal-arrow"></div>
+    <span class="modal-close" @click.stop="closeModal">&times;</span>
+    <h1>Jopox huomiot:</h1>
+    <p v-html="popupReason"></p>
+</div>
+
+
+
 `
 });
 
