@@ -127,14 +127,25 @@ $('#season').trigger('change');
 loadTeams();
 
 // Handle add/update teams submission
-$('#dashboardForm').submit(function (e) {
-    e.preventDefault();
+let selectedAction = null; // Tallennetaan painikkeen arvo
 
-    const selectedTeams = [];
-    const action = $(document.activeElement).val(); // Get the value of the active element (button pressed)
-    console.log('Action:', action); // Log the action
-    $('#teams option:selected').each(function () {
-        selectedTeams.push({
+// Tallenna painikkeen arvo klikkaustapahtuman yhteydessä
+$('#dashboardForm button[type="submit"]').on('click', function () {
+    selectedAction = $(this).val(); // Aseta valittu action-arvo
+});
+
+// Lomakkeen lähetys JSON-muotoisena
+$('#dashboardForm').on('submit', function (e) {
+    e.preventDefault(); // Estä lomakkeen oletuslähetys
+
+    if (!selectedAction) {
+        alert("Action not specified.");
+        return;
+    }
+
+    // Valitse joukkueet
+    const selectedTeams = $('#teams option:selected').map(function () {
+        return {
             TeamID: $(this).val(),
             TeamAbbrv: $(this).data('abbrv'),
             team_association: $(this).data('association'),
@@ -142,31 +153,33 @@ $('#dashboardForm').submit(function (e) {
             stat_group: $(this).data('statgroup'),
             season: $('#season').val(),
             level_id: $('#levels').val(),
-            statgroup: $('#statgroups').val()    
-        });
-    });
+            statgroup: $('#statgroups').val(),
+        };
+    }).get();
 
+    // Rakennetaan JSON-data
     const data = {
-        action: action,
+        action: selectedAction, // Käytä tallennettua action-arvoa
         teams: selectedTeams,
     };
 
-    console.log('Form data:', data); // Log form data
-
+    // Lähetä JSON-pyyntö
     $.ajax({
         url: '/dashboard/update_teams',
         method: 'POST',
         contentType: 'application/json',
-        data: JSON.stringify(data),
+        data: JSON.stringify(data), // Muunna JSONiksi
         success: function (response) {
-            console.log('Success:', response); // Log success response
-            loadTeams(); // Refresh lists and modal with latest data after update
+            console.log('Success:', response);
+            loadTeams(); // Päivitä joukkueiden listat
         },
         error: function (xhr) {
-            alert('An error occurred: ' + xhr.responseText);
-        }
+            console.error('Error:', xhr.responseText);
+            alert(`An error occurred: ${xhr.responseText}`);
+        },
     });
 });
+
 
 // Handle remove teams confirmation
 $('#confirmRemoveTeams').click(function () {
