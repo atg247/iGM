@@ -168,6 +168,32 @@ $('#dashboardForm').submit(function (e) {
     });
 });
 
+//this is a selector for user to select the jopox teamid from the dropdown that is submitted to backend for his user profile
+$('#jopox_teamidselector').submit(function () {
+    event.preventDefault();
+    const jopoxTeamId = $('#jopox_team_id').val();
+    const jopoxTeamName = $('#jopox_team_id option:selected').text();
+    console.log('jopoxTeamId:', jopoxTeamId);
+    console.log('jopoxTeamName:', jopoxTeamName);
+    $.ajax({
+        url: '/dashboard/select_jopox_team',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ jopoxTeamId: jopoxTeamId, jopoxTeamName: jopoxTeamName }),
+        success: function (response) {
+            console.log('Success:', response);
+        },
+        error: function (xhr) {
+            alert('An error occurred: ' + xhr.responseText);
+        }
+    });
+    if (!jopoxTeamId) {
+        alert('Valitse joukkue ennen lähettämistä.');
+        return;
+    }
+});
+
+
 // Handle remove teams confirmation
 $('#confirmRemoveTeams').click(function () {
     const selectedTeams = [];

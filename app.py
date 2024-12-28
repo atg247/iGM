@@ -165,7 +165,20 @@ def dashboard():
 
     return render_template('dashboard.html', managed_teams=managed_teams, followed_teams=followed_teams)
 
-
+#select the jopox team id for user account
+@app.route('/dashboard/select_jopox_team', methods=['POST'])
+@login_required
+def select_jopox_team():
+    data = request.get_json()
+    print('This is data received with json:', data)
+    jopox_team_id = data.get('jopoxTeamId')
+    jopox_team_name = data.get('jopoxTeamName')
+    current_user.jopox_team_id = jopox_team_id
+    current_user.jopox_team_name = jopox_team_name
+    db.session.commit()
+    print(f"Jopox team ID {jopox_team_id} selected for user {current_user.username}. Tallennettu team id on: {current_user.jopox_team_id}/n Tallennettu team name on: {current_user.jopox_team_name}")
+    return jsonify({"message": "Jopox team selected successfully!"}), 200
+    
 
 @app.route('/dashboard/update_teams', methods=['POST'])
 @login_required
@@ -424,7 +437,8 @@ def get_jopox_games():
 
     try:
         # Fetch games from Jopox
-        jopox_games = hae_kalenteri()
+        jopox_games = hae_kalenteri(current_user.jopox_team_id)
+        #print("jopox_games:", jopox_games)
 
         # Ensure a valid response is returned
         return jsonify({"status": "success", "data": jopox_games}), 200
@@ -445,8 +459,8 @@ def compare_games_endpoint():
         data = request.get_json()
         tulospalvelu_games = data.get('tulospalvelu_games', [])
         jopox_games = data.get('jopox_games', [])
-        print("tulospalvelu_games:", tulospalvelu_games[0])
-        print("jopox_games:", jopox_games[0])   
+        #print("tulospalvelu_games:", tulospalvelu_games[0])
+        #print("jopox_games:", jopox_games[0])   
         # Perform the comparison
         comparison_results = compare_games(jopox_games, tulospalvelu_games)
 
@@ -468,7 +482,7 @@ def jopox_ottelut():
 def hae_kalenteri_endpoint():
     try:
         # Fetch the events using the helper function
-        events = hae_kalenteri()
+        events = hae_kalenteri(current_user.jopox_team_id)
         return jsonify(events)  # Return the data as JSON
     except Exception as e:
         return jsonify({"error": f"Error processing games data: {str(e)}"})

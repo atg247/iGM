@@ -13,6 +13,8 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(150), unique=True, nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    jopox_team_id = db.Column(db.String(100), nullable=True)  # Id of the team managed in Jopox
+    jopox_team_name = db.Column(db.String(100), nullable=True)  # Name of the team managed in Jopox
     
     # Relationship to teams through UserTeam table
     teams = db.relationship('Team', secondary='user_team', back_populates='users', overlaps="user_team_entries,team_user_entries")

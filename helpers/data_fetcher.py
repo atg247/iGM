@@ -49,11 +49,10 @@ def get_jopox_events():
     response.raise_for_status()
     return response.json
 
-def hae_kalenteri():
-    numero = 8787
+def hae_kalenteri(team_id):
     events_data = []
-
-    ics_url = f'https://ics.jopox.fi/hockeypox/calendar/ical.php?ics=true&e=t&cal=U122013_{numero}'  # Replace with the actual ICS URL
+    print("jopox_team_id------------------>:", team_id)
+    ics_url = f'https://ics.jopox.fi/hockeypox/calendar/ical.php?ics=true&e=t&cal=U122013_{team_id}'  # Replace with the actual ICS URL
 
     # Step 2: Fetch the ICS file
     try:
@@ -66,6 +65,7 @@ def hae_kalenteri():
 
     # Step 3: Parse the ICS file
     calendar = Calendar(ics_content)
+    print("calendar------------------>:", calendar)
         # Step 4: Extract events into a structured format
     for event in calendar.events:
         # Extract details about each event

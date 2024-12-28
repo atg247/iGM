@@ -45,7 +45,7 @@ def compare_games(jopox_games, tulospalvelu_games):
         best_reason = ""
         color_score = 0  # Track discrepancies for color scoring
 
-        print("T_Game:", date, time, location, teams, small_area_game)
+#        print("T_Game:", date, time, location, teams, small_area_game)
 
         for j_game in jopox_games:
             try:
@@ -111,8 +111,8 @@ def compare_games(jopox_games, tulospalvelu_games):
                     reason += "Kyseessä on pienpeli, mutta siitä ei ole mainintaa Jopoxissa. "
                     color_score_temp += 1
 
-            print(f"Temporary Color Score for {t_game['Game ID']}: {color_score_temp}")
-            print(f"Reason for {t_game['Game ID']}: {reason}")
+            #print(f"Temporary Color Score for {t_game['Game ID']}: {color_score_temp}")
+            #print(f"Reason for {t_game['Game ID']}: {reason}")
 
             # Update the best match
             if score > best_score:
@@ -121,7 +121,7 @@ def compare_games(jopox_games, tulospalvelu_games):
                 best_reason = reason
                 color_score = color_score_temp  # Update main color_score with temp
 
-        print("Best Match:", best_match, best_score)
+        #print("Best Match:", best_match, best_score)
 
         # Determine match status
         if color_score == 0 and best_match:
