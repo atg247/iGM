@@ -71,6 +71,7 @@ function loadTeams() {
         url: '/dashboard/get_ManagedFollowed', // Assumes a backend endpoint to fetch the latest teams data
         method: 'GET',
         success: function (response) {
+            console.log('Hallinnoidut joukkueet:', response);
             // Update the managed teams list
             const managedTeamsList = $('#managedTeamsList');
             managedTeamsList.empty();
@@ -85,8 +86,19 @@ function loadTeams() {
                 followedTeamsList.append(`<li data-team-id="${team.team_id}">${team.team_name} (${team.stat_group})</li>`);
             });
 
+            // Store the jopox managed team in a variable
+            const jopoxManagedTeam = response.jopox_managed_team;
+
+            // Update the HTML element with the jopox managed team
+            // Update the HTML element with the jopox managed team
+            if (jopoxManagedTeam) {
+                $('#jopoxManagedTeam').text(jopoxManagedTeam);
+            } else {
+                $('#jopoxManagedTeam').text('Et hallinnoi tällä hetkellä mitään Jopox-joukkuetta.');
+            }
+
             // Update modal with the latest data
-            updateRemoveTeamsModal(response.managed_teams, response.followed_teams);
+            updateRemoveTeamsModal(response.managed_teams, response.followed_teams, response.jopox_managed_team);
         },
         error: function (xhr) {
             console.error("Error fetching teams:", xhr.responseText);
@@ -95,11 +107,28 @@ function loadTeams() {
 }
 
 // Function to update Remove Teams Modal content
-function updateRemoveTeamsModal(managedTeams, followedTeams) {
-    const managedTeamsModalList = $('#removeTeamsModal .modal-body ul:first');
-    const followedTeamsModalList = $('#removeTeamsModal .modal-body ul:last');
+function updateRemoveTeamsModal(managedTeams, followedTeams, jopoxManagedTeam) {
+    const managedTeamsModalList = $('#removeTeamsModal .modal-body ul:eq(1)');
+    const followedTeamsModalList = $('#removeTeamsModal .modal-body ul:eq(2)');
+    const jopoxManagedModalTeam = $('#removeTeamsModal .modal-body ul:eq(0)');
 
+    jopoxManagedModalTeam.empty();
     managedTeamsModalList.empty();
+    followedTeamsModalList.empty();
+
+    // Append the Jopox managed team
+    if (jopoxManagedTeam) {
+        jopoxManagedModalTeam.append(`
+            <li>
+                <input type="checkbox" name="teams" value="${jopoxManagedTeam}" data-relationship="jopox">
+                ${jopoxManagedTeam}
+            </li>
+        `);
+    } else {
+        jopoxManagedModalTeam.append('<p>No Jopox managed team available.</p>');
+    }
+
+    // Append the managed teams
     managedTeams.forEach(team => {
         managedTeamsModalList.append(`
             <li>
@@ -109,7 +138,7 @@ function updateRemoveTeamsModal(managedTeams, followedTeams) {
         `);
     });
 
-    followedTeamsModalList.empty();
+    // Append the followed teams
     followedTeams.forEach(team => {
         followedTeamsModalList.append(`
             <li>

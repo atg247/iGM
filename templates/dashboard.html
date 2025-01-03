@@ -85,6 +85,14 @@
     </div>
 </form>
 
+<!-- Jopox Managed Team -->
+<h2>Jopox-joukkueesi:</h2>
+{% if jopox_managed_team %}
+    <p id="jopoxManagedTeam">{{ jopox_managed_team }}</p>
+{% else %}
+    <p id="jopoxManagedTeam">Et hallinnoi tällä hetkellä mitään Jopox-joukkuetta.</p>
+{% endif %}
+
 <!-- Managed Teams List -->
 <h2>Hallinnoimasi joukkueet:</h2>
 <ul id="managedTeamsList">
@@ -123,6 +131,17 @@
             </div>
             <div class="modal-body">
                 <form id="removeTeamsForm">
+                    <h5>Jopox-joukkueesi</h5>
+                    <ul>
+                        {% if jopox_managed_team %}
+                        <li>
+                            <input type="checkbox" name="teams" value="{{ jopox_managed_team }}" data-relationship="jopox">
+                            {{ jopox_managed_team }}
+                        </li>
+                        {% else %}
+                        <p>No Jopox managed team available.</p>
+                        {% endif %}
+                    </ul>
                     <h5>Hallinnoimasi Joukkueet</h5>
                     <ul>
                         {% for team in managed_teams %}
