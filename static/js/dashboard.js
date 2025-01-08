@@ -211,6 +211,8 @@ $('#jopox_teamidselector').submit(function () {
         data: JSON.stringify({ jopoxTeamId: jopoxTeamId, jopoxTeamName: jopoxTeamName }),
         success: function (response) {
             console.log('Success:', response);
+            loadTeams(); // Refresh lists and modal with latest data after update
+
         },
         error: function (xhr) {
             alert('An error occurred: ' + xhr.responseText);

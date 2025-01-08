@@ -17,7 +17,7 @@ def parse_sortable_date(date_string):
 def compare_games(jopox_games, tulospalvelu_games):
     """Compare games from Jopox and Tulospalvelu.fi datasets."""
     results = []
-
+    
     for t_game in tulospalvelu_games:
         try:
             t_game_date = parse_sortable_date(t_game['SortableDate'])
@@ -37,6 +37,9 @@ def compare_games(jopox_games, tulospalvelu_games):
         small_area_game = t_game['Small Area Game'] == '1'
         teams = f"{t_game['Home Team']} - {t_game['Away Team']}".lower()
 
+        #print T-game details in different rows
+        print("-------\nTULOSPALVELU:", date,"\n", time,"\n", location,"\n", teams,"\n", small_area_game)
+
         if time == "00:00":
             time = "Not scheduled"
 
@@ -45,7 +48,7 @@ def compare_games(jopox_games, tulospalvelu_games):
         best_reason = ""
         color_score = 0  # Track discrepancies for color scoring
 
-#        print("T_Game:", date, time, location, teams, small_area_game)
+        #print("T_Game:", date, time, location, teams, small_area_game)
 
         for j_game in jopox_games:
             try:
@@ -60,6 +63,8 @@ def compare_games(jopox_games, tulospalvelu_games):
             j_time = j_game['Aika'].split(' - ')[0]
             j_location = j_game['Paikka'].lower()
             j_teams = j_game['Tapahtuma'].split(":")[-1].lower()
+
+            print("-------\nJopox:", "\n",j_game_date, "\n", j_time, "\n", j_location, "\n", j_teams)
 
             # Convert times
             try:
@@ -121,7 +126,7 @@ def compare_games(jopox_games, tulospalvelu_games):
                 best_reason = reason
                 color_score = color_score_temp  # Update main color_score with temp
 
-        #print("Best Match:", best_match, best_score)
+        print("Best Match:", best_match, best_score)
 
         # Determine match status
         if color_score == 0 and best_match:
