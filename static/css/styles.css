@@ -109,6 +109,13 @@ h1,h2 {
 
 }
 
+.toggle-played-button {
+    background-color: #35463a;
+    color: #dfeae2;
+    padding: 2px;
+    font-size: 1em;
+    border: 10px;
+}
 .selected-team {
     font-weight: bold;
     transition: outline 0.3s ease-in-out; /* Smooth transition for outline */
@@ -163,6 +170,31 @@ h1,h2 {
     transition: transform 0.2s, box-shadow 0.2s; /* Add transition for smooth hover effect */
     margin-left: 0.5rem;
     margin-right: 0.5rem;
+}
+
+.game-card:hover {
+    transform: scale(1.02); /* Slightly enlarge on hover */
+    box-shadow: 8px 8px 10px rgba(0, 0, 0, 0.4); /* Add a deeper shadow on hover */
+}
+
+.game-details {
+    margin-top: 0.5rem; /* Space between main card and details */
+    padding: 0.5rem;
+    border-top: 1px solid #ddd; /* Separate details with a border */
+    background-color: #f9f9f9; /* Light gray background for details */
+    border-radius: 8px; /* Match the border radius of the card */
+    color: #555; /* Slightly dimmed text for details */
+    font-size: 0.75rem; /* Slightly smaller font for details */
+    box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle inset shadow */
+}
+
+.warning-message {
+    background-color: #ffebcc;
+    border: 1px solid #ffa500;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+    color: #333;
 }
 
 .topRow {

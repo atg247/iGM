@@ -75,6 +75,7 @@ def hae_kalenteri(team_id):
         end_time = event.end.format('HH:mm') if event.end else 'Unknown End'
         location = event.location if event.location else 'Unknown Location'
         description = event.description if event.description else 'No Description'
+        uid = event.uid if event.uid else 'No UID'
 
         if "Ottelu" in event_name:
             # Append event data to list
@@ -85,7 +86,8 @@ def hae_kalenteri(team_id):
                 "Tapahtuma": event.name,
                 "Aika": f"{start_time} - {end_time}",
                 "Paikka": location,
-                "Lisätiedot": description  # Assuming description contains level information
+                "Lisätiedot": description,  # Assuming description contains level information
+                "Uid": uid.split('_')[-1]
             })
 
     if events_data:

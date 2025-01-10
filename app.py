@@ -17,6 +17,8 @@ from dotenv import load_dotenv
 from flask_migrate import Migrate
 import logging
 from flask_mail import Mail
+from sqlalchemy import and_
+
 
 
 
@@ -204,19 +206,30 @@ def update_teams():
             level_id = team_data.get('level_id')
             statgroup = team_data.get('statgroup')
 
-            # Check if the team exists in the Team table; if not, add it
-            team = Team.query.filter_by(team_id=team_id).first()
+            # Check if the team exists in the Team table for this team_id + stat_group
+            team = Team.query.filter_by(team_id=team_id, stat_group=stat_group).first()
             
             if not team:
-                team = Team(team_id=team_id, team_name=team_abbrv, stat_group=stat_group, team_association=team_association, season=season, level_id=level_id, statgroup=statgroup)
+                # Create new team if it doesn't exist
+                team = Team(
+                    team_id=team_id,
+                    team_name=team_abbrv,
+                    stat_group=stat_group,
+                    team_association=team_association,
+                    season=season,
+                    level_id=level_id,
+                    statgroup=statgroup
+                )
                 db.session.add(team)
-                db.session.commit()  # Commit here to generate `team.id` for relationships
+                db.session.commit()  # Commit to generate `team.id`
 
-            # Check if the relationship exists in the UserTeam table
-            existing_relationship = UserTeam.query.filter_by(
-                user_id=current_user.id,
-                team_id=team.id,
-                relationship_type=action
+            # Check if the relationship exists in the UserTeam table for this user + team + action
+            existing_relationship = UserTeam.query.filter(
+                and_(
+                    UserTeam.user_id == current_user.id,
+                    UserTeam.team_id == team.id,
+                    UserTeam.relationship_type == action
+                )
             ).first()
 
             # Create a new relationship if none exists
@@ -233,11 +246,11 @@ def update_teams():
         # Fetch the updated lists of managed and followed teams
         managed_teams = [
             {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
-            for team in current_user.teams if team.team_user_entries[0].relationship_type == 'manage'
+            for team in current_user.teams if any(entry.relationship_type == 'manage' for entry in team.team_user_entries)
         ]
         followed_teams = [
             {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
-            for team in current_user.teams if team.team_user_entries[0].relationship_type == 'follow'
+            for team in current_user.teams if any(entry.relationship_type == 'follow' for entry in team.team_user_entries)
         ]
         return jsonify({
             "managed_teams": managed_teams,
@@ -248,6 +261,7 @@ def update_teams():
         db.session.rollback()
         print("Error during update:", e)
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
 
 @app.route('/dashboard/remove_teams', methods=['POST'])
 @login_required
@@ -407,7 +421,7 @@ def get_all_schedules():
         ]
 
         all_teams = managed_teams + followed_teams
-        all_games = []
+        managed_games = []
 
         # Fetch games for each team
         for team in all_teams:
@@ -435,20 +449,21 @@ def get_all_schedules():
                 # Add formatted and sortable dates
                 games_df['SortableDate'] = games_df['Date']
                 games_df['Date'] = games_df['Date'].dt.strftime('%d.%m.%Y')  # Format for display
-                all_games.extend(games_df.to_dict(orient='records'))
+                managed_games.extend(games_df.to_dict(orient='records'))
 
         # Sort all games by sortable date and time
-        all_games = sorted(all_games, key=lambda game: (game['SortableDate'], game['Time']))
-        return jsonify(all_games), 200
+        managed_games = sorted(managed_games, key=lambda game: (game['SortableDate'], game['Time']))
+        return jsonify(managed_games), 200
 
     except Exception as e:
         app.logger.error(f"Error fetching schedules: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
+
 @app.route('/api/jopox_games')
 @login_required
 def get_jopox_games():
-
+    print('starting api/jopox_games')
     try:
         # Fetch games from Jopox
         jopox_games = hae_kalenteri(current_user.jopox_team_id)
@@ -545,7 +560,7 @@ def fetch_games():
     dog = '2024-10-12'
     selected_teams = request.form.getlist('teams')
 
-    all_games_df = pd.DataFrame()
+    managed_games_df = pd.DataFrame()
     if not selected_teams:
         return jsonify({"error": "No teams selected. Please choose at least one team."})
 
@@ -558,15 +573,15 @@ def fetch_games():
 
         games_df = fetcher.display_games()
         if not games_df.empty:
-            all_games_df = pd.concat([all_games_df, games_df], ignore_index=True)
+            managed_games_df = pd.concat([managed_games_df, games_df], ignore_index=True)
 
-    if all_games_df.empty:
+    if managed_games_df.empty:
         return jsonify({"error": "No games found for the selected teams."})
 
     # Convert the games DataFrame to a JSON format
     try:
-        all_games_data = all_games_df.to_dict(orient='records')
-        return jsonify(all_games_data)
+        managed_games_data = managed_games_df.to_dict(orient='records')
+        return jsonify(managed_games_data)
     except Exception as e:
         return jsonify({"error": f"Error processing games data: {str(e)}"})
 
