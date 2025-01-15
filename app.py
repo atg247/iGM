@@ -6,8 +6,9 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_bcrypt import Bcrypt
 from helpers.data_fetcher import get_levels, get_stat_groups, get_teams, hae_kalenteri
 from helpers.game_fetcher import GameFetcher
+from helpers.jopox_scraper import JopoxScraper
 from helpers.game_comparison import compare_games
-from models.user import db, User, Team, UserTeam
+from models.user import db, User, Team, UserTeam, TGamesdb
 from forms.registration_form import RegistrationForm
 from forms.login_form import LoginForm
 from forms.forgot_password import ForgotPasswordForm, send_reset_email
@@ -49,7 +50,9 @@ login_manager.login_view = 'login'  # Redirect to 'login' if trying to access a 
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
+
+
 
 # Create tables if they do not exist (for simplicity)
 with app.app_context():
@@ -406,14 +409,12 @@ def get_all_schedules():
     Fetch schedules for all managed and followed teams, sorted by date and time.
     """
     try:
-        # Fetch managed teams
         managed_teams = [
             {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "type": 'manage'}
             for team in Team.query.join(UserTeam)
             .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'manage').all()
         ]
 
-        # Fetch followed teams
         followed_teams = [
             {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "type": 'follow'}
             for team in Team.query.join(UserTeam)
@@ -425,39 +426,119 @@ def get_all_schedules():
 
         # Fetch games for each team
         for team in all_teams:
-            fetcher = GameFetcher(
-                dwl=0,  # Replace with actual value
-                season=team['season'],
-                stat_group_id=team['stat_group_id'],
-                team_id=team['team_id'],
-                distr_id=0,  # Replace with actual value if needed
-                GameDates=3,  # Replace with actual value if needed
-                dog='2024-10-12'  # Replace with actual date logic if needed
-            )
-            error = fetcher.fetch_games()
+            try:
+                fetcher = GameFetcher(
+                    dwl=0,  # Replace with actual value
+                    season=team['season'],
+                    stat_group_id=team['stat_group_id'],
+                    team_id=team['team_id'],
+                    distr_id=0,  # Replace with actual value if needed
+                    GameDates=3,  # Replace with actual value if needed
+                    dog='2024-10-12'  # Replace with actual date logic if needed
+                )
+                error = fetcher.fetch_games()
 
-            if error:
-                app.logger.error(f"Error fetching games for {team['team_name']}: {error}")
-                continue
+                if error:
+                    app.logger.error(f"Error fetching games for {team['team_name']}: {error}")
+                    continue  # Skip this team if there's an error
 
-            # Format the games using display_games helper
-            games_df = fetcher.display_games()
-            if not games_df.empty:
-                games_df['Team Name'] = team['team_name']
-                games_df['Type'] = team['type']  # Manage or Follow
+                # Format the games using display_games helper
+                games_df = fetcher.display_games()
+                if not games_df.empty:
+                    games_df['Team Name'] = team['team_name']
+                    games_df['Type'] = team['type']  # Manage or Follow
 
-                # Add formatted and sortable dates
-                games_df['SortableDate'] = games_df['Date']
-                games_df['Date'] = games_df['Date'].dt.strftime('%d.%m.%Y')  # Format for display
-                managed_games.extend(games_df.to_dict(orient='records'))
+                    # Add formatted and sortable dates
+                    games_df['SortableDate'] = games_df['Date']
+                    games_df['Date'] = games_df['Date'].dt.strftime('%d.%m.%Y')  # Format for display
+                    managed_games.extend(games_df.to_dict(orient='records'))
+
+            except Exception as e:
+                app.logger.error(f"Error fetching games for {team['team_name']}: {str(e)}")
+                continue  # Skip to the next team if error occurs during fetch
 
         # Sort all games by sortable date and time
         managed_games = sorted(managed_games, key=lambda game: (game['SortableDate'], game['Time']))
-        return jsonify(managed_games), 200
+        print("managed_games:", managed_games[:1])
+        
+        # Store the games in the database if not already there based on game id
+        updated_games = []  # List of updated games
+
+        for game in managed_games:
+            try:
+                print("adding game to db:", game)
+                # Check if the game already exists
+                existing_game = TGamesdb.query.filter_by(game_id=game['Game ID']).first()
+                print("existing_game:", existing_game)
+
+                if existing_game:
+                    # Compare existing game and new game
+                    changes = {}
+
+                    # Check if the date has changed
+                    if existing_game.date != game['Date']:
+                        changes['date'] = {'old': existing_game.date, 'new': game['Date']}
+                        existing_game.date = game['Date']
+
+                    # Check if the time has changed
+                    if existing_game.time != game['Time']:
+                        changes['time'] = {'old': existing_game.time, 'new': game['Time']}
+                        existing_game.time = game['Time']
+
+                    # Check if the location has changed
+                    if existing_game.location != game['Location']:
+                        changes['location'] = {'old': existing_game.location, 'new': game['Location']}
+                        existing_game.location = game['Location']
+
+                    # If there are any changes, add this game to the updated games list
+                    if changes:
+                        updated_games.append({
+                            'game_id': game['Game ID'],
+                            'changes': changes
+                        })
+                else:
+                    # If the game doesn't exist, add it as a new game
+                    new_game = TGamesdb(
+                        game_id=game['Game ID'],
+                        team_id=game['Team ID'],
+                        date=game['Date'],
+                        time=game['Time'],
+                        home_team=game['Home Team'],
+                        away_team=game['Away Team'],
+                        home_goals=game['Home Goals'],
+                        away_goals=game['Away Goals'],
+                        location=game['Location'],
+                        level_name=game['Level Name'],
+                        small_area_game=game['Small Area Game'],
+                        team_name=game['Team Name'],
+                        type=game['Type'],
+                        sortable_date=game['SortableDate']
+                    )
+                    print(f"Attempting to add new game: {game['Game ID']}")
+                    db.session.add(new_game)
+
+            except Exception as e:
+                app.logger.error(f"Error processing game {game['Game ID']}: {str(e)}")
+
+        # Commit the changes if any games have been updated or added
+        if updated_games:
+            db.session.commit()
+            print(f"Updated games: {updated_games}")
+
+        return jsonify({
+            "managed_games": managed_games,
+            "updated_games": updated_games,
+            "message": "Games processed successfully"
+        }), 200
 
     except Exception as e:
+        db.session.rollback()  # Rollback in case of any error in the outer block
         app.logger.error(f"Error fetching schedules: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
+
+    
+
+        # Palautetaan muutokset frontendille
 
 
 @app.route('/api/jopox_games')
@@ -499,6 +580,63 @@ def compare_games_endpoint():
     except Exception as e:
         app.logger.error(f"Error in game comparison: {e}")
         return jsonify({"error": "Comparison failed", "details": str(e)}), 500
+
+@app.route('/api/update_jopox', methods=['POST'])
+def update_jopox():
+    data = request.json
+    game = data.get('game')
+    best_match = data.get('best_match')
+
+    print("Game info:", game)
+    print("Jopox info:", best_match)
+
+    username = "malkamaki.antti@gmail.com"
+    password = "zorfyj-rymje5-hycsyX"
+
+    if not best_match:
+        print("No best match found.")
+        try: 
+            scraper = JopoxScraper(username, password)
+
+            if scraper.login() and scraper.access_admin():
+                game_data = {
+                    "SeasonId": "547",
+                    "SubSiteId": "8787",
+                    "LeagueDropdownList": "15460", #"15116" Treenipelit 24/25, "15449" U12 Sarja lohko, "15460" U12 Sarja lohko 3B
+                    "EventDropDownList": "",
+                    "HomeTeamTextBox": game.get("Punainen", ""),#muokattu S-kiekko Punainen muotoon Punainen - pitää keksiä joku logiikka
+                    "GuestTeamTextBox": game.get("Away Team", ""),
+                    "AwayCheckbox": "", #Tämä pitää setviä kuntoon jos tyhjä niin kotijoukkue on kotijoukkue ja jos "on" niin vierasjoukkue on kotijoukkue.
+                    "GameLocationTextBox": game.get("Location", ""),
+                    "GameDateTextBox": game.get("Date", ""),
+                    "GameStartTimeTextBox": game.get("Time", ""),
+                    "GameDurationTextBox": game.get("GameDurationTextBox", "120"),
+                    "GameDeadlineTextBox": "",
+                    "GameMaxParticipatesTextBox": "",
+                    "GamePublicInfoTextBox": f"""{'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli'}<br>
+                    <br>                    
+                    Kokoontuminen tuntia ennen ottelun alkua.<br>
+                    <br>
+                    Joukkue:
+                    <br>
+                    """,#Tähän kenttään logiikka, jolla määritetään tarvitaanko toimitsijoita ja niin, että huomioi pienpelit
+                    "FeedGameDropdown": "0",
+                    "GameInfoTextBox": f"""
+                    Ottelu {game.get('Date')} klo {game.get('Time')}<br>
+                    {game.get('Home Team')} - {game.get('Away Team')}<br>
+                    {game.get('Location')}<br><br>Kaikki joukkueen jäsenet""",
+                    "GameNotificationTextBox": "",
+                    "SaveGameButton": "Tallenna"
+                    }
+            
+                #scraper.add_game(game_data)
+                return jsonify({"message": "Pelin lisäämistoiminto ei käytössä, aktivoi scraper.add_game."}), 200
+            
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    
+    else:
+        print("Skippasi tänne.")
 
 
 @app.route('/jopox_ottelut')

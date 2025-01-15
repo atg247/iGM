@@ -13,6 +13,7 @@ const app = Vue.createApp({
             popupReason: "", // Stores the reason to display in the popup
             selectedGame: null, // To store the game details for the modal
             showPlayedGames: false, // Controls whether played games are shown 
+            showUpdateJopoxModal: false, // Päivitä Jopox -modalin näkyvyys
         };
     },
     methods: {
@@ -24,9 +25,12 @@ const app = Vue.createApp({
                 fetch('/api/schedules').then(response => response.json()),
                 fetch('/api/jopox_games').then(response => response.json())
             ])
-            .then(([tulospalveluGames, jopoxGames]) => {
+            .then(([tulospalveluData, jopoxGames]) => {
                 // Save Tulospalvelu.fi data for rendering game cards
-                if (Array.isArray(tulospalveluGames)) {
+                if (tulospalveluData && Array.isArray(tulospalveluData.managed_games)) {
+                    console.log('Tulospalvelu data:', tulospalveluData);
+
+                    const tulospalveluGames = tulospalveluData.managed_games;  // Käytetään oikeaa kenttää
                     // Filter out duplicate Game IDs
                     const uniqueGames = [];
                     const seenGameIDs = new Set();
@@ -38,11 +42,10 @@ const app = Vue.createApp({
                     }
                     this.allGames = uniqueGames;
                     this.managedGames = uniqueGames.filter(game => game.Type === 'manage');
-
+            
                 } else {
-                    console.error('Unexpected Tulospalvelu response:', tulospalveluGames);
+                    console.error('Unexpected Tulospalvelu response:', tulospalveluData);
                 }
-                console.log('jopoxGames:', jopoxGames.data  );
                                 // Send data to backend for comparison
                 return fetch('/api/compare', {
                     method: 'POST',
@@ -140,15 +143,33 @@ const app = Vue.createApp({
             // Further filter out played games if `showPlayedGames` is false
             if (!this.showPlayedGames) {
                 filtered = filtered.filter(game => {
-                    const gameDateTime = new Date(`${game.Date} ${game.Time}`);
-                    const now = new Date();
-                    return gameDateTime > now; // Include only upcoming games
+                    try {
+                        const gameDateTime = new Date(game.SortableDate); // Use SortableDate for comparison
+                        const now = new Date();
+        
+                        // Compare only the day (ignore time)
+                        const gameDateWithoutTime = new Date(
+                            gameDateTime.getFullYear(),
+                            gameDateTime.getMonth(),
+                            gameDateTime.getDate()
+                        );
+                        const nowWithoutTime = new Date(
+                            now.getFullYear(),
+                            now.getMonth(),
+                            now.getDate()
+                        );
+        
+                        return gameDateWithoutTime >= nowWithoutTime; // Include only current and future games
+                    } catch (error) {
+                        console.error('Error filtering game by date:', game, error);
+                        return false; // Exclude games with invalid dates
+                    }
                 });
             }
         
             this.filteredGames = filtered;
         },
-
+        
         toggleGameDetails(gameId) {
             this.expandedGameId = this.expandedGameId === gameId ? null : gameId;
         },    
@@ -261,16 +282,28 @@ const app = Vue.createApp({
 
         isPastDay(sortableDate) {
             try {
-                const date = new Date(sortableDate);
+                const date = new Date(sortableDate); // Parse SortableDate
                 const now = new Date();
         
-                // Vertaa vain päivää (ei aikaa)
-                return date.setHours(0, 0, 0, 0) < now.setHours(0, 0, 0, 0);
+                // Compare days only
+                const dateWithoutTime = new Date(
+                    date.getFullYear(),
+                    date.getMonth(),
+                    date.getDate()
+                );
+                const nowWithoutTime = new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate()
+                );
+                
+                return dateWithoutTime < nowWithoutTime;
             } catch (error) {
-                console.error('Error parsing date:', sortableDate, error);
-                return false;
+                console.error('Error parsing SortableDate:', sortableDate, error);
+                return false; // Default to "not past" in case of an error
             }
-        },                       
+        },
+                          
                 
         isTeamSelected(teamName) {
             // Check if a team is selected
@@ -312,7 +345,6 @@ const app = Vue.createApp({
                 // Hanki kursorin sijainti
                 const cursorX = event.clientX;
                 const cursorY = event.clientY;
-                console.log("Cursor position:", cursorX, cursorY);
         
                 // Näytä modal-ikkuna tilapäisesti mittojen laskemista varten
                 modal.style.visibility = "hidden";
@@ -339,7 +371,6 @@ const app = Vue.createApp({
                 modal.style.display = "block";
                 this.showReasonPopup = true;
         
-                console.log("Modal positioned at:", modal.style.top, modal.style.left);
             });
         },
         
@@ -354,13 +385,45 @@ const app = Vue.createApp({
         },             
                 
        
-        
+
         closeModal() {
-            console.log("Modal closed"); // Debugging log
             this.showReasonPopup = false; // Hide the modal
             this.popupReason = ''; // Clear the reason text
         },
-            
+        
+        openUpdateModal(game) {
+            this.selectedGame = game; // Tallenna valittu peli
+            this.showUpdateJopoxModal = true; // Näytä Päivitä Jopox -modal
+        },
+    
+        // Lähetä tiedot backendille päivitystä varten
+        updateJopox() {
+            const payload = {
+                game: this.selectedGame, // Tulospalvelun tiedot
+                best_match: this.selectedGame.best_match, // Jopoxin tiedot
+            };
+    
+            fetch('/api/update_jopox', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Jopox-päivitys onnistui: ' + data.message);
+                this.closeUpdateModal(); // Sulje modal päivityksen jälkeen
+            })
+            .catch(error => {
+                console.error('Virhe Jopox-päivityksessä:', error);
+                alert('Päivityksessä tapahtui virhe.');
+            });
+        },
+    
+        // Sulje Päivitä Jopox -modal
+        closeUpdateModal() {
+            this.showUpdateJopoxModal = false;
+            this.selectedGame = null;
+        },
 
         formatReason(reason) {
             if (reason) {
@@ -481,6 +544,11 @@ template:
                     {{ game['Home Team'] }} - {{ game['Away Team'] }}
                     <span v-if="game['Small Area Game'] === '1'">(Pienpeli)</span>
                 </p>
+                <button class="update-jopox-btn"
+                v-if="!isPastDay(date) && !isNotManagedTeam(game)"
+                @click.stop="openUpdateModal(game)">
+                    <span class="status-text">Päivitä Jopox</span>
+                </button>
                 <div class="status-box"
                      v-if="!isPastDay(date) && !isNotManagedTeam(game)"
                      @click.stop="toggleModal($event, game.reason)"
@@ -514,7 +582,6 @@ template:
                 <div v-if="game.warning" class="warning-message">
                 <strong>Varoitus:</strong> {{ game.warning }}
                 </div>
-
             </div>
         </div>
     </div>
@@ -527,6 +594,18 @@ template:
     <span class="modal-close" @click.stop="closeModal">&times;</span>
     <h1>Jopox huomiot:</h1>
     <p v-html="popupReason"></p>
+</div>
+
+<div v-if="showUpdateJopoxModal" class="modal-window2">
+    <div class="modal-content">
+        <span class="modal-close" @click="closeUpdateModal">&times;</span>
+        <h2>Päivitä Jopox</h2>
+        <p><strong>Ottelun tiedot:</strong></p>
+        <pre>Tulospalvelun game id{{ selectedGame?.['Game ID'] }}</pre>
+        <p><strong>Jopoxin tiedot:</strong></p>
+        <pre>{{ selectedGame?.best_match }}</pre>
+        <button @click="updateJopox">Lähetä päivitys</button>
+    </div>
 </div>
 
 

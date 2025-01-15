@@ -157,6 +157,8 @@ def compare_games(jopox_games, tulospalvelu_games):
         if color_score == 0 and best_match:
             match_status = 'green'
             jopox_games.remove(best_match)
+            best_reason = "Ottelu löytyy Jopoxista. Ei huomioita."
+            
         elif color_score > 0 and best_match:
             match_status = 'yellow'
         else:
