@@ -197,6 +197,40 @@ $('#dashboardForm').submit(function (e) {
     });
 });
 
+$(document).ready(function () {
+    // Aktivoi Jopox-yhteys -painike
+    $('#activateJopox').click(function () {
+        $('#jopoxAuthModal').modal('show');  // Näytä modaalinen ikkuna
+    });
+
+    // Tietojen tallentaminen Jopoxiin
+    $('#jopoxAuthForm').submit(function (e) {
+        e.preventDefault();
+
+        const jopoxUsername = $('#jopoxUsername').val();
+        const jopoxPassword = $('#jopoxPassword').val();
+
+        // Lähetä tiedot backendille
+        $.ajax({
+            url: '/dashboard/save_jopox_credentials',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                username: jopoxUsername,
+                password: jopoxPassword
+            }),
+            success: function (response) {
+                console.log('Jopox-tiedot tallennettu:', response);
+                $('#jopoxAuthModal').modal('hide');  // Sulje modaalinen ikkuna
+                loadTeams();  // Päivitä tiimit
+            },
+            error: function (xhr) {
+                alert('Virhe tallentaessa tietoja: ' + xhr.responseText);
+            }
+        });
+    });
+});
+
 //this is a selector for user to select the jopox teamid from the dropdown that is submitted to backend for his user profile
 $('#jopox_teamidselector').submit(function () {
     event.preventDefault();

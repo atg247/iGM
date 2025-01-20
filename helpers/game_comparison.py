@@ -52,8 +52,8 @@ def compare_games(jopox_games, tulospalvelu_games):
         small_area_game = t_game['Small Area Game'] == '1'
         teams = f"{t_game['Home Team']} - {t_game['Away Team']}".lower()
 
-        logger.info("Extracted details: date=%s, time=%s, location=%s, teams=%s, small_area_game=%s",
-                    date, time, location, teams, small_area_game)
+        #logger.info("Extracted details: date=%s, time=%s, location=%s, teams=%s, small_area_game=%s",
+        #            date, time, location, teams, small_area_game)
 
         if time == "00:00":
             time = "Not scheduled"
@@ -65,7 +65,7 @@ def compare_games(jopox_games, tulospalvelu_games):
         warning_reason = None
 
         for j_game in jopox_games:
-            logger.info("Comparing with Jopox game: %s", j_game)
+            #logger.info("Comparing with Jopox game: %s", j_game)
 
             try:
                 j_game_date = datetime.strptime(j_game['Pvm'], '%Y-%m-%d').date()
@@ -74,7 +74,7 @@ def compare_games(jopox_games, tulospalvelu_games):
                 continue
 
             if date != j_game_date.strftime('%Y-%m-%d'):
-                logger.info("Dates do not match: Tulospalvelu %s vs Jopox %s", date, j_game_date)
+                #logger.info("Dates do not match: Tulospalvelu %s vs Jopox %s", date, j_game_date)
                 continue
 
             # Extract J_Game details
@@ -82,8 +82,8 @@ def compare_games(jopox_games, tulospalvelu_games):
             j_location = j_game['Paikka'].lower()
             j_teams = j_game['Tapahtuma'].split(":")[-1].lower()
 
-            logger.info("Extracted Jopox details: date=%s, time=%s, location=%s, teams=%s",
-                        j_game_date, j_time, j_location, j_teams)
+            #logger.info("Extracted Jopox details: date=%s, time=%s, location=%s, teams=%s",
+            #            j_game_date, j_time, j_location, j_teams)
 
             # Convert times
             try:
@@ -112,7 +112,7 @@ def compare_games(jopox_games, tulospalvelu_games):
             else:
                 reason += f"Ottelun oikea alkamisaika on klo: {time}, mutta Jopoxissa se on klo {j_time}. "
                 color_score_temp += 1
-            logger.info("Time matching: score=%d, reason=%s", score, reason)
+            #logger.info("Time matching: score=%d, reason=%s", score, reason)
 
             # Location Matching
             location_match_score = fuzz.partial_ratio(location, j_location)
@@ -121,7 +121,7 @@ def compare_games(jopox_games, tulospalvelu_games):
             else:
                 reason += f"Ottelu pelataan paikassa: {location}, mutta Jopoxiin on merkattu: {j_location}. "
                 color_score_temp += 1
-            logger.info("Location matching: score=%d, match_score=%d, reason=%s", score, location_match_score, reason)
+            #logger.info("Location matching: score=%d, match_score=%d, reason=%s", score, location_match_score, reason)
 
             # Team Matching
             team_match_score = fuzz.partial_ratio(teams, j_teams)
@@ -130,7 +130,7 @@ def compare_games(jopox_games, tulospalvelu_games):
             else:
                 reason += f"Team mismatch ({teams} vs {j_teams}). "
                 color_score_temp += 1
-            logger.info("Team matching: score=%d, match_score=%d, reason=%s", score, team_match_score, reason)
+            #logger.info("Team matching: score=%d, match_score=%d, reason=%s", score, team_match_score, reason)
 
             # Small Area Game Check
             if small_area_game:
@@ -140,7 +140,7 @@ def compare_games(jopox_games, tulospalvelu_games):
 
             # Update the best match
             if score > best_score:
-                logger.info("New best match found: %s with score %d", j_game, score)
+                #logger.info("New best match found: %s with score %d", j_game, score)
                 best_score = score
                 best_match = j_game
                 best_reason = reason
@@ -165,7 +165,7 @@ def compare_games(jopox_games, tulospalvelu_games):
             match_status = 'red'
             best_reason = "En löytänyt ottelua Jopoxista."
 
-        logger.info("Final match status: %s, reason: %s", match_status, best_reason)
+        #logger.info("Final match status: %s, reason: %s", match_status, best_reason)
 
         results.append({
             'game': t_game,
@@ -175,5 +175,5 @@ def compare_games(jopox_games, tulospalvelu_games):
             'best_match': best_match,
         })
 
-    logger.info("Comparison completed. Total results: %d", len(results))
+    #logger.info("Comparison completed. Total results: %d", len(results))
     return results

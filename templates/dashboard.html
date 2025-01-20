@@ -59,6 +59,35 @@
         </div>
     </div>
 </form>
+
+<button id="activateJopox" class="btn btn-primary">Aktivoi Jopox-yhteys</button>
+
+<!-- Modal for Jopox Authentication -->
+<div class="modal fade" id="jopoxAuthModal" tabindex="-1" aria-labelledby="jopoxAuthModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="jopoxAuthModalLabel">Aktivoi Jopox-yhteys</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Syötä Jopox-käyttäjätunnuksesi ja -salasanasi. Nämä tiedot tallennetaan turvallisesti ja suojataan luotettavasti.</p>
+        <button class="btn btn-info" data-bs-toggle="tooltip" data-bs-placement="top" title="Salasanojen suojaus: Salasanoja ei tallenneta selväkielisinä. Käytämme vahvaa salausta, jotta vain sinun tunnuksesi voivat käyttää niitä.">Miten suojaamme salasanasi?</button>
+        <form id="jopoxAuthForm">
+          <div class="mb-3">
+            <label for="jopoxUsername" class="form-label">Jopox Käyttäjätunnus</label>
+            <input type="text" id="jopoxUsername" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="jopoxPassword" class="form-label">Jopox Salasana</label>
+            <input type="password" id="jopoxPassword" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Tallenna tiedot</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 <form id="jopox_teamidselector" method="POST" action="{{ url_for('update_teams') }}" class="mt-4">
     <div class="form-group row">
         <label for="jopox_teamidselector" class="col-sm-2 col-form-label">Jopox ylläpito</label>

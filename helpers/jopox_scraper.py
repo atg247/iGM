@@ -40,13 +40,13 @@ class JopoxScraper:
             "LoginButton": "Kirjaudu"
         }
         response = self.session.post(self.login_url, data=login_payload)
-        logging.debug("Login attempt payload: %s", login_payload)
-        logging.debug("Login response status code: %d", response.status_code)
+        #logging.debug("Login attempt payload: %s", login_payload)
+        #logging.debug("Login response status code: %d", response.status_code)
         #logging.debug("Login response text: %s", response.text)
 
         if response.status_code == 200:
             logging.info("Login successful!")
-            logging.debug("Cookies after login: %s", self.session.cookies)
+            #logging.debug("Cookies after login: %s", self.session.cookies)
             return True
         else:
             logging.error("Login failed!")
@@ -74,7 +74,7 @@ class JopoxScraper:
             "Referer": add_game_url,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         })
-        logging.debug("Fetching game form page response status code: %d", response.status_code)
+        #logging.debug("Fetching game form page response status code: %d", response.status_code)
         #logging.debug("Fetching game form page response text: %s", response.text)
 
         if response.status_code != 200:
@@ -119,7 +119,7 @@ class JopoxScraper:
             "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
         }
 
-        logging.debug("Submitting game data payload: %s", payload)
+        #logging.debug("Submitting game data payload: %s", payload)
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -128,9 +128,9 @@ class JopoxScraper:
         }
 
         response = self.session.post(add_game_url, data=payload, headers=headers)
-        logging.debug("Add game response status code: %d", response.status_code)
-        logging.debug("Add game response text: %s", response.text)
-        logging.debug("Add game response headers: %s", response.headers)
+        #logging.debug("Add game response status code: %d", response.status_code)
+        #logging.debug("Add game response text: %s", response.text)
+        #logging.debug("Add game response headers: %s", response.headers)
 
         soup = BeautifulSoup(response.text, 'html.parser')
         error_message = soup.find('textarea', {'id': 'ErrorTextBox'})

@@ -19,6 +19,8 @@ from flask_migrate import Migrate
 import logging
 from flask_mail import Mail
 from sqlalchemy import and_
+from cryptography.fernet import Fernet
+from flask import request, jsonify
 
 
 
@@ -37,6 +39,12 @@ mail.init_app(app)
 # Set logging level to DEBUG
 app.logger.setLevel(logging.DEBUG)
 #MUISTA POISTAA TÄMÄ VALMIISTA VERSIOSTA!!!!!!!!!!!!!!!!!!!!!!!!
+
+# Luodaan ja tallennetaan salausavain (tämä tulisi olla turvassa palvelimella)
+
+fernet_key = os.getenv('FERNET_KEY')
+# Luo Fernet-objekti
+cipher_suite = Fernet(fernet_key)
 
 
 # Initialize necessary extensions
@@ -168,10 +176,39 @@ def dashboard():
     app.logger.info(f"Followed teams: {followed_teams}")
     app.logger.debug(f"Followed teams raw data: {followed_teams}")
 
+
     return render_template('dashboard.html', managed_teams=managed_teams, followed_teams=followed_teams)
+
+@app.route('/dashboard/save_jopox_credentials', methods=['POST'])
+def save_jopox_credentials():
+    data = request.get_json()
+
+    username = data['username']
+    password = data['password']  # Salattu salasana
+    print(f"Received Jopox credentials: {username}, {password}")
+    
+    print("db engine url", db.engine.url)
+    
+
+    # Salataan salasana
+    encrypted_password = cipher_suite.encrypt(password.encode('utf-8'))
+    print(f"Encrypted password: {encrypted_password}")
+    # Tallennetaan käyttäjän tiedot tietokantaan
+    user = db.session.get(User, current_user.id)  # Oletetaan, että käyttäjän tiedot haetaan sessiosta
+    user.jopox_username = username
+    user.jopox_password = encrypted_password
+
+    print(f"password saved: {user.jopox_password}")
+    print(f"username saved: {user.jopox_username}")
+
+
+    db.session.commit()
+    print(f"Jopox credentials saved successfully for user {current_user.username}.")
+    return jsonify({'message': 'Jopox credentials saved successfully.'}), 200
 
 #select the jopox team id for user account
 @app.route('/dashboard/select_jopox_team', methods=['POST'])
+
 @login_required
 def select_jopox_team():
     data = request.get_json()
@@ -459,23 +496,22 @@ def get_all_schedules():
 
         # Sort all games by sortable date and time
         managed_games = sorted(managed_games, key=lambda game: (game['SortableDate'], game['Time']))
-        print("managed_games:", managed_games[:1])
+        app.logger.debug(f"Managed games fetched: {len(managed_games)} games")
         
         # Store the games in the database if not already there based on game id
         updated_games = []  # List of updated games
+        added_games = []  # List of added games
 
         for game in managed_games:
             try:
-                print("adding game to db:", game)
+                app.logger.debug(f"Checking if game {game['Game ID']} already exists")
                 # Check if the game already exists
                 existing_game = TGamesdb.query.filter_by(game_id=game['Game ID']).first()
-                print("existing_game:", existing_game)
 
                 if existing_game:
                     # Compare existing game and new game
                     changes = {}
 
-                    # Check if the date has changed
                     if existing_game.date != game['Date']:
                         changes['date'] = {'old': existing_game.date, 'new': game['Date']}
                         existing_game.date = game['Date']
@@ -489,6 +525,7 @@ def get_all_schedules():
                     if existing_game.location != game['Location']:
                         changes['location'] = {'old': existing_game.location, 'new': game['Location']}
                         existing_game.location = game['Location']
+
 
                     # If there are any changes, add this game to the updated games list
                     if changes:
@@ -514,29 +551,39 @@ def get_all_schedules():
                         type=game['Type'],
                         sortable_date=game['SortableDate']
                     )
-                    print(f"Attempting to add new game: {game['Game ID']}")
-                    db.session.add(new_game)
+                    if new_game:
+                        added_games.append({
+                            'game date': new_game.date,
+                            'game id': new_game.game_id
+                        })
 
+                    db.session.add(new_game)
+            
             except Exception as e:
                 app.logger.error(f"Error processing game {game['Game ID']}: {str(e)}")
 
-        # Commit the changes if any games have been updated or added
-        if updated_games:
+        try:
             db.session.commit()
-            print(f"Updated games: {updated_games}")
+            app.logger.debug("Commit successful.")
+        except Exception as e:
+            app.logger.error(f"Error committing changes: {str(e)}")
+            db.session.rollback()
+
+        if updated_games:
+            app.logger.debug(f"Updated games: {updated_games}")
+        if added_games:
+            app.logger.debug(f"Added games: {added_games}")
 
         return jsonify({
             "managed_games": managed_games,
             "updated_games": updated_games,
-            "message": "Games processed successfully"
+            "message": f"Games processed successfully. Added games: {len(added_games)}, Updated games: {len(updated_games)}"
         }), 200
 
     except Exception as e:
         db.session.rollback()  # Rollback in case of any error in the outer block
         app.logger.error(f"Error fetching schedules: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
-
-    
 
         # Palautetaan muutokset frontendille
 
@@ -590,10 +637,16 @@ def update_jopox():
     print("Game info:", game)
     print("Jopox info:", best_match)
 
-    username = "malkamaki.antti@gmail.com"
-    password = "zorfyj-rymje5-hycsyX"
+    username = "{current_user.jopox_username}"
+    #decrypt password from database
+    encrypted_password = current_user.jopox_password
+    decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
+    password = "{decrypted_password}"
+    print("Username:", username)
+    print("Password:", password)
 
     if not best_match:
+        pass
         print("No best match found.")
         try: 
             scraper = JopoxScraper(username, password)
