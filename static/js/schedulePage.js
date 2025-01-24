@@ -14,6 +14,21 @@ const app = Vue.createApp({
             selectedGame: null, // To store the game details for the modal
             showPlayedGames: false, // Controls whether played games are shown 
             showUpdateJopoxModal: false, // Päivitä Jopox -modalin näkyvyys
+            form: {
+                league_selected: '',
+                league_options: [],
+                event_selected: '',
+                event_options: [],
+                SiteNameLabel: '',
+                HomeTeamTextbox: '',
+                guest_team: '',
+                AwayCheckbox: false,
+                game_location: '',
+                game_date: '',
+                game_start_time: '',
+                game_duration: '',
+                game_public_info: ''
+            }
         };
     },
     methods: {
@@ -393,7 +408,41 @@ const app = Vue.createApp({
         
         openUpdateModal(game) {
             this.selectedGame = game; // Tallenna valittu peli
-            this.showUpdateJopoxModal = true; // Näytä Päivitä Jopox -modal
+        
+            // Lähetä backendiin pyyntö hakea olemassa olevat jopox-tiedot best matchin uid:llä
+            const uid = game.best_match.Uid;
+            console.log('haetaan tietoja uid:llä:', uid);
+            fetch(`/api/jopox_form_information?uid=${uid}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Populate the form with the fetched data
+                this.form.league_selected = data.league_selected || '';
+                this.form.league_options = data.league_options || []; 
+                if (this.form.league_selected && !this.form.league_options.includes(this.form.league_selected)) {
+                    this.form.league_options.push(this.form.league_selected);
+                }
+                    
+                this.form.event_selected = data.event_selected || '';
+                this.form.event_options = data.event_options || [];
+                this.form.SiteNameLabel = data.SiteNameLabel || '';
+                this.form.HomeTeamTextbox = data.HomeTeamTextbox || '';
+                this.form.guest_team = data.guest_team || '';
+                this.form.AwayCheckbox = data.AwayCheckbox || false;
+                this.form.game_location = data.game_location || '';
+                this.form.game_date = data.game_date || '';
+                this.form.game_start_time = data.game_start_time || '';
+                this.form.game_duration = data.game_duration || '';
+                this.form.game_public_info = data.game_public_info || '';
+
+                console.log('Fetched Jopox data:', data);
+                this.showUpdateJopoxModal = true; // Näytä Päivitä Jopox -modal
+            })
+            .catch(error => {
+                console.error('Error fetching Jopox data:', error);
+            });
         },
     
         // Lähetä tiedot backendille päivitystä varten
@@ -401,8 +450,7 @@ const app = Vue.createApp({
             const payload = {
                 game: this.selectedGame, // Tulospalvelun tiedot
                 best_match: this.selectedGame.best_match, // Jopoxin tiedot
-            };
-    
+            };        
             fetch('/api/update_jopox', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -433,6 +481,12 @@ const app = Vue.createApp({
             return '';
         },
 
+        submitForm() {
+            // Handle form submission logic here
+            console.log('Form submitted:', this.form);
+            this.closeUpdateModal();
+        },
+        
     },
     
     computed: {
@@ -455,10 +509,12 @@ const app = Vue.createApp({
     mounted() {
         this.fetchTeams(); // Fetch teams first
         this.fetchGamesAndCompare(); // Fetch games and run comparison
-
     },
 
 template: 
+
+
+
 `
 <div class="container my-4">
     <div>
@@ -596,17 +652,109 @@ template:
     <p v-html="popupReason"></p>
 </div>
 
+<!-- Add this to your HTML or Vue template -->
 <div v-if="showUpdateJopoxModal" class="modal-window2">
     <div class="modal-content">
-        <span class="modal-close" @click="closeUpdateModal">&times;</span>
+        <span class="close" @click="closeUpdateModal">&times;</span>
         <h2>Päivitä Jopox</h2>
-        <p><strong>Ottelun tiedot:</strong></p>
-        <pre>Tulospalvelun game id{{ selectedGame?.['Game ID'] }}</pre>
-        <p><strong>Jopoxin tiedot:</strong></p>
-        <pre>{{ selectedGame?.best_match }}</pre>
-        <button @click="updateJopox">Lähetä päivitys</button>
+        <form id="jpx-details-form">
+            <!-- Sarja -->
+            <div>
+                <label for="league">Sarja:</label>
+                <select id="league" v-model="form.league_selected">
+                    <!-- Luo vaihtoehdot ja valitse oikea oletusarvo -->
+                    <option v-for="option in form.league_options" :key="option" :value="option">
+                        {{ option }}
+                    </option>
+                </select>
+            </div>
+
+            <!-- Kotijoukkue -->
+            <div>
+                <label for="home_team">Joukkue: {{form.SiteNameLabel}}</label>
+                <input type="text" id="home_team" v-model="form.HomeTeamTextbox" placeholder="Kotijoukkue">
+            </div>
+
+            <!-- Vastustaja -->
+            <div>
+                <label for="guest_team">Vastustaja:</label>
+                <input type="text" id="guest_team" v-model="form.guest_team" placeholder="Vastustaja">
+            </div>
+
+            <!-- Vierasottelu -->
+            <div>
+                <label for="away_game">Vierasottelu:</label>
+                <input type="checkbox" id="away_game" v-model="form.AwayCheckbox">
+            </div>
+
+            <!-- Paikka -->
+            <div>
+                <label for="location">Paikka:</label>
+                <input type="text" id="location" v-model="form.game_location" placeholder="Paikka">
+            </div>
+
+            <!-- Päivämäärä -->
+            <div>
+                <label for="date">Pvm:</label>
+                <input type="text" id="date" v-model="form.game_date" placeholder="Pvm">
+            </div>
+
+            <!-- Aloitusaika -->
+            <div>
+                <label for="start_time">Aloitusaika:</label>
+                <input type="text" id="start_time" v-model="form.game_start_time" placeholder="Aloitusaika">
+            </div>
+
+            <!-- Kesto -->
+            <div>
+                <label for="duration">Kesto:</label>
+                <input type="text" id="duration" v-model="form.game_duration" placeholder="Kesto (min)">
+            </div>
+
+            <!-- Ennakkoinfo -->
+            <label for="public_info">Ennakkoinfo:</label>
+            <div 
+            id="public_info"
+            contenteditable="true"
+            v-html="form.game_public_info" 
+            @input="updateContent"
+            class="editable-content"
+            >
+            </div> 
+           
+
+            <button type="button" @click="submitForm">Päivitä</button>
+        </form>
     </div>
 </div>
+
+<script>
+export default {
+  data() {
+    return {
+      form: {
+        game_public_info: '' // HTML-sisältö
+      }
+    };
+  },
+  methods: {
+    // Kun käyttäjä muokkaa sisältöä, päivitetään Vue data
+    updateContent(event) {
+      this.form.game_public_info = event.target.innerHTML;
+    }
+  }
+};
+</script>
+<style>
+.editable-content {
+  border: 1px solid #ccc;
+  padding: 10px;
+  min-height: 100px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  background-color: #f9f9f9;
+}
+</style>
 
 
 

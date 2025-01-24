@@ -356,20 +356,35 @@ h1,h2 {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: white;
-    border: 1px solid #ccc;
-    padding: 20px;
+    background-color: #dfeae2;
+    border: 1px solid #35463a;
+    padding: 0.8rem;
     z-index: 1000;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
+    color: #35463a
 }
+
 
 .modal-content {
-    padding: 20px;
+    padding: 0.4rem;
     max-width: 500px;
-    text-align: center;
+    text-align: left;
 }
 
+.modal-content label {
+    padding-right: 0.2rem; /* Esimerkki paddingista oikealla puolella */
+    font-weight: bold; /* Esimerkki, tee labelista lihavoitu */
+    font-size: 12px; /* Esimerkki fonttikoko */
+    display: inline-block; /* Varmistaa, että labelit eivät vie koko tilaa */
+    margin-bottom: 8px; /* Lisää väli labelin ja sen sisällön väliin */
+}
+
+#public_info {
+    font-size: 12px;
+    border: 1px solid #35463a; /* Set border width, style, and color */
+    padding: 0.5rem;
+}
 
 /* Modal Animation */
 @keyframes slideIn {

@@ -1,7 +1,7 @@
+import os
 import requests
 from bs4 import BeautifulSoup
 import logging
-
 
 # Configure logging to a file
 logging.basicConfig(
@@ -11,6 +11,7 @@ logging.basicConfig(
     filemode='w'
 )
 
+    
 class JopoxScraper:
     def __init__(self, username, password):
         self.login_url = "https://s-kiekko-app.jopox.fi/login"
@@ -141,5 +142,81 @@ class JopoxScraper:
             logging.info("Game added successfully or no error message received.")
             return "Game added successfully!"
 
+    def j_game_details(self, j_game_id):
 
-    
+        try:
+            j_game_url = f"https://hallinta3.jopox.fi//Admin/HockeyPox2020/Games/Game.aspx?gId={j_game_id}"
+            response = self.session.get(j_game_url, headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                    "Referer": j_game_url,
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                })
+        
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            print('parsing...')
+            #save parsed data to log
+            logging.debug("Parsing game details: %s", soup)
+
+            league_dropdown = soup.find('select', {'id': 'LeagueDropdownList'})
+            if league_dropdown:
+                league_selected_tag = league_dropdown.find('option', selected=True)
+                league_selected = league_selected_tag.text.strip() if league_selected_tag else ''
+                league_options = [option.text.strip() for option in league_dropdown.find_all('option') if not option.get('selected')]
+                print('found league options')
+            else:
+                league_selected = ''
+                league_options = []
+                print('league dropdown not found')
+            event_selected_tag = soup.find('select', {'id': 'EventDropDownList'}).find('option', selected=True)
+            event_selected = event_selected_tag.text.strip() if event_selected_tag else ''
+            event_options = [option.text.strip() for option in soup.find('select', {'id': 'EventDropDownList'}).find_all('option') if not option.get('selected')]
+            print('found event options')
+            SiteNameLabel_tag = soup.find('span', {'id': 'MainContentPlaceHolder_GamesBasicForm_SitenameLabel'})
+            SiteNameLabel = SiteNameLabel_tag.text.strip() if SiteNameLabel_tag else ''
+            print('found sitename')
+            HomeTeamTextbox_tag = soup.find('input', {'id': 'HomeTeamTextBox'})
+            HomeTeamTextbox = HomeTeamTextbox_tag.get('value').strip() if HomeTeamTextbox_tag else ''
+            print('found hometeam')
+            AwayCheckbox_tag = soup.find('input', {'id': 'AwayCheckbox'})
+            AwayCheckbox = AwayCheckbox_tag.get('checked') if AwayCheckbox_tag else False
+            AwayCheckbox = True if AwayCheckbox else False
+            print('found awaycheckbox')
+            guest_team_tag = soup.find('input', {'id': 'GuestTeamTextBox'})
+            guest_team = guest_team_tag.get('value').strip() if guest_team_tag else ''
+            print('found guestteam')
+            game_location_tag = soup.find('input', {'id': 'GameLocationTextBox'})
+            game_location = game_location_tag.get('value').strip() if game_location_tag else ''
+            print('found location')
+            game_date_tag = soup.find('input', {'id': 'GameDateTextBox'})
+            game_date = game_date_tag.get('value').strip() if game_date_tag else ''
+            print('found date')
+            game_start_time_tag = soup.find('input', {'id': 'GameStartTimeTextBox'})
+            game_start_time = game_start_time_tag.get('value').strip() if game_start_time_tag else ''
+            print('found start time')
+            game_duration_tag = soup.find('input', {'id': 'GameDurationTextBox'})
+            game_duration = game_duration_tag.get('value').strip() if game_duration_tag else ''
+            print('found duration')
+            game_public_info_tag = soup.find('textarea', {'id': 'GamePublicInfoTextBox'})
+            game_public_info = game_public_info_tag.text.strip() if game_public_info_tag else ''
+            print('found public info')
+            # Return the parsed data
+            return {
+                "league_selected": league_selected,
+                "league_options": league_options,
+                "event_selected": event_selected,
+                "event_options": event_options,
+                "SiteNameLabel": SiteNameLabel,
+                "HomeTeamTextbox": HomeTeamTextbox,
+                "guest_team": guest_team,
+                "AwayCheckbox": AwayCheckbox,
+                "game_location": game_location,
+                "game_date": game_date,
+                "game_start_time": game_start_time,
+                "game_duration": game_duration,
+                "game_public_info": game_public_info
+            }
+        
+        except Exception as e:
+            logging.error("Error parsing game details: %s", e)
+            raise e

@@ -637,11 +637,11 @@ def update_jopox():
     print("Game info:", game)
     print("Jopox info:", best_match)
 
-    username = "{current_user.jopox_username}"
+    username = current_user.jopox_username
     #decrypt password from database
     encrypted_password = current_user.jopox_password
     decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
-    password = "{decrypted_password}"
+    password = decrypted_password
     print("Username:", username)
     print("Password:", password)
 
@@ -691,7 +691,31 @@ def update_jopox():
     else:
         print("Skippasi tänne.")
 
+@app.route('/api/jopox_form_information')
+def jopox_form_information():
+    
 
+    j_game_id = request.args.get('uid')  # Extract the uid from query parameters
+    username = current_user.jopox_username
+    #decrypt password from database
+    encrypted_password = current_user.jopox_password
+    decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
+    password = decrypted_password
+
+    scraper = JopoxScraper(username, password)
+    print('starting scraper')
+
+    if scraper.login() and scraper.access_admin():
+        try:
+            print('scraping jopox form information')
+            jopox_form_information = scraper.j_game_details(j_game_id)
+            print('jopox form:', jopox_form_information)
+            return jopox_form_information
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    
 @app.route('/jopox_ottelut')
 @login_required
 def jopox_ottelut():
