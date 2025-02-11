@@ -1,14 +1,15 @@
 from fuzzywuzzy import fuzz
 from datetime import datetime, timedelta
 import logging
+import re
 
 def parse_sortable_date(date_string):
     """Parse SortableDate string into a date object."""
     try:
         # Remove GMT and parse only the date part
-        clean_date = date_string.replace(' GMT', '')
-        parsed_datetime = datetime.strptime(clean_date, '%a, %d %b %Y %H:%M:%S')
-        return parsed_datetime.date()  # Return only the date part
+        clean_date = date_string.replace(' GMT', '')  # Remove 'GMT'
+        parsed_datetime = datetime.strptime(clean_date, '%a, %d %b %Y %H:%M:%S')  # Correct format
+        return parsed_datetime  # Return the complete datetime object
     except ValueError as e:
         raise ValueError(f"Error parsing SortableDate: {date_string}") from e
 
@@ -16,25 +17,25 @@ def parse_sortable_date(date_string):
 def compare_games(jopox_games, tulospalvelu_games):
     """Compare games from Jopox and Tulospalvelu.fi datasets."""
     # Initialize logging
-    logging.basicConfig(
-        level=logging.INFO,
-        filename="gamecomparison.log",
-        filemode='w'
-    )
-
     logger = logging.getLogger(__name__)
+    
     
     results = []
     
+    #print("jopox_games comparisonissa:", jopox_games)
+    
+
     managed_games = [managed_game for managed_game in tulospalvelu_games if managed_game['Type'] != 'follow']
     logger.info("Total managed games: %d", len(managed_games))
     logger.info("Total Jopox games: %d", len(jopox_games))
-    
+
     for t_game in managed_games:
-        logger.info("Processing Tulospalvelu game: %s", t_game)
         
+        #logger.info("Processing Tulospalvelu game: %s", t_game)
+        
+        # Parse date from Tulospalvelu game
         try:
-            t_game_date = parse_sortable_date(t_game['SortableDate'])
+            t_game_datetime = parse_sortable_date(t_game['SortableDate'])
         except ValueError:
             logger.error("Invalid SortableDate format for game: %s", t_game)
             results.append({
@@ -46,14 +47,12 @@ def compare_games(jopox_games, tulospalvelu_games):
             continue
 
         # Extract T_Game details
-        date = t_game_date.strftime('%Y-%m-%d')
+        date = t_game_datetime.strftime('%Y-%m-%d')
         time = t_game['Time']
         location = t_game['Location'].lower()
         small_area_game = t_game['Small Area Game'] == '1'
-        teams = f"{t_game['Home Team']} - {t_game['Away Team']}".lower()
-
-        #logger.info("Extracted details: date=%s, time=%s, location=%s, teams=%s, small_area_game=%s",
-        #            date, time, location, teams, small_area_game)
+        home_team = t_game['Home Team'].lower() 
+        away_team = t_game['Away Team'].lower()
 
         if time == "00:00":
             time = "Not scheduled"
@@ -62,29 +61,26 @@ def compare_games(jopox_games, tulospalvelu_games):
         best_score = 0
         best_reason = ""
         color_score = 0  # Track discrepancies for color scoring
-        warning_reason = None
+        warning_reason = ""
 
         for j_game in jopox_games:
-            #logger.info("Comparing with Jopox game: %s", j_game)
-
             try:
-                j_game_date = datetime.strptime(j_game['Pvm'], '%Y-%m-%d').date()
+                # Parse the sortable_date field from Jopox game
+                j_game_datetime = datetime.strptime(j_game['sortable_date'], '%Y-%m-%d %H:%M')
             except ValueError:
-                logger.error("Invalid Jopox date format: %s", j_game['Pvm'])
+                logger.error("Invalid sortable_date format: %s", j_game['sortable_date'])
                 continue
 
-            if date != j_game_date.strftime('%Y-%m-%d'):
-                #logger.info("Dates do not match: Tulospalvelu %s vs Jopox %s", date, j_game_date)
+            # Check if the date matches between Tulospalvelu and Jopox
+            if date != j_game_datetime.strftime('%Y-%m-%d'):
                 continue
 
             # Extract J_Game details
-            j_time = j_game['Aika'].split(' - ')[0]
-            j_location = j_game['Paikka'].lower()
-            j_teams = j_game['Tapahtuma'].split(":")[-1].lower()
-
-            #logger.info("Extracted Jopox details: date=%s, time=%s, location=%s, teams=%s",
-            #            j_game_date, j_time, j_location, j_teams)
-
+            j_time = j_game['aika']
+            j_location = j_game['paikka'].lower()
+            j_team_home = j_game['joukkueet'].split(' - ')[0].lower()
+            j_team_away = j_game['joukkueet'].split(' - ')[1].lower()
+            
             # Convert times
             try:
                 t_game_time = datetime.strptime(time, '%H:%M') if time != "Not scheduled" else None
@@ -103,6 +99,10 @@ def compare_games(jopox_games, tulospalvelu_games):
                 score += 30
                 reason += "Ottelun alkamisaika ei ole määritetty Tulospalvelussa. Jopox-aika vastaa oletusta (07:00). "
                 color_score_temp += 1
+            elif time == "07:00" and j_time == "07:00":
+                score += 30
+                reason += "Ottelun alkamisaika Tulospalvelussa on 07:00. Jopox-aika vastaa oletusta (07:00). "
+                color_score_temp += 1                
             elif t_game_time and t_game_time.time() == j_game_time.time():  # Exact match
                 score += 50
             elif t_game_time and (t_game_time - timedelta(hours=1)).time() == j_game_time.time():  # Arrival time
@@ -112,46 +112,78 @@ def compare_games(jopox_games, tulospalvelu_games):
             else:
                 reason += f"Ottelun oikea alkamisaika on klo: {time}, mutta Jopoxissa se on klo {j_time}. "
                 color_score_temp += 1
-            #logger.info("Time matching: score=%d, reason=%s", score, reason)
 
             # Location Matching
             location_match_score = fuzz.partial_ratio(location, j_location)
-            if location_match_score > 60:
+            if location_match_score > 80:
                 score += 30
+            # find number from string location
+
+                t_location_number = re.findall(r'\d+', location)
+                j_location_number = re.findall(r'\d+', j_location)
+
+                if t_location_number and j_location_number and t_location_number[0] != j_location_number[0]:
+                    score -= 20
+                    reason += f"Ottelu pelataan paikassa: {location}, mutta Jopoxiin on merkattu: {j_location}. "
+                
             else:
                 reason += f"Ottelu pelataan paikassa: {location}, mutta Jopoxiin on merkattu: {j_location}. "
                 color_score_temp += 1
-            #logger.info("Location matching: score=%d, match_score=%d, reason=%s", score, location_match_score, reason)
 
-            # Team Matching
-            team_match_score = fuzz.partial_ratio(teams, j_teams)
-            if team_match_score > 60:
-                score += 30
+            home_team_match_score = fuzz.partial_ratio(home_team, j_team_home)
+            if home_team_match_score > 90:
+                score += 15
             else:
-                reason += f"Team mismatch ({teams} vs {j_teams}). "
+                reason += f"Kotijoukkueen pitäisi olla {home_team}"
                 color_score_temp += 1
-            #logger.info("Team matching: score=%d, match_score=%d, reason=%s", score, team_match_score, reason)
+
+            away_team_match_score = fuzz.partial_ratio(away_team, j_team_away)
+            if away_team_match_score > 90:
+                score += 15
+
+            else:
+                reason += f"Vierasjoukkueen pitäisi olla {away_team}"
+                color_score_temp += 1
+
 
             # Small Area Game Check
             if small_area_game:
-                if 'Lisätiedot' in j_game and 'pienpeli' not in j_game['Lisätiedot'].lower():
-                    reason += "Kyseessä on pienpeli, mutta siitä ei ole mainintaa Jopoxissa. "
-                    color_score_temp += 1
+                if 'Lisätiedot' in j_game and j_game['Lisätiedot']:  # Tarkista, että kenttä on olemassa ja ei tyhjä
+                    if 'pienpeli' not in j_game['Lisätiedot'].lower():
+                        reason += "Kyseessä on pienpeli, mutta siitä ei ole mainintaa Jopoxissa. "
+                        color_score_temp += 1
+                    elif 'pienpeli' in j_game['Lisätiedot'].lower():
+                        score += 20
+                #else:
+                    #logger.info("Lisätiedot ei ole saatavilla j_game:ssa: %s", j_game)
+
+            if not small_area_game:
+                if 'Lisätiedot' in j_game and j_game['Lisätiedot']:
+                    if 'pienpeli' in j_game['Lisätiedot'].lower():
+                        reason+="Kyseessä ei ole pienpeli, vaikka Jopoxissa se on mainittu."
+                        score -=10
 
             # Update the best match
             if score > best_score:
-                #logger.info("New best match found: %s with score %d", j_game, score)
                 best_score = score
                 best_match = j_game
                 best_reason = reason
                 color_score = color_score_temp
+                
+                #logging.info('BEST MATCH UPDATED WITH COLOR SCORE: %s', color_score)
+                #logging.info('BEST MATCH: %s', j_game)
+                
             
-            if best_match is None or color_score > 2:
+            if best_match is None or best_score < 85 :
                 warning_reason = (
                     "En ole varma löysinkö oikean ottelun."
                     "Tarkista Jopoxista, että päivämäärä, joukkueiden nimet ja alkamisaika vastaavat tulospalvelua. "
                     "Esimerkiksi joukkueiden nimien tai pelipaikan lyhentäminen voi aiheuttaa ongelmia."
                 )
+                #logging.info('WARNING ADDED TO GAME: %s', t_game)
+
+            elif best_match and best_score > 100:
+                warning_reason = None
 
         # Determine match status
         if color_score == 0 and best_match:
@@ -161,11 +193,10 @@ def compare_games(jopox_games, tulospalvelu_games):
             
         elif color_score > 0 and best_match:
             match_status = 'yellow'
+            jopox_games.remove(best_match)
         else:
             match_status = 'red'
             best_reason = "En löytänyt ottelua Jopoxista."
-
-        #logger.info("Final match status: %s, reason: %s", match_status, best_reason)
 
         results.append({
             'game': t_game,
@@ -175,5 +206,4 @@ def compare_games(jopox_games, tulospalvelu_games):
             'best_match': best_match,
         })
 
-    #logger.info("Comparison completed. Total results: %d", len(results))
     return results

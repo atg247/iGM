@@ -50,7 +50,7 @@ def get_jopox_events():
     return response.json
 
 def hae_kalenteri(team_id):
-    events_data = []
+    descriptions = []
     print("jopox_team_id------------------>:", team_id)
     ics_url = f'https://ics.jopox.fi/hockeypox/calendar/ical.php?ics=true&e=t&cal=U122013_{team_id}'  # Replace with the actual ICS URL
 
@@ -70,28 +70,20 @@ def hae_kalenteri(team_id):
     for event in calendar.events:
         # Extract details about each event
         event_name = event.name
-        start_date = event.begin.format('YYYY-MM-DD') if event.begin else 'Unknown Start date'
-        start_time = event.begin.format('HH:mm') if event.begin else 'Unknown Start time'
-        end_time = event.end.format('HH:mm') if event.end else 'Unknown End'
-        location = event.location if event.location else 'Unknown Location'
         description = event.description if event.description else 'No Description'
         uid = event.uid if event.uid else 'No UID'
 
         if "Ottelu" in event_name:
             # Append event data to list
-            events_data.append({
+            descriptions.append({
                 
-                "Pvm": start_date,
-                "SortableDate": start_date,  # Date in sortable format (YYYY-MM-DD)
                 "Tapahtuma": event.name,
-                "Aika": f"{start_time} - {end_time}",
-                "Paikka": location,
                 "Lisätiedot": description,  # Assuming description contains level information
                 "Uid": uid.split('_')[-1]
             })
 
-    if events_data:
-        return events_data
+    if descriptions:
+        return descriptions
     else:
         print("No events found in the ICS file.")
         return []

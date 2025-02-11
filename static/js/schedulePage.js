@@ -28,7 +28,9 @@ const app = Vue.createApp({
                 game_start_time: '',
                 game_duration: '',
                 game_public_info: ''
-            }
+            },
+            updatedFields: {} // Will hold the fields that have been updated
+
         };
     },
     methods: {
@@ -61,13 +63,16 @@ const app = Vue.createApp({
                 } else {
                     console.error('Unexpected Tulospalvelu response:', tulospalveluData);
                 }
-                                // Send data to backend for comparison
-                return fetch('/api/compare', {
+
+                //inspect jopoxGames
+                console.log('Jopox data:', jopoxGames);
+            // Send data to backend for comparison
+            return fetch('/api/compare', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         tulospalvelu_games: this.managedGames, // Only unique and managed games sent for comparison
-                        jopox_games: jopoxGames.data, // Assuming Jopox data is in `.data`
+                        jopox_games: jopoxGames, // Assuming Jopox data is in `.data`
                     }),
                 });
             })
@@ -410,7 +415,7 @@ const app = Vue.createApp({
             this.selectedGame = game; // Tallenna valittu peli
         
             // Lähetä backendiin pyyntö hakea olemassa olevat jopox-tiedot best matchin uid:llä
-            const uid = game.best_match.Uid;
+            const uid = game.best_match.uid;
             console.log('haetaan tietoja uid:llä:', uid);
             fetch(`/api/jopox_form_information?uid=${uid}`, {
                 method: 'GET',
@@ -418,13 +423,14 @@ const app = Vue.createApp({
             })
             .then(response => response.json())
             .then(data => {
+
                 // Populate the form with the fetched data
                 this.form.league_selected = data.league_selected || '';
                 this.form.league_options = data.league_options || []; 
                 if (this.form.league_selected && !this.form.league_options.includes(this.form.league_selected)) {
                     this.form.league_options.push(this.form.league_selected);
                 }
-                    
+                console.log('data:',data)    
                 this.form.event_selected = data.event_selected || '';
                 this.form.event_options = data.event_options || [];
                 this.form.SiteNameLabel = data.SiteNameLabel || '';
@@ -439,15 +445,118 @@ const app = Vue.createApp({
 
                 console.log('Fetched Jopox data:', data);
                 this.showUpdateJopoxModal = true; // Näytä Päivitä Jopox -modal
+                this.compareUpdates(game, data);
+
             })
+
             .catch(error => {
                 console.error('Error fetching Jopox data:', error);
             });
+
+
         },
     
+        compareUpdates(game, data) {
+            const tulospalveluGame = game; // Assuming this is the managed game from Tulospalvelu
+            const jopoxData = data|| {}; // Assuming the best match from Jopox
+            console.log('game.best_match:', data)
+            // Reset updatedFields before comparing
+            this.updatedFields = {};
+
+            // Compare fields and mark them as updated if they differ
+            if (tulospalveluGame.Time !== data.game_start_time) {
+                console.log('ajat eivät täsmää!')
+                this.form.game_start_time = tulospalveluGame.Time;
+                this.updatedFields.game_start_time = true; // Mark as updated
+            } else {
+                this.form.game_start_time = data.game_start_time;
+            }
+
+            if (tulospalveluGame.Location !== data.game_location) {
+                this.form.game_location = tulospalveluGame.Location;
+                this.updatedFields.game_location = true; // Mark as updated
+            } else {
+                this.form.game_location = data.game_location;
+            }
+
+            console.log('game:', game)
+                        
+            // Check if HomeTeamTextbox text is found within Home Team from the game
+            if (data.AwayCheckbox == false){
+                if (!game['Home Team'].toLowerCase().includes(data.HomeTeamTextbox.toLowerCase())) {
+                    console.log('Home Team:', game['Home Team'], 'Jopox:', data.HomeTeamTextbox.toLowerCase());
+                    this.updatedFields.HomeTeamTextbox = true; // Mark this field as updated
+                    alert('Tarkasta onko peliryhmä oikea!');
+                }
+            }
+
+            if (data.AwayCheckbox == true){
+                if (!game['Away Team'].toLowerCase().includes(data.HomeTeamTextbox.toLowerCase())) {
+                    console.log('Away Team:', game['Away Team'], 'Jopox:', data.HomeTeamTextbox.toLowerCase());
+                    this.updatedFields.HomeTeamTextbox = true; // Mark this field as updated
+                    alert('Tarkasta onko peliryhmä oikea!');
+                }
+            }
+
+            if (data.AwayCheckbox == false) {
+                if (tulospalveluGame['Away Team'].trim() !== data.guest_team.trim()) {
+                    this.form.guest_team = tulospalveluGame['Away Team'];
+                    console.log('T:', tulospalveluGame['Away Team'], 'J:', data.guest_team);
+                    this.updatedFields.guest_team = true;
+                }
+                else {
+                    this.form.guest_team = data.guest_team;
+                }
+            }
+            
+            if (data.AwayCheckbox == true) {
+                if (tulospalveluGame['Home Team'].trim() !== data.guest_team.trim()) {
+                    this.form.guest_team = tulospalveluGame['Home Team'];
+                    console.log('T:', tulospalveluGame['Home Team'], 'J:', data.guest_team);
+                    this.updatedFields.guest_team = true;
+                } 
+                else {
+                    this.form.guest_team = data.guest_team;
+                }
+            }
+    
+            console.log('Updated fields:', this.updatedFields)
+            // Populate other form fields as needed (league, event, etc.)
+        },
+
         // Lähetä tiedot backendille päivitystä varten
         updateJopox() {
-            const payload = {
+
+            const formWithStringCheckbox = {
+                ...this.form,
+                AwayCheckbox: this.form.AwayCheckbox ? 'on' : ''
+            };
+
+            const payload = { 
+                game: this.selectedGame, // Tulospalvelun tiedot
+                best_match: this.selectedGame.best_match, // Jopoxin tiedot
+                updatedFields: this.updatedFields, // Päivitetyt kentät
+                form: formWithStringCheckbox // Lomakkeen tiedot with string AwayCheckbox
+            };
+            console.log('Payload:', payload)
+            fetch('/api/update_jopox', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Jopox-päivitys onnistui: ' + data.message);
+                this.closeUpdateModal(); // Sulje modal päivityksen jälkeen
+            })
+            .catch(error => {
+                console.error('Virhe Jopox-päivityksessä:', error);
+                alert('Päivityksessä tapahtui virhe.');
+            });
+        },
+
+        createJopox() {
+            const payload = { 
                 game: this.selectedGame, // Tulospalvelun tiedot
                 best_match: this.selectedGame.best_match, // Jopoxin tiedot
             };        
@@ -483,7 +592,7 @@ const app = Vue.createApp({
 
         submitForm() {
             // Handle form submission logic here
-            console.log('Form submitted:', this.form);
+            this.updateJopox()
             this.closeUpdateModal();
         },
         
@@ -630,9 +739,10 @@ template:
             <!-- Expanded Section for Jopox Details -->
             <div v-if="expandedGameId === game['Game ID']" class="game-details">
                 <h2>Jopox tapahtuma:</h2>
-                <p><strong>{{ game.best_match?.Tapahtuma|| 'Not available' }}</strong></p>
-                <p><strong>Paikka:</strong> {{ game.best_match?.Paikka || 'Not available' }}</p>
-                <p><strong>Klo:</strong> {{ game.best_match?.Aika || 'Not available' }}</p>
+                <p><strong>{{ game.best_match?.joukkueet|| 'Not available' }}</strong></p>
+                <p><strong>Paikka:</strong> {{ game.best_match?.paikka || 'Not available' }}</p>
+                <p><strong>Pvm:</strong> {{ game.best_match?.pvm || 'Not available' }}</p>
+                <p><strong>Klo:</strong> {{ game.best_match?.aika || 'Not available' }}</p>
                 <p><strong>Lisätiedot:</strong> {{ game.best_match?.Lisätiedot || 'No additional details available' }}</p>
 
                 <div v-if="game.warning" class="warning-message">
@@ -670,13 +780,13 @@ template:
             </div>
 
             <!-- Kotijoukkue -->
-            <div>
-                <label for="home_team">Joukkue: {{form.SiteNameLabel}}</label>
+            <div :class="{'updated-field': updatedFields.HomeTeamTextbox}">
+                <label for="home_team">{{form.SiteNameLabel}}</label>
                 <input type="text" id="home_team" v-model="form.HomeTeamTextbox" placeholder="Kotijoukkue">
             </div>
 
             <!-- Vastustaja -->
-            <div>
+            <div :class="{'updated-field': updatedFields.guest_team}">
                 <label for="guest_team">Vastustaja:</label>
                 <input type="text" id="guest_team" v-model="form.guest_team" placeholder="Vastustaja">
             </div>
@@ -688,19 +798,19 @@ template:
             </div>
 
             <!-- Paikka -->
-            <div>
+            <div :class="{'updated-field': updatedFields.game_location}">
                 <label for="location">Paikka:</label>
                 <input type="text" id="location" v-model="form.game_location" placeholder="Paikka">
             </div>
 
             <!-- Päivämäärä -->
-            <div>
+            <div :class="{'updated-field': updatedFields.game_date}">
                 <label for="date">Pvm:</label>
                 <input type="text" id="date" v-model="form.game_date" placeholder="Pvm">
             </div>
 
             <!-- Aloitusaika -->
-            <div>
+            <div :class="{'updated-field': updatedFields.game_start_time}">
                 <label for="start_time">Aloitusaika:</label>
                 <input type="text" id="start_time" v-model="form.game_start_time" placeholder="Aloitusaika">
             </div>

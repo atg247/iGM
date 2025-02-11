@@ -362,7 +362,8 @@ h1,h2 {
     z-index: 1000;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
-    color: #35463a
+    color: #35463a;
+    align-items: center;
 }
 
 
@@ -370,6 +371,7 @@ h1,h2 {
     padding: 0.4rem;
     max-width: 500px;
     text-align: left;
+
 }
 
 .modal-content label {
@@ -378,6 +380,11 @@ h1,h2 {
     font-size: 12px; /* Esimerkki fonttikoko */
     display: inline-block; /* Varmistaa, että labelit eivät vie koko tilaa */
     margin-bottom: 8px; /* Lisää väli labelin ja sen sisällön väliin */
+}
+
+.updated-field {
+    background-color: #ffff99; /* Vaalean keltainen taustaväri */
+    font-weight: bold;
 }
 
 #public_info {
