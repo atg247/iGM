@@ -697,8 +697,8 @@ def update_jopox():
                 "GameDateTextBox": form.get("game_date", ""),
                 "GameStartTimeTextBox": form.get("game_start_time", ""),
                 "GameDurationTextBox": form.get("game_duration", "120"),
-                #"GameDeadlineTextBox": "",
-                #"GameMaxParticipatesTextBox": "",
+                "GameDeadlineTextBox": "",
+                "GameMaxParticipatesTextBox": "",
                 "GamePublicInfoTextBox": f"""{form.get("game_public_info")}""",
                 "FeedGameDropdown": "0",
                 "GameInfoTextBox": f"""{form.get("game_public_info")}""",
@@ -719,10 +719,8 @@ def create_jopox():
     pass
     data = request.json
     game = data.get('game')
-    best_match = data.get('best_match')
 
     print("Game info:", game)
-    print("Jopox info:", best_match)
 
     username = current_user.jopox_username
     #decrypt password from database
@@ -732,10 +730,9 @@ def create_jopox():
     print("Username:", username)
     print("Password:", password)
 
-    if not best_match:
-        pass
-        print("No best match found.")
+    if game:
         try: 
+            pass
             scraper = JopoxScraper(username, password)
 
             if scraper.login() and scraper.access_admin():
@@ -753,24 +750,14 @@ def create_jopox():
                     "GameDurationTextBox": game.get("GameDurationTextBox", "120"),
                     "GameDeadlineTextBox": "",
                     "GameMaxParticipatesTextBox": "",
-                    "GamePublicInfoTextBox": f"""{'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli'}<br>
-                    <br>                    
-                    Kokoontuminen tuntia ennen ottelun alkua.<br>
-                    <br>
-                    Joukkue:
-                    <br>
-                    """,#Tähän kenttään logiikka, jolla määritetään tarvitaanko toimitsijoita ja niin, että huomioi pienpelit
                     "FeedGameDropdown": "0",
-                    "GameInfoTextBox": f"""
-                    Ottelu {game.get('Date')} klo {game.get('Time')}<br>
-                    {game.get('Home Team')} - {game.get('Away Team')}<br>
-                    {game.get('Location')}<br><br>Kaikki joukkueen jäsenet""",
                     "GameNotificationTextBox": "",
                     "SaveGameButton": "Tallenna"
                     }
-            
-                #scraper.add_game(game_data)
-                return jsonify({"message": "Pelin lisäämistoiminto ei käytössä, aktivoi scraper.add_game."}), 200
+                print("Game data:", game_data)
+                print("Game:", game)
+                scraper.add_game(game_data, game)
+                return jsonify({"message": "Ottelu lisätty. Päivitä sivu nähdäksesi muutokset."}), 200
             
         except Exception as e:
             return jsonify({"error": str(e)}), 500

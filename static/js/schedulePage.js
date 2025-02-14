@@ -446,8 +446,17 @@ const app = Vue.createApp({
                 console.log('Fetched Jopox data:', data);
                 this.showUpdateJopoxModal = true; // Näytä Päivitä Jopox -modal
                 this.compareUpdates(game, data);
-
+                
+                this.$nextTick(() => {
+                    const contentDiv = document.getElementById("public_info");
+                    if (contentDiv) {
+                        contentDiv.innerHTML = this.form.game_public_info; // Asetetaan HTML-muodossa
+                    }
+                })
             })
+
+             // Käytetään nextTick asettamaan sisältö oikein contenteditable-kenttään
+            
 
             .catch(error => {
                 console.error('Error fetching Jopox data:', error);
@@ -524,8 +533,20 @@ const app = Vue.createApp({
             // Populate other form fields as needed (league, event, etc.)
         },
 
+          // Kun käyttäjä muokkaa sisältöä, päivitetään Vue data
+        syncContent(event) {
+            event.target.innerHTML = this.form.game_public_info; // Kopioidaan alkuperäinen sisältö DOMiin
+        },
+        
+
         // Lähetä tiedot backendille päivitystä varten
         updateJopox() {
+
+            // Päivitetään `game_public_info` contenteditable-divistä ennen lomakkeen lähetystä
+            const contentDiv = document.getElementById("public_info");
+            if (contentDiv) {
+                this.form.game_public_info = contentDiv.innerHTML.trim(); // Trim helpottaa tyhjien rivien käsittelyä
+            }
 
             const formWithStringCheckbox = {
                 ...this.form,
@@ -555,12 +576,16 @@ const app = Vue.createApp({
             });
         },
 
-        createJopox() {
+        createJopox(game) {
+
+        
             const payload = { 
-                game: this.selectedGame, // Tulospalvelun tiedot
-                best_match: this.selectedGame.best_match, // Jopoxin tiedot
-            };        
-            fetch('/api/update_jopox', {
+                game: game // Lähetetään pelin tiedot backendille
+            };
+
+            console.log("Lähetetään uusi Jopox-tapahtuma:", payload);
+
+            fetch('/api/create_jopox', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -568,8 +593,11 @@ const app = Vue.createApp({
             .then(response => response.json())
             .then(data => {
                 alert('Jopox-päivitys onnistui: ' + data.message);
-                this.closeUpdateModal(); // Sulje modal päivityksen jälkeen
+
+                // Päivitetään ottelun status vihreäksi, koska se nyt löytyy Jopoxista
+                //game.match_status = "green"; 
             })
+
             .catch(error => {
                 console.error('Virhe Jopox-päivityksessä:', error);
                 alert('Päivityksessä tapahtui virhe.');
@@ -649,7 +677,7 @@ template:
                 }"
             :class="['btn', isTeamSelected(team.team_id) ? 'selected-team' : 'unselected-team']"
         >
-            {{ team.team_name }}<br>{{ team.stat_group}}
+            {{ team.team_name }} - {{ team.stat_group}}
         </button>
     </div>
     
@@ -666,7 +694,7 @@ template:
             }"
             :class="['btn', isTeamSelected(team.team_id) ? 'selected-team' : 'unselected-team']"
         >
-            {{ team.team_name }}<br>{{ team.stat_group }}
+            {{ team.team_name }} - {{ team.stat_group}}
         </button>
     </div> 
     <div>
@@ -709,11 +737,15 @@ template:
                     {{ game['Home Team'] }} - {{ game['Away Team'] }}
                     <span v-if="game['Small Area Game'] === '1'">(Pienpeli)</span>
                 </p>
+                
                 <button class="update-jopox-btn"
-                v-if="!isPastDay(date) && !isNotManagedTeam(game)"
-                @click.stop="openUpdateModal(game)">
-                    <span class="status-text">Päivitä Jopox</span>
+                    v-if="!isPastDay(date) && !isNotManagedTeam(game)"
+                    @click.stop="game.match_status === 'red' ? createJopox(game) : openUpdateModal(game)">
+                    <span class="status-text">
+                        {{ game.match_status === 'red' ? 'Luo Jopoxiin' : 'Päivitä Jopox' }}
+                    </span>
                 </button>
+
                 <div class="status-box"
                      v-if="!isPastDay(date) && !isNotManagedTeam(game)"
                      @click.stop="toggleModal($event, game.reason)"
@@ -743,7 +775,13 @@ template:
                 <p><strong>Paikka:</strong> {{ game.best_match?.paikka || 'Not available' }}</p>
                 <p><strong>Pvm:</strong> {{ game.best_match?.pvm || 'Not available' }}</p>
                 <p><strong>Klo:</strong> {{ game.best_match?.aika || 'Not available' }}</p>
-                <p><strong>Lisätiedot:</strong> {{ game.best_match?.Lisätiedot || 'No additional details available' }}</p>
+                <p><strong>Lisätiedot:</strong> 
+                 {{ 
+                    game.best_match 
+                    ? (game.best_match.Lisätiedot || 'Lisätiedot eivät ole tässä kentässä saatavilla toistaiseksi. Voit tarkastaa lisätiedot painamalla "Päivitä Jopox" -painiketta.') 
+                    : 'No additional details available' 
+                }}
+                </p>
 
                 <div v-if="game.warning" class="warning-message">
                 <strong>Varoitus:</strong> {{ game.warning }}
@@ -765,7 +803,7 @@ template:
 <!-- Add this to your HTML or Vue template -->
 <div v-if="showUpdateJopoxModal" class="modal-window2">
     <div class="modal-content">
-        <span class="close" @click="closeUpdateModal">&times;</span>
+        <div class="modal-close" @click="closeUpdateModal">&times;</div>
         <h2>Päivitä Jopox</h2>
         <form id="jpx-details-form">
             <!-- Sarja -->
@@ -824,47 +862,21 @@ template:
             <!-- Ennakkoinfo -->
             <label for="public_info">Ennakkoinfo:</label>
             <div 
-            id="public_info"
-            contenteditable="true"
-            v-html="form.game_public_info" 
-            @input="updateContent"
-            class="editable-content"
+                id="public_info"
+                contenteditable="true"
+                class="editable-content"
             >
-            </div> 
-           
-
-            <button type="button" @click="submitForm">Päivitä</button>
+            </div>          
+            <div class="button-container">
+                <button class="cancel-button" type="button" @click="closeUpdateModal">Peruuta</button>
+                <button class="action-button" type="button" @click="submitForm">Päivitä</button>
+            </div>
         </form>
     </div>
 </div>
 
-<script>
-export default {
-  data() {
-    return {
-      form: {
-        game_public_info: '' // HTML-sisältö
-      }
-    };
-  },
-  methods: {
-    // Kun käyttäjä muokkaa sisältöä, päivitetään Vue data
-    updateContent(event) {
-      this.form.game_public_info = event.target.innerHTML;
-    }
-  }
-};
-</script>
-<style>
-.editable-content {
-  border: 1px solid #ccc;
-  padding: 10px;
-  min-height: 100px;
-  font-family: Arial, sans-serif;
-  font-size: 14px;
-  background-color: #f9f9f9;
-}
-</style>
+
+
 
 
 

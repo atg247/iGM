@@ -28,6 +28,7 @@ h1,h2 {
     font-size: 14px;
     margin-top: 6px;
     margin-bottom: 1px;
+    text-decoration: underline;
 }
 
 /* Button adjustments for smaller buttons */
@@ -98,15 +99,25 @@ h1,h2 {
 }
 
 
+.btn-group {
+    display: flex;
+    flex-direction: column; /* Stack buttons vertically */
+    align-items: stretch; /* Ensure buttons take full width of the container */
+}
 
 .btn-group button {
-    flex: 1; /* Restore original width behavior */
+    flex: 1; /* Allow buttons to grow and fill the container */
     min-width: auto; /* Prevent buttons from stretching */
-    margin: 7px; /* Add consistent spacing */
+    margin: 0.1rem 0; /* Add consistent vertical spacing */
     border: 2px solid #ccc; /* Light gray border for better visibility */
     transition: background-color 0.3s, color 0.3s, border-color 0.3s; /* Smooth effects */
     box-shadow: 0 3px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
+}
 
+.button-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
 }
 
 .toggle-played-button {
@@ -321,12 +332,12 @@ h1,h2 {
     right: 10px;
     font-size: 1.5em;
     color: #aaa;
-    cursor: pointer;
     transition: color 0.3s ease;
 }
 
 .modal-close:hover {
     color: #333; /* Darker hover effect */
+    cursor: pointer;
 }
 
 .update-jopox-btn {
@@ -364,22 +375,52 @@ h1,h2 {
     border-radius: 8px;
     color: #35463a;
     align-items: center;
+    font-size: 1.2em; /* Example font size */
+    width: 80%; /* Default width */
+    max-width: 500px; /* Maximum width */
+    max-height: 90vh; /* Maximum height */
+    overflow-y: auto; /* Enable vertical scrolling if needed */
 }
 
+/* Media query for smaller screens */
+@media (max-width: 600px) {
+    .modal-window2 {
+        width: 90%; /* Increase width for smaller screens */
+        padding: 1rem; /* Increase padding for better touch interaction */
+        font-size: 1em; /* Adjust font size for readability */
+    }
+}
 
 .modal-content {
     padding: 0.4rem;
     max-width: 500px;
     text-align: left;
-
 }
 
 .modal-content label {
     padding-right: 0.2rem; /* Esimerkki paddingista oikealla puolella */
     font-weight: bold; /* Esimerkki, tee labelista lihavoitu */
-    font-size: 12px; /* Esimerkki fonttikoko */
+    font-size: 0.7em; /* Esimerkki fonttikoko */
     display: inline-block; /* Varmistaa, että labelit eivät vie koko tilaa */
     margin-bottom: 8px; /* Lisää väli labelin ja sen sisällön väliin */
+}
+
+/*muokkaa modal-ikkunan sisällä olevien input-kenttien fontin koko pienemmäksi*/
+.modal-content input {
+    font-size: 0.8em;
+}
+
+.modal-content select {
+    font-size: 0.8em;
+}
+
+.editable-content {
+  border: 1px solid #ccc;
+  padding: 10px;
+  min-height: 100px;
+  font-family: Arial, sans-serif;
+  font-size: 0.8em;
+  background-color: #f9f9f9;
 }
 
 .updated-field {

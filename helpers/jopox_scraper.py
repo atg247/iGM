@@ -146,15 +146,13 @@ class JopoxScraper:
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDateTextBox": game_data.get("GameDateTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameStartTimeTextBox": game_data.get("GameStartTimeTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDurationTextBox": game_data.get("GameDurationTextBox", "120"),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", "0"),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": f"<p>{game_data.get('GamePublicInfoTextBox')}</p>",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": f"<p>{game_data.get('GamePublicInfoTextbox')}</p>",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameNotificationTextBox": "",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
         }
-
-        print(payload)
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -170,7 +168,7 @@ class JopoxScraper:
         soup = BeautifulSoup(response.text, 'html.parser')
 
         error_message = soup.find('textarea', {'id': 'ErrorTextBox'})
-        logging.debug("Response HTML: %s", soup.prettify())
+
         if error_message:
             logging.error("Error message from server: %s", error_message.text)
             return error_message.text
@@ -178,7 +176,7 @@ class JopoxScraper:
             logging.info("Game added successfully or no error message received.")
             return "Game added successfully!"
 
-    def add_game(self, game_data):
+    def add_game(self, game_data, game):
         add_game_url = "https://hallinta3.jopox.fi/Admin/HockeyPox2020/Games/Game.aspx"
 
         # Load the form page
@@ -199,7 +197,29 @@ class JopoxScraper:
         viewstate = soup.find("input", {"name": "__VIEWSTATE"})["value"]
         eventvalidation = soup.find("input", {"name": "__EVENTVALIDATION"})["value"]
         viewstategenerator = soup.find("input", {"name": "__VIEWSTATEGENERATOR"})["value"]
+        HomeTeamTextBox = ''
+        # use soup to find sitenamelabel
+        try:
+            SiteNameLabel_tag = soup.find('span', {'id': 'MainContentPlaceHolder_GamesBasicForm_SitenameLabel'})
+            SiteNameLabel = SiteNameLabel_tag.text.strip() if SiteNameLabel_tag else ''
+            logging.info("SiteNameLabel: %s", SiteNameLabel)
 
+            #remove anything in brackets from SiteNameLabel
+            SiteNameLabel = re.sub(r'\([^)]*\)', '', SiteNameLabel)
+            logging.info("SiteNameLabel: %s", SiteNameLabel)
+
+            #check which are the common parts of SiteNameLabel and game['Team Name']
+            common_part = os.path.commonprefix([SiteNameLabel, game['Team Name']])
+            logging.info("Common part: %s", common_part)
+            #remove common part from game['Team Name']
+            HomeTeamTextBox = game['Team Name'].replace(common_part, '')
+            logging.info("HomeTeamTextBox: %s", HomeTeamTextBox)
+
+                        
+
+        except Exception as e:
+            logging.error("Error parsing home_team: %s", e)
+            raise e
 
         # Build payload
         payload = {
@@ -214,7 +234,7 @@ class JopoxScraper:
             #"ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
             "ctl00$MainContentPlaceHolder$GamesBasicForm$LeagueDropdownList": game_data.get("LeagueDropdownList", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$EventDropDownList": game_data.get("EventDropDownList", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$HomeTeamTextBox": game_data.get("HomeTeamTextBox", ""),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$HomeTeamTextBox": HomeTeamTextBox,
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GuestTeamTextBox": game_data.get("GuestTeamTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$AwayCheckbox": game_data.get("AwayCheckbox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameLocationTextBox": game_data.get("GameLocationTextBox", ""),
@@ -222,17 +242,36 @@ class JopoxScraper:
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameStartTimeTextBox": game_data.get("GameStartTimeTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDurationTextBox": game_data.get("GameDurationTextBox", "120"),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", "0"),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": f"<p>{game_data.get('GamePublicInfoTextBox', '')}</p>",
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": f"""
+            {game.get('Home Team')} - {game.get('Away Team')}<br>
+            {'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli'}<br>
+            <br>
+            {game.get('Location')}<br>
+            <br>
+            <br>                    
+            Kokoontuminen tuntia ennen ottelun alkua.<br>
+            <br>
+            Joukkue:
+            <br>
+            """,#Tähän kenttään logiikka, jolla määritetään tarvitaanko toimitsijoita ja niin, että huomioi pienpelit,
             "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": f"""
-            #    Ottelu {game_data.get('GameDateTextBox')} klo {game_data.get('GameStartTimeTextBox')}\n
-            #    {game_data.get('HomeTeamTextBox')} - {game_data.get('GuestTeamTextBox')}\n
-            #    {game_data.get('GameLocationTextBox')}\n\nKaikki joukkueen jäsenet""",
+            Ottelu {game.get('GameDateTextBox')} klo {game.get('GameStartTimeTextBox')}<br>
+            {game.get('HomeTeamTextBox')} - {game.get('GuestTeamTextBox')}<br>
+            {game.get('GameLocationTextBox')}<br>
+            <br>
+            {'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli'}<br>
+            <br>                    
+            Kokoontuminen tuntia ennen ottelun alkua.<br>
+            <br>
+            Joukkue:
+            <br>
+            """,#Tähän kenttään logiikka, jolla määritetään tarvitaanko toimitsijoita ja niin, että huomioi pienpelit
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameNotificationTextBox": "",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
         }
 
-        #logging.debug("Submitting game data payload: %s", payload)
+        logging.debug("Submitting game data payload: %s", payload)
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -241,9 +280,7 @@ class JopoxScraper:
         }
 
         response = self.session.post(add_game_url, data=payload, headers=headers)
-        #logging.debug("Add game response status code: %d", response.status_code)
-        #logging.debug("Add game response text: %s", response.text)
-        #logging.debug("Add game response headers: %s", response.headers)
+        logging.debug("Add game response status code: %d", response.status_code)
 
         soup = BeautifulSoup(response.text, 'html.parser')
         error_message = soup.find('textarea', {'id': 'ErrorTextBox'})
