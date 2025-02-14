@@ -6,7 +6,9 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_bcrypt import Bcrypt
 from helpers.data_fetcher import get_levels, get_stat_groups, get_teams, hae_kalenteri
 from helpers.game_fetcher import GameFetcher
-from models.user import db, User, Team, UserTeam
+from helpers.jopox_scraper import JopoxScraper
+from helpers.game_comparison import compare_games
+from models.user import db, User, Team, UserTeam, TGamesdb
 from forms.registration_form import RegistrationForm
 from forms.login_form import LoginForm
 from forms.forgot_password import ForgotPasswordForm, send_reset_email
@@ -16,6 +18,10 @@ from dotenv import load_dotenv
 from flask_migrate import Migrate
 import logging
 from flask_mail import Mail
+from sqlalchemy import and_
+from cryptography.fernet import Fernet
+from flask import request, jsonify
+
 
 
 
@@ -31,8 +37,24 @@ mail.init_app(app)
 
 #MUISTA POISTAA TÄMÄ VALMIISTA VERSIOSTA!!!!!!!!!!!!!!!!!!!!!!!!
 # Set logging level to DEBUG
+
+logging.basicConfig(
+        level=logging.DEBUG,
+        filename="comparison.log",
+        filemode='w',
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+
+logger = logging.getLogger(__name__)
+
 app.logger.setLevel(logging.DEBUG)
 #MUISTA POISTAA TÄMÄ VALMIISTA VERSIOSTA!!!!!!!!!!!!!!!!!!!!!!!!
+
+# Luodaan ja tallennetaan salausavain (tämä tulisi olla turvassa palvelimella)
+
+fernet_key = os.getenv('FERNET_KEY')
+# Luo Fernet-objekti
+cipher_suite = Fernet(fernet_key)
 
 
 # Initialize necessary extensions
@@ -46,7 +68,9 @@ login_manager.login_view = 'login'  # Redirect to 'login' if trying to access a 
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
+
+
 
 # Create tables if they do not exist (for simplicity)
 with app.app_context():
@@ -162,9 +186,59 @@ def dashboard():
     app.logger.info(f"Followed teams: {followed_teams}")
     app.logger.debug(f"Followed teams raw data: {followed_teams}")
 
+
     return render_template('dashboard.html', managed_teams=managed_teams, followed_teams=followed_teams)
 
+@app.route('/dashboard/save_jopox_credentials', methods=['POST'])
+def save_jopox_credentials():
+    data = request.get_json()
 
+    username = data['username']
+    password = data['password']
+    print(f"Received Jopox credentials: {username}, {password}")
+    
+    print("db engine url", db.engine.url)
+    
+    
+    # Salataan salasana
+    encrypted_password = cipher_suite.encrypt(password.encode('utf-8'))
+    print(f"Encrypted password: {encrypted_password}")
+    # Tallennetaan käyttäjän tiedot tietokantaan
+    user = db.session.get(User, current_user.id)  # Oletetaan, että käyttäjän tiedot haetaan sessiosta
+    user.jopox_username = username
+    user.jopox_password = encrypted_password
+
+    print(f"password saved: {user.jopox_password}")
+    print(f"username saved: {user.jopox_username}")
+
+    #kirjaudutaan jopoxiin ja haetaan joukkuetiedot
+    scraper = JopoxScraper(username, password)
+    jopox_credentials = scraper.login_for_credentials()
+    logging.info(f"jopox credentials received: {jopox_credentials}")
+
+        
+    pass
+
+
+    db.session.commit()
+    print(f"Jopox credentials saved successfully for user {current_user.username}.")
+    return jsonify({'message': 'Jopox credentials saved successfully.'}), 200
+
+#select the jopox team id for user account
+@app.route('/dashboard/select_jopox_team', methods=['POST'])
+
+@login_required
+def select_jopox_team():
+    data = request.get_json()
+    print('This is data received with json:', data)
+    jopox_team_id = data.get('jopoxTeamId')
+    jopox_team_name = data.get('jopoxTeamName')
+    current_user.jopox_team_id = jopox_team_id
+    current_user.jopox_team_name = jopox_team_name
+    db.session.commit()
+    print(f"Jopox team ID {jopox_team_id} selected for user {current_user.username}. Tallennettu team id on: {current_user.jopox_team_id}/n Tallennettu team name on: {current_user.jopox_team_name}")
+    return jsonify({"message": "Jopox team selected successfully!"}), 200
+    
 
 @app.route('/dashboard/update_teams', methods=['POST'])
 @login_required
@@ -190,19 +264,30 @@ def update_teams():
             level_id = team_data.get('level_id')
             statgroup = team_data.get('statgroup')
 
-            # Check if the team exists in the Team table; if not, add it
-            team = Team.query.filter_by(team_id=team_id).first()
+            # Check if the team exists in the Team table for this team_id + stat_group
+            team = Team.query.filter_by(team_id=team_id, stat_group=stat_group).first()
             
             if not team:
-                team = Team(team_id=team_id, team_name=team_abbrv, stat_group=stat_group, team_association=team_association, season=season, level_id=level_id, statgroup=statgroup)
+                # Create new team if it doesn't exist
+                team = Team(
+                    team_id=team_id,
+                    team_name=team_abbrv,
+                    stat_group=stat_group,
+                    team_association=team_association,
+                    season=season,
+                    level_id=level_id,
+                    statgroup=statgroup
+                )
                 db.session.add(team)
-                db.session.commit()  # Commit here to generate `team.id` for relationships
+                db.session.commit()  # Commit to generate `team.id`
 
-            # Check if the relationship exists in the UserTeam table
-            existing_relationship = UserTeam.query.filter_by(
-                user_id=current_user.id,
-                team_id=team.id,
-                relationship_type=action
+            # Check if the relationship exists in the UserTeam table for this user + team + action
+            existing_relationship = UserTeam.query.filter(
+                and_(
+                    UserTeam.user_id == current_user.id,
+                    UserTeam.team_id == team.id,
+                    UserTeam.relationship_type == action
+                )
             ).first()
 
             # Create a new relationship if none exists
@@ -219,11 +304,11 @@ def update_teams():
         # Fetch the updated lists of managed and followed teams
         managed_teams = [
             {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
-            for team in current_user.teams if team.team_user_entries[0].relationship_type == 'manage'
+            for team in current_user.teams if any(entry.relationship_type == 'manage' for entry in team.team_user_entries)
         ]
         followed_teams = [
             {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
-            for team in current_user.teams if team.team_user_entries[0].relationship_type == 'follow'
+            for team in current_user.teams if any(entry.relationship_type == 'follow' for entry in team.team_user_entries)
         ]
         return jsonify({
             "managed_teams": managed_teams,
@@ -235,6 +320,7 @@ def update_teams():
         print("Error during update:", e)
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500
 
+
 @app.route('/dashboard/remove_teams', methods=['POST'])
 @login_required
 def remove_teams():
@@ -245,7 +331,13 @@ def remove_teams():
         for team in selected_teams:
             team_id = team['team_id']
             relationship_type = team['relationship_type']
-
+            
+            if relationship_type == 'jopox':
+                current_user.jopox_team_id = None
+                current_user.jopox_team_name = None
+                db.session.commit()
+                continue
+            
             # Find and delete the specific UserTeam relationship
             user_team = UserTeam.query.filter_by(
                 user_id=current_user.id,
@@ -266,10 +358,13 @@ def remove_teams():
             {"team_name": team.team_name, "stat_group": team.stat_group, "id": team.id}
             for team in current_user.teams if team.team_user_entries[0].relationship_type == 'follow'
         ]
+
+        jopox_managed_team = current_user.jopox_team_name
       
         return jsonify({
             "message": "Selected teams removed successfully!",
             "managed_teams": managed_teams,
+            "jopox_managed_team": jopox_managed_team,
             "followed_teams": followed_teams
         }), 200
         
@@ -298,9 +393,14 @@ def get_ManagedFollowed():
             .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'follow').all()
         ]
 
+        jopox_managed_team = current_user.jopox_team_name
+
+        print("managed_teams:", managed_teams, "followed_teams:", followed_teams, "jopox_managed_team:", jopox_managed_team)
+
         return jsonify({
             "managed_teams": managed_teams,
-            "followed_teams": followed_teams
+            "followed_teams": followed_teams,
+            "jopox_managed_team": jopox_managed_team
         }), 200
 
     except Exception as e:
@@ -355,8 +455,6 @@ def get_user_teams():
     except Exception as e:
         app.logger.error(f"Error fetching teams: {str(e)}")
         return jsonify({"error": "Failed to fetch teams", "details": str(e)}), 500
-
-
     
 @app.route('/api/schedules')
 def get_all_schedules():
@@ -364,14 +462,12 @@ def get_all_schedules():
     Fetch schedules for all managed and followed teams, sorted by date and time.
     """
     try:
-        # Fetch managed teams
         managed_teams = [
             {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "type": 'manage'}
             for team in Team.query.join(UserTeam)
             .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'manage').all()
         ]
 
-        # Fetch followed teams
         followed_teams = [
             {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "type": 'follow'}
             for team in Team.query.join(UserTeam)
@@ -379,46 +475,322 @@ def get_all_schedules():
         ]
 
         all_teams = managed_teams + followed_teams
-        all_games = []
+        managed_games = []
 
         # Fetch games for each team
         for team in all_teams:
-            fetcher = GameFetcher(
-                dwl=0,  # Replace with actual value
-                season=team['season'],
-                stat_group_id=team['stat_group_id'],
-                team_id=team['team_id'],
-                distr_id=0,  # Replace with actual value if needed
-                GameDates=3,  # Replace with actual value if needed
-                dog='2024-10-12'  # Replace with actual date logic if needed
-            )
-            error = fetcher.fetch_games()
+            try:
+                fetcher = GameFetcher(
+                    dwl=0,  # Replace with actual value
+                    season=team['season'],
+                    stat_group_id=team['stat_group_id'],
+                    team_id=team['team_id'],
+                    distr_id=0,  # Replace with actual value if needed
+                    GameDates=3,  # Replace with actual value if needed
+                    dog='2024-10-12'  # Replace with actual date logic if needed
+                )
+                error = fetcher.fetch_games()
 
-            if error:
-                app.logger.error(f"Error fetching games for {team['team_name']}: {error}")
-                continue
+                if error:
+                    app.logger.error(f"Error fetching games for {team['team_name']}: {error}")
+                    continue  # Skip this team if there's an error
 
-            # Format the games using display_games helper
-            games_df = fetcher.display_games()
-            if not games_df.empty:
-                games_df['Team Name'] = team['team_name']
-                games_df['Type'] = team['type']  # Manage or Follow
+                # Format the games using display_games helper
+                games_df = fetcher.display_games()
+                if not games_df.empty:
+                    games_df['Team Name'] = team['team_name']
+                    games_df['Type'] = team['type']  # Manage or Follow
 
-                # Add formatted and sortable dates
-                games_df['SortableDate'] = games_df['Date']
-                games_df['Date'] = games_df['Date'].dt.strftime('%d.%m.%Y')  # Format for display
-                all_games.extend(games_df.to_dict(orient='records'))
+                    # Add formatted and sortable dates
+                    games_df['SortableDate'] = games_df['Date']
+                    games_df['Date'] = games_df['Date'].dt.strftime('%d.%m.%Y')  # Format for display
+                    managed_games.extend(games_df.to_dict(orient='records'))
+
+            except Exception as e:
+                app.logger.error(f"Error fetching games for {team['team_name']}: {str(e)}")
+                continue  # Skip to the next team if error occurs during fetch
 
         # Sort all games by sortable date and time
-        all_games = sorted(all_games, key=lambda game: (game['SortableDate'], game['Time']))
+        managed_games = sorted(managed_games, key=lambda game: (game['SortableDate'], game['Time']))
+        app.logger.debug(f"Managed games fetched: {len(managed_games)} games")
+        
+        # Store the games in the database if not already there based on game id
+        updated_games = []  # List of updated games
+        added_games = []  # List of added games
 
-        return jsonify(all_games), 200
+        for game in managed_games:
+            try:
+                #app.logger.debug(f"Checking if game {game['Game ID']} already exists")
+                # Check if the game already exists
+                existing_game = TGamesdb.query.filter_by(game_id=game['Game ID']).first()
+
+                if existing_game:
+                    # Compare existing game and new game
+                    changes = {}
+
+                    if existing_game.date != game['Date']:
+                        changes['date'] = {'old': existing_game.date, 'new': game['Date']}
+                        existing_game.date = game['Date']
+
+                    # Check if the time has changed
+                    if existing_game.time != game['Time']:
+                        changes['time'] = {'old': existing_game.time, 'new': game['Time']}
+                        existing_game.time = game['Time']
+
+                    # Check if the location has changed
+                    if existing_game.location != game['Location']:
+                        changes['location'] = {'old': existing_game.location, 'new': game['Location']}
+                        existing_game.location = game['Location']
+
+
+                    # If there are any changes, add this game to the updated games list
+                    if changes:
+                        updated_games.append({
+                            'game_id': game['Game ID'],
+                            'changes': changes
+                        })
+                else:
+                    # If the game doesn't exist, add it as a new game
+                    new_game = TGamesdb(
+                        game_id=game['Game ID'],
+                        team_id=game['Team ID'],
+                        date=game['Date'],
+                        time=game['Time'],
+                        home_team=game['Home Team'],
+                        away_team=game['Away Team'],
+                        home_goals=game['Home Goals'],
+                        away_goals=game['Away Goals'],
+                        location=game['Location'],
+                        level_name=game['Level Name'],
+                        small_area_game=game['Small Area Game'],
+                        team_name=game['Team Name'],
+                        type=game['Type'],
+                        sortable_date=game['SortableDate']
+                    )
+                    if new_game:
+                        added_games.append({
+                            'game date': new_game.date,
+                            'game id': new_game.game_id
+                        })
+
+                    db.session.add(new_game)
+            
+            except Exception as e:
+                app.logger.error(f"Error processing game {game['Game ID']}: {str(e)}")
+
+        try:
+            db.session.commit()
+            app.logger.debug("Commit successful.")
+        except Exception as e:
+            app.logger.error(f"Error committing changes: {str(e)}")
+            db.session.rollback()
+
+        if updated_games:
+            app.logger.debug(f"Updated games: {updated_games}")
+        if added_games:
+            app.logger.debug(f"Added games: {added_games}")
+
+        return jsonify({
+            "managed_games": managed_games,
+            "updated_games": updated_games,
+            "message": f"Games processed successfully. Added games: {len(added_games)}, Updated games: {len(updated_games)}"
+        }), 200
 
     except Exception as e:
+        db.session.rollback()  # Rollback in case of any error in the outer block
         app.logger.error(f"Error fetching schedules: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
+        # Palautetaan muutokset frontendille
 
+
+@app.route('/api/jopox_games')
+@login_required
+def get_jopox_games():
+    print('starting api/jopox_games')
+    username = current_user.jopox_username
+    #decrypt password from database
+    encrypted_password = current_user.jopox_password
+    decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
+    password = decrypted_password
+    j_team_id = current_user.jopox_team_id
+    print("j_team_id", j_team_id)
+
+    scraper = JopoxScraper(username, password)
+    print('starting scraper') 
+    descriptions = hae_kalenteri(j_team_id)
+    print ("descriptions:", descriptions[:2])
+    if scraper.login() and scraper.access_admin():
+        try:
+            print('scraping jopox form information')
+            jopox_games = scraper.scrape_jopox_games()
+            print('jopox_games:', jopox_games[:2])
+            #find matching description based on uid and add it to jopox_games
+            for game in jopox_games:
+                matching_description = next((desc for desc in descriptions if desc['Uid'] == game['uid']), None)
+                if matching_description:
+                    # Lisää description tiedot jopox_gamesiin
+                    game['Lisätiedot'] = matching_description['Lisätiedot']
+
+            return jopox_games
+    
+        except Exception as e:
+            # Log the error for debugging
+            app.logger.error(f"Error fetching Jopox games: {e}")
+
+            # Return an error response
+            return jsonify({"status": "error", "message": str(e)}), 500
+    
+@app.route('/api/compare', methods=['POST'])
+@login_required
+def compare_games_endpoint():
+
+    try:
+        # Receive datasets from the frontend
+        print("käynnistetään compare_games_endpoint")
+        data = request.get_json()
+        tulospalvelu_games = data.get('tulospalvelu_games', [])
+        jopox_games = data.get('jopox_games', [])
+        #print("tulospalvelu_games:", tulospalvelu_games[0])
+        print("jopox_games vertailua varten:", jopox_games[0])   
+        # Perform the comparison
+        comparison_results = compare_games(jopox_games, tulospalvelu_games)
+
+        # Return comparison results
+        return jsonify(comparison_results), 200
+
+    except Exception as e:
+        app.logger.error(f"Error in game comparison: {e}")
+        return jsonify({"error": "Comparison failed", "details": str(e)}), 500
+
+@app.route('/api/update_jopox', methods=['POST'])
+def update_jopox():
+    print("launching update_jopox()")
+    data = request.json
+    game = data.get('game')
+    best_match = data.get('best_match')
+    form = data.get('form')
+    uid = best_match.get('uid')
+    logging.debug('NEW FORM: %s', form)
+    away = form.get('AwayCheckbox', None)
+    logging.debug('AWAYBOX: %s', away)
+
+    username = current_user.jopox_username
+    #decrypt password from database
+    encrypted_password = current_user.jopox_password
+    decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
+    password = decrypted_password
+
+    try: 
+        scraper = JopoxScraper(username, password)
+
+        if scraper.login() and scraper.access_admin():
+            game_data = {
+                "SeasonId": "547",
+                "SubSiteId": "8787",
+                "LeagueDropdownList": "15460", #"15116" Treenipelit 24/25, "15449" U12 Sarja lohko, "15460" U12 Sarja lohko 3B
+                "EventDropDownList": "",
+                "HomeTeamTextBox": form.get("HomeTeamTextbox", ""),#muokattu S-kiekko Punainen muotoon Punainen - pitää keksiä joku logiikka
+                "GuestTeamTextBox": form.get("guest_team", ""),
+                "AwayCheckbox": form["AwayCheckbox"], #Tämä pitää setviä kuntoon jos tyhjä niin kotijoukkue on kotijoukkue ja jos "on" niin vierasjoukkue on kotijoukkue.
+                "GameLocationTextBox": form.get("game_location", ""),
+                "GameDateTextBox": form.get("game_date", ""),
+                "GameStartTimeTextBox": form.get("game_start_time", ""),
+                "GameDurationTextBox": form.get("game_duration", "120"),
+                "GameDeadlineTextBox": "",
+                "GameMaxParticipatesTextBox": "",
+                "GamePublicInfoTextBox": f"""{form.get("game_public_info")}""",
+                "FeedGameDropdown": "0",
+                "GameInfoTextBox": f"""{form.get("game_public_info")}""",
+                "GameNotificationTextBox": "",
+                "SaveGameButton": "Tallenna"
+                }
+            
+            logging.info(f"STARTING scraper to modify game: {uid}")
+            logging.info(f"Scraping with data: {game_data}")
+            scraper.modify_game(game_data, uid)
+            return jsonify({"message": "Pelin tiedot muokattu"}), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/create_jopox', methods=['POST'])
+def create_jopox():
+    pass
+    data = request.json
+    game = data.get('game')
+
+    print("Game info:", game)
+
+    username = current_user.jopox_username
+    #decrypt password from database
+    encrypted_password = current_user.jopox_password
+    decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
+    password = decrypted_password
+    print("Username:", username)
+    print("Password:", password)
+
+    if game:
+        try: 
+            pass
+            scraper = JopoxScraper(username, password)
+
+            if scraper.login() and scraper.access_admin():
+                game_data = {
+                    "SeasonId": "547",
+                    "SubSiteId": "8787",
+                    "LeagueDropdownList": "15460", #"15116" Treenipelit 24/25, "15449" U12 Sarja lohko, "15460" U12 Sarja lohko 3B
+                    "EventDropDownList": "",
+                    "HomeTeamTextBox": game.get("Punainen", ""),#muokattu S-kiekko Punainen muotoon Punainen - pitää keksiä joku logiikka
+                    "GuestTeamTextBox": game.get("Away Team", ""),
+                    "AwayCheckbox": "", #Tämä pitää setviä kuntoon jos tyhjä niin kotijoukkue on kotijoukkue ja jos "on" niin vierasjoukkue on kotijoukkue.
+                    "GameLocationTextBox": game.get("Location", ""),
+                    "GameDateTextBox": game.get("Date", ""),
+                    "GameStartTimeTextBox": game.get("Time", ""),
+                    "GameDurationTextBox": game.get("GameDurationTextBox", "120"),
+                    "GameDeadlineTextBox": "",
+                    "GameMaxParticipatesTextBox": "",
+                    "FeedGameDropdown": "0",
+                    "GameNotificationTextBox": "",
+                    "SaveGameButton": "Tallenna"
+                    }
+                print("Game data:", game_data)
+                print("Game:", game)
+                scraper.add_game(game_data, game)
+                return jsonify({"message": "Ottelu lisätty. Päivitä sivu nähdäksesi muutokset."}), 200
+            
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    
+    else:
+        print("Skippasi tänne.")
+
+@app.route('/api/jopox_form_information')
+def jopox_form_information():
+    
+
+    j_game_id = request.args.get('uid')  # Extract the uid from query parameters
+    print ('j_game_id:', j_game_id)
+    username = current_user.jopox_username
+    #decrypt password from database
+    encrypted_password = current_user.jopox_password
+    decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
+    password = decrypted_password
+
+    scraper = JopoxScraper(username, password)
+    print('starting scraper')
+
+    if scraper.login() and scraper.access_admin():
+        try:
+            print('scraping jopox form information')
+            jopox_form_information = scraper.j_game_details(j_game_id)
+            print('jopox form:', jopox_form_information)
+            return jopox_form_information
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    
 @app.route('/jopox_ottelut')
 @login_required
 def jopox_ottelut():
@@ -429,7 +801,7 @@ def jopox_ottelut():
 def hae_kalenteri_endpoint():
     try:
         # Fetch the events using the helper function
-        events = hae_kalenteri()
+        events = hae_kalenteri(current_user.jopox_team_id)
         return jsonify(events)  # Return the data as JSON
     except Exception as e:
         return jsonify({"error": f"Error processing games data: {str(e)}"})
@@ -478,7 +850,7 @@ def fetch_games():
     dog = '2024-10-12'
     selected_teams = request.form.getlist('teams')
 
-    all_games_df = pd.DataFrame()
+    managed_games_df = pd.DataFrame()
     if not selected_teams:
         return jsonify({"error": "No teams selected. Please choose at least one team."})
 
@@ -491,15 +863,15 @@ def fetch_games():
 
         games_df = fetcher.display_games()
         if not games_df.empty:
-            all_games_df = pd.concat([all_games_df, games_df], ignore_index=True)
+            managed_games_df = pd.concat([managed_games_df, games_df], ignore_index=True)
 
-    if all_games_df.empty:
+    if managed_games_df.empty:
         return jsonify({"error": "No games found for the selected teams."})
 
     # Convert the games DataFrame to a JSON format
     try:
-        all_games_data = all_games_df.to_dict(orient='records')
-        return jsonify(all_games_data)
+        managed_games_data = managed_games_df.to_dict(orient='records')
+        return jsonify(managed_games_data)
     except Exception as e:
         return jsonify({"error": f"Error processing games data: {str(e)}"})
 

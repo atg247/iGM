@@ -71,6 +71,7 @@ function loadTeams() {
         url: '/dashboard/get_ManagedFollowed', // Assumes a backend endpoint to fetch the latest teams data
         method: 'GET',
         success: function (response) {
+            console.log('Hallinnoidut joukkueet:', response);
             // Update the managed teams list
             const managedTeamsList = $('#managedTeamsList');
             managedTeamsList.empty();
@@ -85,8 +86,19 @@ function loadTeams() {
                 followedTeamsList.append(`<li data-team-id="${team.team_id}">${team.team_name} (${team.stat_group})</li>`);
             });
 
+            // Store the jopox managed team in a variable
+            const jopoxManagedTeam = response.jopox_managed_team;
+
+            // Update the HTML element with the jopox managed team
+            // Update the HTML element with the jopox managed team
+            if (jopoxManagedTeam) {
+                $('#jopoxManagedTeam').text(jopoxManagedTeam);
+            } else {
+                $('#jopoxManagedTeam').text('Et hallinnoi tällä hetkellä mitään Jopox-joukkuetta.');
+            }
+
             // Update modal with the latest data
-            updateRemoveTeamsModal(response.managed_teams, response.followed_teams);
+            updateRemoveTeamsModal(response.managed_teams, response.followed_teams, response.jopox_managed_team);
         },
         error: function (xhr) {
             console.error("Error fetching teams:", xhr.responseText);
@@ -95,11 +107,28 @@ function loadTeams() {
 }
 
 // Function to update Remove Teams Modal content
-function updateRemoveTeamsModal(managedTeams, followedTeams) {
-    const managedTeamsModalList = $('#removeTeamsModal .modal-body ul:first');
-    const followedTeamsModalList = $('#removeTeamsModal .modal-body ul:last');
+function updateRemoveTeamsModal(managedTeams, followedTeams, jopoxManagedTeam) {
+    const managedTeamsModalList = $('#removeTeamsModal .modal-body ul:eq(1)');
+    const followedTeamsModalList = $('#removeTeamsModal .modal-body ul:eq(2)');
+    const jopoxManagedModalTeam = $('#removeTeamsModal .modal-body ul:eq(0)');
 
+    jopoxManagedModalTeam.empty();
     managedTeamsModalList.empty();
+    followedTeamsModalList.empty();
+
+    // Append the Jopox managed team
+    if (jopoxManagedTeam) {
+        jopoxManagedModalTeam.append(`
+            <li>
+                <input type="checkbox" name="teams" value="${jopoxManagedTeam}" data-relationship="jopox">
+                ${jopoxManagedTeam}
+            </li>
+        `);
+    } else {
+        jopoxManagedModalTeam.append('<p>No Jopox managed team available.</p>');
+    }
+
+    // Append the managed teams
     managedTeams.forEach(team => {
         managedTeamsModalList.append(`
             <li>
@@ -109,7 +138,7 @@ function updateRemoveTeamsModal(managedTeams, followedTeams) {
         `);
     });
 
-    followedTeamsModalList.empty();
+    // Append the followed teams
     followedTeams.forEach(team => {
         followedTeamsModalList.append(`
             <li>
@@ -180,6 +209,70 @@ $('#dashboardForm').on('submit', function (e) {
     });
 });
 
+<<<<<<< HEAD
+=======
+$(document).ready(function () {
+    // Aktivoi Jopox-yhteys -painike
+    $('#activateJopox').click(function () {
+        $('#jopoxAuthModal').modal('show');  // Näytä modaalinen ikkuna
+    });
+
+    // Tietojen tallentaminen Jopoxiin
+    $('#jopoxAuthForm').submit(function (e) {
+        e.preventDefault();
+
+        const jopoxUsername = $('#jopoxUsername').val();
+        const jopoxPassword = $('#jopoxPassword').val();
+
+        // Lähetä tiedot backendille
+        $.ajax({
+            url: '/dashboard/save_jopox_credentials',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                username: jopoxUsername,
+                password: jopoxPassword
+            }),
+            success: function (response) {
+                console.log('Jopox-tiedot tallennettu:', response);
+                $('#jopoxAuthModal').modal('hide');  // Sulje modaalinen ikkuna
+                loadTeams();  // Päivitä tiimit
+            },
+            error: function (xhr) {
+                alert('Virhe tallentaessa tietoja: ' + xhr.responseText);
+            }
+        });
+    });
+});
+
+//this is a selector for user to select the jopox teamid from the dropdown that is submitted to backend for his user profile
+$('#jopox_teamidselector').submit(function () {
+    event.preventDefault();
+    const jopoxTeamId = $('#jopox_team_id').val();
+    const jopoxTeamName = $('#jopox_team_id option:selected').text();
+    console.log('jopoxTeamId:', jopoxTeamId);
+    console.log('jopoxTeamName:', jopoxTeamName);
+    $.ajax({
+        url: '/dashboard/select_jopox_team',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ jopoxTeamId: jopoxTeamId, jopoxTeamName: jopoxTeamName }),
+        success: function (response) {
+            console.log('Success:', response);
+            loadTeams(); // Refresh lists and modal with latest data after update
+
+        },
+        error: function (xhr) {
+            alert('An error occurred: ' + xhr.responseText);
+        }
+    });
+    if (!jopoxTeamId) {
+        alert('Valitse joukkue ennen lähettämistä.');
+        return;
+    }
+});
+
+>>>>>>> Vertailun-parantelu-ja-jopox-joukkuuen-lisääminen
 
 // Handle remove teams confirmation
 $('#confirmRemoveTeams').click(function () {

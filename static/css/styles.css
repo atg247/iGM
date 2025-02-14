@@ -5,6 +5,17 @@ body {
     padding: 3px;
 }
 
+.my-4
+{
+ padding: 0.3rem;
+}
+
+.mt-4
+{
+ padding: 0.3rem;
+}
+
+
 /* Make form labels, selects, and inputs smaller */
 .form-group label,
 .form-group select,
@@ -17,6 +28,7 @@ h1,h2 {
     font-size: 14px;
     margin-top: 6px;
     margin-bottom: 1px;
+    text-decoration: underline;
 }
 
 /* Button adjustments for smaller buttons */
@@ -87,17 +99,34 @@ h1,h2 {
 }
 
 
+.btn-group {
+    display: flex;
+    flex-direction: column; /* Stack buttons vertically */
+    align-items: stretch; /* Ensure buttons take full width of the container */
+}
 
 .btn-group button {
-    flex: 1; /* Restore original width behavior */
+    flex: 1; /* Allow buttons to grow and fill the container */
     min-width: auto; /* Prevent buttons from stretching */
-    margin: 7px; /* Add consistent spacing */
+    margin: 0.1rem 0; /* Add consistent vertical spacing */
     border: 2px solid #ccc; /* Light gray border for better visibility */
     transition: background-color 0.3s, color 0.3s, border-color 0.3s; /* Smooth effects */
     box-shadow: 0 3px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a subtle shadow */
-
 }
 
+.button-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.toggle-played-button {
+    background-color: #35463a;
+    color: #dfeae2;
+    padding: 2px;
+    font-size: 1em;
+    border: 10px;
+}
 .selected-team {
     font-weight: bold;
     transition: outline 0.3s ease-in-out; /* Smooth transition for outline */
@@ -154,55 +183,47 @@ h1,h2 {
     margin-right: 0.5rem;
 }
 
-
-
-.gameInfo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.1rem;
+.game-card:hover {
+    transform: scale(1.02); /* Slightly enlarge on hover */
+    box-shadow: 8px 8px 10px rgba(0, 0, 0, 0.4); /* Add a deeper shadow on hover */
 }
 
-.gameTime {
-    font-weight: bold;
-    display: flex;
-    margin-bottom: 0.1rem;
-
-}
-.gameTeams {
-    font-weight: bold;
-    text-align: right;
-    margin-bottom: 0.1rem;
-}
-.gameLocation {
-    margin-bottom: 0.1rem;
-}
-.gameStatgroup {
-    margin-bottom: 0.1rem;
+.game-details {
+    margin-top: 0.5rem; /* Space between main card and details */
+    padding: 0.5rem;
+    border-top: 1px solid #ddd; /* Separate details with a border */
+    background-color: #f9f9f9; /* Light gray background for details */
+    border-radius: 8px; /* Match the border radius of the card */
+    color: #555; /* Slightly dimmed text for details */
+    font-size: 0.75rem; /* Slightly smaller font for details */
+    box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.1); /* Subtle inset shadow */
 }
 
-.gameInfo1 {
-    display: flex;
-    flex-direction: column; /* Stack child elements vertically */
+.warning-message {
+    background-color: #ffebcc;
+    border: 1px solid #ffa500;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+    color: #333;
 }
 
 .topRow {
     display: flex;
-    justify-content: left; /* Center the gameTeams element */
-    margin-bottom: 0.5rem; /* Add some spacing below the top row */
+    justify-content: space-between;
+    align-items: center;
 }
 
 .bottomRow {
     display: flex;
     justify-content: space-between; /* Distribute space between the child elements */
-}
-
-.gameInfo1 > div {
-    margin: 0 10px; /* Add some spacing between the elements */
+    padding-left: 0.2rem;
+    padding-right: 0.2rem;
 }
 
 .gameTime {
     margin-bottom: 0.1rem;
+    text-align:left;
 }
 
 .gameTeams {
@@ -220,17 +241,207 @@ h1,h2 {
     margin-bottom: 0.1rem;
 }
 
-/* Mobile-specific optimizations */
+
+/* Status box container */
+.status-box {
+    display: flex; /* Flexbox to align circle and text */
+    align-items:center;
+    gap: 0.2rem; /* Space between circle and text */
+    padding-left: 0.2rem; /* Add padding inside the box */
+    padding-right: 0.2rem; /* Add padding inside the box */
+/*    background-color: #f4fff8;*/
+    background: linear-gradient(to bottom, #f9f9f9, #e0e0e0); /* Light gradient for depth */
+
+    border: 1px solid #35463a; /* Border around the box */
+    border-radius: 3px; /* Rounded corners */
+    box-shadow: inset 3px 3px 3px  rgba(0, 0, 0, 0.3); /* Inner shadow for depth */
+    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth animation */
+    cursor: pointer;
+}
+.status-box:hover {
+    transform: scale(1.1); /* Tee ympyrä hieman suuremmaksi */
+    transition: all 0.2s ease; /* Sulava siirtymä */
+}
+
+/* Circle styles */
+.status-circle {
+    width: 0.9em; /* Diameter of the circle */
+    height: 0.9em;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-block; /* Ensures the element is treated as a box */
+    box-shadow: inset 3px 3px 2px rgba(0, 0, 0, 0.3); /* Inner shadow for depth */
+    cursor: pointer; /* Tämä mahdollistaa klikattavuuden */
+
+}
+
+/* Color coding for the circle */
+.circle-green {
+    background-color: green;
+    border: 1px solid #35463a; /* Correct border declaration */
+
+}
+
+.circle-yellow {
+    background-color: rgb(255, 230, 0);
+    border: 1px solid #35463a; /* Correct border declaration */
+
+}
+
+.circle-red {
+    background-color: red;
+    border: 1px solid #35463a; /* Correct border declaration */
+
+}
+
+/* Text inside the status box */
+.status-text {
+    font-size: 0.9em; /* Text size */
+    color: #35463a; /* Text color */
+}
+
+/* Modal Overlay */
+
+.modal-window {
+    position: absolute;
+    background: #fff;
+    border-radius: 8px;
+    padding: 0.3rem;
+    width: 300px;
+    max-width: 90%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+}
+.modal-arrow {
+    position: absolute;
+    bottom: 98%; /* Nuoli modalin yläpuolella */
+    right: 10px; /* Sijoitus modalin oikeasta reunasta */
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid #fff; /* Nuolen väri */
+    z-index: 20;
+}
+
+
+
+.modal-close {
+    position: absolute;
+    top: 0px;
+    right: 10px;
+    font-size: 1.5em;
+    color: #aaa;
+    transition: color 0.3s ease;
+}
+
+.modal-close:hover {
+    color: #333; /* Darker hover effect */
+    cursor: pointer;
+}
+
+.update-jopox-btn {
+    display: flex; /* Flexbox to align circle and text */
+    margin-left: auto;
+    margin-right: 0.2rem;
+    gap: 0.2rem; /* Space between circle and text */
+    padding: 0.2rem;/*    background-color: #f4fff8;*/
+    padding-bottom: 0;
+    padding-top: 0;
+    background: linear-gradient(to bottom, #f9f9f9, #e0e0e0); /* Light gradient for depth */
+
+    border: 1px solid #35463a; /* Border around the box */
+    border-radius: 3px; /* Rounded corners */
+    box-shadow: inset 3px 3px 3px  rgba(0, 0, 0, 0.3); /* Inner shadow for depth */
+    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth animation */
+    cursor: pointer;
+}
+
+.update-jopox-btn:hover {
+    transform: scale(1.1); /* Tee ympyrä hieman suuremmaksi */
+    transition: all 0.2s ease; /* Sulava siirtymä */
+}
+
+.modal-window2 {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #dfeae2;
+    border: 1px solid #35463a;
+    padding: 0.8rem;
+    z-index: 1000;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    color: #35463a;
+    align-items: center;
+    font-size: 1.2em; /* Example font size */
+    width: 80%; /* Default width */
+    max-width: 500px; /* Maximum width */
+    max-height: 90vh; /* Maximum height */
+    overflow-y: auto; /* Enable vertical scrolling if needed */
+}
+
+/* Media query for smaller screens */
 @media (max-width: 600px) {
-    .game-window {
-        padding: 0;
+    .modal-window2 {
+        width: 90%; /* Increase width for smaller screens */
+        padding: 1rem; /* Increase padding for better touch interaction */
+        font-size: 1em; /* Adjust font size for readability */
     }
+}
 
-    .window-header {
-        font-size: 1rem;
+.modal-content {
+    padding: 0.4rem;
+    max-width: 500px;
+    text-align: left;
+}
+
+.modal-content label {
+    padding-right: 0.2rem; /* Esimerkki paddingista oikealla puolella */
+    font-weight: bold; /* Esimerkki, tee labelista lihavoitu */
+    font-size: 0.7em; /* Esimerkki fonttikoko */
+    display: inline-block; /* Varmistaa, että labelit eivät vie koko tilaa */
+    margin-bottom: 8px; /* Lisää väli labelin ja sen sisällön väliin */
+}
+
+/*muokkaa modal-ikkunan sisällä olevien input-kenttien fontin koko pienemmäksi*/
+.modal-content input {
+    font-size: 0.8em;
+}
+
+.modal-content select {
+    font-size: 0.8em;
+}
+
+.editable-content {
+  border: 1px solid #ccc;
+  padding: 10px;
+  min-height: 100px;
+  font-family: Arial, sans-serif;
+  font-size: 0.8em;
+  background-color: #f9f9f9;
+}
+
+.updated-field {
+    background-color: #ffff99; /* Vaalean keltainen taustaväri */
+    font-weight: bold;
+}
+
+#public_info {
+    font-size: 12px;
+    border: 1px solid #35463a; /* Set border width, style, and color */
+    padding: 0.5rem;
+}
+
+/* Modal Animation */
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
     }
-
-    .game-card {
-        font-size: 0.8rem;
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }

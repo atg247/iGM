@@ -57,9 +57,70 @@
                 <button name="action" value="follow" type="submit" class="btn btn-secondary">Lisää joukkue seurattavaksi</button>
             </div>
         </div>
-        
     </div>
 </form>
+
+<button id="activateJopox" class="btn btn-primary">Aktivoi Jopox-yhteys</button>
+
+<!-- Modal for Jopox Authentication -->
+<div class="modal fade" id="jopoxAuthModal" tabindex="-1" aria-labelledby="jopoxAuthModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="jopoxAuthModalLabel">Aktivoi Jopox-yhteys</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Syötä Jopox-käyttäjätunnuksesi ja -salasanasi. Nämä tiedot tallennetaan turvallisesti ja suojataan luotettavasti.</p>
+        <button class="btn btn-info" data-bs-toggle="tooltip" data-bs-placement="top" title="Salasanojen suojaus: Salasanoja ei tallenneta selväkielisinä. Käytämme vahvaa salausta, jotta vain sinun tunnuksesi voivat käyttää niitä.">Miten suojaamme salasanasi?</button>
+        <form id="jopoxAuthForm">
+          <div class="mb-3">
+            <label for="jopoxUsername" class="form-label">Jopox Käyttäjätunnus</label>
+            <input type="text" id="jopoxUsername" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="jopoxPassword" class="form-label">Jopox Salasana</label>
+            <input type="password" id="jopoxPassword" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Tallenna tiedot</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<form id="jopox_teamidselector" method="POST" action="{{ url_for('update_teams') }}" class="mt-4">
+    <div class="form-group row">
+        <label for="jopox_teamidselector" class="col-sm-2 col-form-label">Jopox ylläpito</label>
+        <div class="col-sm-10">
+            <select id="jopox_team_id" class="form-control" required>
+                <option value="">Valitse Jopox-joukkue</option>
+                <option value="8780">S-Kiekko U9</option>
+                <option value="8790">S-Kiekko U10</option>
+                <option value="8788">S-Kiekko U11</option>
+                <option value="8787">S-Kiekko U12</option>
+                <option value="8786">S-Kiekko U13</option>
+                <option value="8784">S-Kiekko U14</option>
+                <option value="8782">S-Kiekko U15</option>
+                <option value="8789">S-Kiekko U16</option>
+                <option value="8785">S-Kiekko U18 Mestis</option>
+                <option value="8783">S-Kiekko U18 Ak</option>
+                <option value="8781">S-Kiekko U20</option>
+            </select>
+        </div>
+        <!-- Submit Button -->
+        <div class="col-sm-12 text-center">
+            <button name="action" type="submit" class="btn btn-primary">Lisää Jopox-joukkue hallinnoitavaksi</button>
+        </div>    
+    </div>
+</form>
+
+<!-- Jopox Managed Team -->
+<h2>Jopox-joukkueesi:</h2>
+{% if jopox_managed_team %}
+    <p id="jopoxManagedTeam">{{ jopox_managed_team }}</p>
+{% else %}
+    <p id="jopoxManagedTeam">Et hallinnoi tällä hetkellä mitään Jopox-joukkuetta.</p>
+{% endif %}
 
 <!-- Managed Teams List -->
 <h2>Hallinnoimasi joukkueet:</h2>
@@ -99,6 +160,17 @@
             </div>
             <div class="modal-body">
                 <form id="removeTeamsForm">
+                    <h5>Jopox-joukkueesi</h5>
+                    <ul>
+                        {% if jopox_managed_team %}
+                        <li>
+                            <input type="checkbox" name="teams" value="{{ jopox_managed_team }}" data-relationship="jopox">
+                            {{ jopox_managed_team }}
+                        </li>
+                        {% else %}
+                        <p>No Jopox managed team available.</p>
+                        {% endif %}
+                    </ul>
                     <h5>Hallinnoimasi Joukkueet</h5>
                     <ul>
                         {% for team in managed_teams %}

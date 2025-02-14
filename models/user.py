@@ -13,7 +13,12 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(150), unique=True, nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
-    
+    jopox_team_id = db.Column(db.String(100), nullable=True)  # Id of the team managed in Jopox
+    jopox_team_name = db.Column(db.String(100), nullable=True)  # Name of the team managed in Jopox
+    jopox_username = db.Column(db.String(150), nullable=True)
+    jopox_password = db.Column(db.LargeBinary, nullable=True)  # Salattu salasana
+
+
     # Relationship to teams through UserTeam table
     teams = db.relationship('Team', secondary='user_team', back_populates='users', overlaps="user_team_entries,team_user_entries")
 
@@ -43,7 +48,7 @@ class User(db.Model, UserMixin):
 class Team(db.Model):
     __tablename__ = 'team'
     id = db.Column(db.Integer, primary_key=True)
-    team_id = db.Column(db.String(100), unique=True, nullable=False)  # The team's unique identifier
+    team_id = db.Column(db.String(100), nullable=False)  # The team's unique identifier
     team_name = db.Column(db.String(150), nullable=False)
     stat_group = db.Column(db.String(150), nullable=True)
     season = db.Column(db.String(50), nullable=True)
@@ -53,6 +58,34 @@ class Team(db.Model):
 
     # Relationship to users through UserTeam table
     users = db.relationship('User', secondary='user_team', back_populates='teams', overlaps="user_team_entries,team_user_entries")
+    # Relationship to games
+    games = db.relationship('TGamesdb', back_populates='team', lazy=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('team_id', 'stat_group', name='uq_team_id_stat_group'),
+    )
+
+#create a table for users game schedule from Tulospalvelu.fi
+class TGamesdb(db.Model):
+    __tablename__ = 'tgames'
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.String(100), nullable=False)
+    team_id = db.Column(db.String(100), db.ForeignKey('team.team_id'), nullable=False)  # Link to the team
+    date = db.Column(db.String(50), nullable=False)
+    time = db.Column(db.String(50), nullable=False)
+    home_team = db.Column(db.String(150), nullable=False)
+    away_team = db.Column(db.String(150), nullable=False)
+    home_goals = db.Column(db.String(50), nullable=False)
+    away_goals = db.Column(db.String(50), nullable=False)
+    location = db.Column(db.String(150), nullable=False)
+    level_name = db.Column(db.String(150), nullable=False)
+    small_area_game = db.Column(db.String(50), nullable=False)
+    team_name = db.Column(db.String(150), nullable=False)
+    type = db.Column(db.String(50), nullable=False)
+    sortable_date = db.Column(db.DateTime, nullable=False)
+
+    team = db.relationship('Team', back_populates='games')  # One team to many games
+     
 
 # UserTeam Association Table
 class UserTeam(db.Model):
