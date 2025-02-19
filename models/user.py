@@ -47,8 +47,8 @@ class User(db.Model, UserMixin):
 # Team Table
 class Team(db.Model):
     __tablename__ = 'team'
-    id = db.Column(db.Integer, primary_key=True)
-    team_id = db.Column(db.String(100), nullable=False)  # The team's unique identifier
+    id = db.Column(db.Integer, nullable=False)
+    team_id = db.Column(db.String(100), primary_key=True)
     team_name = db.Column(db.String(150), nullable=False)
     stat_group = db.Column(db.String(150), nullable=True)
     season = db.Column(db.String(50), nullable=True)
@@ -84,6 +84,8 @@ class TGamesdb(db.Model):
     type = db.Column(db.String(50), nullable=False)
     sortable_date = db.Column(db.DateTime, nullable=False)
 
+
+
     team = db.relationship('Team', back_populates='games')  # One team to many games
      
 
@@ -91,8 +93,9 @@ class TGamesdb(db.Model):
 class UserTeam(db.Model):
     __tablename__ = 'user_team'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', name='fk_user_team_user_id'), nullable=False)
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id', name='fk_user_team_team_id'), nullable=False)
+
     relationship_type = db.Column(db.String(50), nullable=False)  # 'managed' or 'followed'
 
     # Relationships to navigate between related items, avoiding overlaps
