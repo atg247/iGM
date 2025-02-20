@@ -75,6 +75,10 @@
         <button class="btn btn-info" data-bs-toggle="tooltip" data-bs-placement="top" title="Salasanojen suojaus: Salasanoja ei tallenneta selväkielisinä. Käytämme vahvaa salausta, jotta vain sinun tunnuksesi voivat käyttää niitä.">Miten suojaamme salasanasi?</button>
         <form id="jopoxAuthForm">
           <div class="mb-3">
+             <label for="jopoxUrl" class="form-label">Jopox-kirjautumisen URL</label>
+             <input type="text" id="jopoxLoginUrl" class="form-control" required>
+          </div>
+          <div class="mb-3">
             <label for="jopoxUsername" class="form-label">Jopox Käyttäjätunnus</label>
             <input type="text" id="jopoxUsername" class="form-control" required>
           </div>

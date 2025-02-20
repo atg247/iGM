@@ -12,33 +12,50 @@ from models.user import db, User
 # Configure logging to a file
     
 class JopoxScraper:
-    def __init__(self, username, password):
-        self.login_url = "https://s-kiekko-app.jopox.fi/login"
+    def __init__(self, user_id, username, password):
+#       self.login_url = "https://s-kiekko-app.jopox.fi/login"
+        self.user = db.session.get(User, user_id)
+        self.login_url = self.user.jopox_login_url        
         self.admin_login_url = "https://s-kiekko-app.jopox.fi/adminlogin"
         self.base_url = "https://hallinta3.jopox.fi//Admin/HockeyPox2020/Games/Games.aspx"
         self.session = requests.Session()
         self.username = username
         self.password = password
 
+    def get_event_validation(self, response):
+        soup = BeautifulSoup(response.text, 'html.parser')
+        viewstate = soup.find("input", {"name": "__VIEWSTATE"})["value"]
+        eventvalidation = soup.find("input", {"name": "__EVENTVALIDATION"})["value"]
+        viewstategenerator = soup.find("input", {"name": "__VIEWSTATEGENERATOR"})["value"]
+        return {
+        '__VIEWSTATE': viewstate,
+        '__EVENTVALIDATION': eventvalidation,
+        '__VIEWSTATEGENERATOR': viewstategenerator
+        }
+
     def login(self):
+        url = self.login_url
+        response = self.session.get(url)
+        event_validation_data = self.get_event_validation(response)
+        
         login_payload = {
             "__EVENTTARGET": "",
             "__EVENTARGUMENT": "",
-            "__VIEWSTATE": "4NWxflGFghGP1YQS8e08WYCq4fy7aPmfxX2P9iMaq3kvQexgiHGK35tLcG77/xt4MDDtp662387WiA5Bcai5gz8fQtPpsn0h3nqcEJ33oYxx9f+l+T0npKKclOHufqhPKm3PLVLrlIPZnSQuT+x6Fg==",
-            "__VIEWSTATEGENERATOR": "808BB379",
-            "__EVENTVALIDATION": "oIx/wD7w2bUUazztMa7cwiQ7iwXYV37eSeEkhhcCymnZfmS/rK6dBHKMP6oGzR/6yqZkHtooWHXFZjpJmHe1u25Pby/DuE5SX+FsCZkCnurPafqJg+XIz2EbNG3Hzqlu1ywyR3Kyo2cwYaO0/sKiZtIf/fvWKtmno06o+U+53spSJ34jG5+ZjVWKlDz6XtuU",
-            "UsernameTextBox": self.username,
+            "__VIEWSTATE": event_validation_data['__VIEWSTATE'],
+            "__VIEWSTATEGENERATOR": event_validation_data['__VIEWSTATEGENERATOR'],
+            "__EVENTVALIDATION": event_validation_data['__EVENTVALIDATION'],            "UsernameTextBox": self.username,
+            "UsernameTextBox": self.username,            
             "PasswordTextBox": self.password,
             "LoginButton": "Kirjaudu"
         }
         response = self.session.post(self.login_url, data=login_payload)
-        #logging.debug("Login attempt payload: %s", login_payload)
-        #logging.debug("Login response status code: %d", response.status_code)
-        #logging.debug("Login response text: %s", response.text)
+        #logging.info("Login attempt payload: %s", login_payload)
+        #logging.info("Login response status code: %d", response.status_code)
+        #logging.info("Login response text: %s", response.text)
 
         if response.status_code == 200:
             logging.info("Login successful!")
-            #logging.debug("Cookies after login: %s", self.session.cookies)
+            #logging.info("Cookies after login: %s", self.session.cookies)
             return True
     
         else:
@@ -46,20 +63,24 @@ class JopoxScraper:
             return False
         
     def login_for_credentials(self):
+        url = self.login_url
+        response = self.session.get(url)
+        event_validation_data = self.get_event_validation(response)
+        
         login_payload = {
             "__EVENTTARGET": "",
             "__EVENTARGUMENT": "",
-            "__VIEWSTATE": "4NWxflGFghGP1YQS8e08WYCq4fy7aPmfxX2P9iMaq3kvQexgiHGK35tLcG77/xt4MDDtp662387WiA5Bcai5gz8fQtPpsn0h3nqcEJ33oYxx9f+l+T0npKKclOHufqhPKm3PLVLrlIPZnSQuT+x6Fg==",
-            "__VIEWSTATEGENERATOR": "808BB379",
-            "__EVENTVALIDATION": "oIx/wD7w2bUUazztMa7cwiQ7iwXYV37eSeEkhhcCymnZfmS/rK6dBHKMP6oGzR/6yqZkHtooWHXFZjpJmHe1u25Pby/DuE5SX+FsCZkCnurPafqJg+XIz2EbNG3Hzqlu1ywyR3Kyo2cwYaO0/sKiZtIf/fvWKtmno06o+U+53spSJ34jG5+ZjVWKlDz6XtuU",
+            "__VIEWSTATE": event_validation_data['__VIEWSTATE'],
+            "__VIEWSTATEGENERATOR": event_validation_data['__VIEWSTATEGENERATOR'],
+            "__EVENTVALIDATION": event_validation_data['__EVENTVALIDATION'],            "UsernameTextBox": self.username,
             "UsernameTextBox": self.username,
             "PasswordTextBox": self.password,
             "LoginButton": "Kirjaudu"
         }
         response = self.session.post(self.login_url, data=login_payload)
-        #logging.debug("Login attempt payload: %s", login_payload)
-        #logging.debug("Login response status code: %d", response.status_code)
-        #logging.debug("Login response text: %s", response.text)
+        #logging.info("Login attempt payload: %s", login_payload)
+        #logging.info("Login response status code: %d", response.status_code)
+        #logging.info("Login response text: %s", response.text)
 
         if response.status_code == 200:
             logging.info("Login successful!")
@@ -82,7 +103,7 @@ class JopoxScraper:
             jopox_credentials.append({'jopox_team_name': jopox_team_name})
             jopox_credentials.append({'jopox_team_id': jopox_team_id})
                     
-            #logging.debug("Cookies after login: %s", self.session.cookies)
+            #logging.info("Cookies after login: %s", self.session.cookies)
             return jopox_credentials
     
         else:
@@ -91,9 +112,9 @@ class JopoxScraper:
 
     def access_admin(self):
         response = self.session.get(self.admin_login_url)
-        #logging.debug("Admin access response status code: %d", response.status_code)
-        #logging.debug("Admin access response text: %s", response.text)
-        #logging.debug("Cookies after admin access: %s", self.session.cookies)
+        #logging.info("Admin access response status code: %d", response.status_code)
+        #logging.info("Admin access response text: %s", response.text)
+        #logging.info("Cookies after admin access: %s", self.session.cookies)
 
         if response.status_code == 200:
             logging.info("Admin access successful!")
@@ -104,36 +125,32 @@ class JopoxScraper:
 
     def modify_game(self, game_data, uid):
         mod_game_url = f"https://hallinta3.jopox.fi//Admin/HockeyPox2020/Games/Game.aspx?gId={uid}"
-
+        url = mod_game_url
         # Load the form page
         response = self.session.get(mod_game_url, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
             "Referer": mod_game_url,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         })
-        #logging.debug("Fetching game form page response status code: %d", response.status_code)
-        #logging.debug("Fetching game form page response text: %s", response.text)
+        logging.info("Fetching game form page response status code: %d", response.status_code)
+        #logging.info("Fetching game form page response text: %s", response.text)
 
         if response.status_code != 200:
             logging.error("Failed to load form page!")
             return
+        logging.info('modify_game(): fetching event validation data...')
 
         # Parse HTML and extract necessary values
-        soup = BeautifulSoup(response.text, 'html.parser')
-        viewstate = soup.find("input", {"name": "__VIEWSTATE"})["value"]
-        eventvalidation = soup.find("input", {"name": "__EVENTVALIDATION"})["value"]
-        viewstategenerator = soup.find("input", {"name": "__VIEWSTATEGENERATOR"})["value"]
-        logging.debug("game_data received for modifying game: %s", game_data)
-
-    
+        event_validation_data = self.get_event_validation(response)            
+        logging.info("Event validation data: %s", event_validation_data)
         # Build payload
         payload = {
             "__EVENTTARGET": "",
             "__EVENTARGUMENT": "",
             "__LASTFOCUS": "",
-            "__VIEWSTATE": viewstate,
-            "__VIEWSTATEGENERATOR": viewstategenerator,
-            "__EVENTVALIDATION": eventvalidation,
+            "__VIEWSTATE": event_validation_data['__VIEWSTATE'],
+            "__VIEWSTATEGENERATOR": event_validation_data['__VIEWSTATEGENERATOR'],
+            "__EVENTVALIDATION": event_validation_data['__EVENTVALIDATION'],            "UsernameTextBox": self.username,
             #"ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSeasons": game_data.get("SeasonId", ""),
             #"ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSubSites": game_data.get("SubSiteId", ""),
             #"ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
@@ -161,9 +178,9 @@ class JopoxScraper:
         }
 
         response = self.session.post(mod_game_url, data=payload, headers=headers)
-        #logging.debug("Add game response status code: %d", response.status_code)
-        #logging.debug("Add game response text: %s", response.text)
-        #logging.debug("Add game response headers: %s", response.headers)
+        #logging.info("Add game response status code: %d", response.status_code)
+        #logging.info("Add game response text: %s", response.text)
+        #logging.info("Add game response headers: %s", response.headers)
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -185,50 +202,26 @@ class JopoxScraper:
             "Referer": add_game_url,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         })
-        #logging.debug("Fetching game form page response status code: %d", response.status_code)
-        #logging.debug("Fetching game form page response text: %s", response.text)
+        #logging.info("Fetching game form page response status code: %d", response.status_code)
+        #logging.info("Fetching game form page response text: %s", response.text)
 
         if response.status_code != 200:
             logging.error("Failed to load form page!")
             return
 
         # Parse HTML and extract necessary values
-        soup = BeautifulSoup(response.text, 'html.parser')
-        viewstate = soup.find("input", {"name": "__VIEWSTATE"})["value"]
-        eventvalidation = soup.find("input", {"name": "__EVENTVALIDATION"})["value"]
-        viewstategenerator = soup.find("input", {"name": "__VIEWSTATEGENERATOR"})["value"]
-        HomeTeamTextBox = ''
-        # use soup to find sitenamelabel
-        try:
-            SiteNameLabel_tag = soup.find('span', {'id': 'MainContentPlaceHolder_GamesBasicForm_SitenameLabel'})
-            SiteNameLabel = SiteNameLabel_tag.text.strip() if SiteNameLabel_tag else ''
-            logging.info("SiteNameLabel: %s", SiteNameLabel)
-
-            #remove anything in brackets from SiteNameLabel
-            SiteNameLabel = re.sub(r'\([^)]*\)', '', SiteNameLabel)
-            logging.info("SiteNameLabel: %s", SiteNameLabel)
-
-            #check which are the common parts of SiteNameLabel and game['Team Name']
-            common_part = os.path.commonprefix([SiteNameLabel, game['Team Name']])
-            logging.info("Common part: %s", common_part)
-            #remove common part from game['Team Name']
-            HomeTeamTextBox = game['Team Name'].replace(common_part, '')
-            logging.info("HomeTeamTextBox: %s", HomeTeamTextBox)
-
-                        
-
-        except Exception as e:
-            logging.error("Error parsing home_team: %s", e)
-            raise e
+        event_validation_data = self.get_event_validation(response)
+        team_name = game.get('Team Name')            
+        HomeTeamTextBox = self.homeTeamTextBox(response, team_name)
 
         # Build payload
         payload = {
             "__EVENTTARGET": "",
             "__EVENTARGUMENT": "",
             "__LASTFOCUS": "",
-            "__VIEWSTATE": viewstate,
-            "__VIEWSTATEGENERATOR": viewstategenerator,
-            "__EVENTVALIDATION": eventvalidation,
+            "__VIEWSTATE": event_validation_data['__VIEWSTATE'],
+            "__VIEWSTATEGENERATOR": event_validation_data['__VIEWSTATEGENERATOR'],
+            "__EVENTVALIDATION": event_validation_data['__EVENTVALIDATION'],            "UsernameTextBox": self.username,
             "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSeasons": game_data.get("SeasonId", ""),
             "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSubSites": game_data.get("SubSiteId", ""),
             #"ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
@@ -271,7 +264,7 @@ class JopoxScraper:
             "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
         }
 
-        logging.debug("Submitting game data payload: %s", payload)
+        logging.info("Submitting game data payload: %s", payload)
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -280,7 +273,7 @@ class JopoxScraper:
         }
 
         response = self.session.post(add_game_url, data=payload, headers=headers)
-        logging.debug("Add game response status code: %d", response.status_code)
+        logging.info("Add game response status code: %d", response.status_code)
 
         soup = BeautifulSoup(response.text, 'html.parser')
         error_message = soup.find('textarea', {'id': 'ErrorTextBox'})
@@ -290,7 +283,27 @@ class JopoxScraper:
         else:
             logging.info("Game added successfully or no error message received.")
             return "Game added successfully!"
+    
+    def homeTeamTextBox(self, response, team_name):
+        try:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            SiteNameLabel_tag = soup.find('span', {'id': 'MainContentPlaceHolder_GamesBasicForm_SitenameLabel'})
+            SiteNameLabel = SiteNameLabel_tag.text.strip() if SiteNameLabel_tag else ''
+            logging.info("SiteNameLabel: %s", SiteNameLabel)
 
+            #remove anything in brackets from SiteNameLabel
+            SiteNameLabel = re.sub(r'\([^)]*\)', '', SiteNameLabel)
+            logging.info("SiteNameLabel: %s", SiteNameLabel)
+
+            #check which are the common parts of SiteNameLabel and team_name
+            common_part = os.path.commonprefix([SiteNameLabel, team_name])
+            logging.info("Common part: %s", common_part)
+            #remove common part from team_name
+            HomeTeamTextBox = team_name.replace(common_part, '')
+            logging.info("HomeTeamTextBox: %s", HomeTeamTextBox)
+            return HomeTeamTextBox
+        except Exception as e:
+            logging.error("Error parsing home_team: %s", e)
 
     def fetch_page(self, url):
         # Lähetetään GET-pyyntö
@@ -394,7 +407,7 @@ class JopoxScraper:
 
             print('parsing...')
             #save parsed data to log
-            #logging.debug("Parsing game details: %s", soup)
+            #logging.info("Parsing game details: %s", soup)
 
             league_dropdown = soup.find('select', {'id': 'LeagueDropdownList'})
             if league_dropdown:

@@ -209,8 +209,6 @@ $('#dashboardForm').on('submit', function (e) {
     });
 });
 
-<<<<<<< HEAD
-=======
 $(document).ready(function () {
     // Aktivoi Jopox-yhteys -painike
     $('#activateJopox').click(function () {
@@ -220,7 +218,8 @@ $(document).ready(function () {
     // Tietojen tallentaminen Jopoxiin
     $('#jopoxAuthForm').submit(function (e) {
         e.preventDefault();
-
+        
+        const jopoxLoginUrl = $('#jopoxLoginUrl').val();
         const jopoxUsername = $('#jopoxUsername').val();
         const jopoxPassword = $('#jopoxPassword').val();
 
@@ -230,6 +229,7 @@ $(document).ready(function () {
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({
+                jopoxLoginUrl: jopoxLoginUrl,
                 username: jopoxUsername,
                 password: jopoxPassword
             }),
@@ -272,7 +272,6 @@ $('#jopox_teamidselector').submit(function () {
     }
 });
 
->>>>>>> Vertailun-parantelu-ja-jopox-joukkuuen-lisääminen
 
 // Handle remove teams confirmation
 $('#confirmRemoveTeams').click(function () {

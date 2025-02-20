@@ -192,35 +192,29 @@ def dashboard():
 @app.route('/dashboard/save_jopox_credentials', methods=['POST'])
 def save_jopox_credentials():
     data = request.get_json()
-
+    login_url = data['jopoxLoginUrl']
     username = data['username']
     password = data['password']
-    print(f"Received Jopox credentials: {username}, {password}")
-    
-    print("db engine url", db.engine.url)
-    
+    print(f"Received Jopox credentials: {username}, {password}, {login_url}")
     
     # Salataan salasana
     encrypted_password = cipher_suite.encrypt(password.encode('utf-8'))
     print(f"Encrypted password: {encrypted_password}")
     # Tallennetaan käyttäjän tiedot tietokantaan
     user = db.session.get(User, current_user.id)  # Oletetaan, että käyttäjän tiedot haetaan sessiosta
+    user.jopox_login_url = login_url
     user.jopox_username = username
     user.jopox_password = encrypted_password
 
     print(f"password saved: {user.jopox_password}")
     print(f"username saved: {user.jopox_username}")
-
+    print(f"login_url saved: {user.jopox_login_url}")
     #kirjaudutaan jopoxiin ja haetaan joukkuetiedot
-    scraper = JopoxScraper(username, password)
+    db.session.commit()
+    scraper = JopoxScraper(current_user.id, username, password)
     jopox_credentials = scraper.login_for_credentials()
     logging.info(f"jopox credentials received: {jopox_credentials}")
 
-        
-    pass
-
-
-    db.session.commit()
     print(f"Jopox credentials saved successfully for user {current_user.username}.")
     return jsonify({'message': 'Jopox credentials saved successfully.'}), 200
 
@@ -616,7 +610,7 @@ def get_jopox_games():
     j_team_id = current_user.jopox_team_id
     print("j_team_id", j_team_id)
 
-    scraper = JopoxScraper(username, password)
+    scraper = JopoxScraper(current_user.id, username, password)
     print('starting scraper') 
     descriptions = hae_kalenteri(j_team_id)
     print ("descriptions:", descriptions[:2])
@@ -682,7 +676,7 @@ def update_jopox():
     password = decrypted_password
 
     try: 
-        scraper = JopoxScraper(username, password)
+        scraper = JopoxScraper(current_user.id, username, password)
 
         if scraper.login() and scraper.access_admin():
             game_data = {
@@ -733,7 +727,7 @@ def create_jopox():
     if game:
         try: 
             pass
-            scraper = JopoxScraper(username, password)
+            scraper = JopoxScraper(current_user.id, username, password)
 
             if scraper.login() and scraper.access_admin():
                 game_data = {
@@ -761,9 +755,6 @@ def create_jopox():
             
         except Exception as e:
             return jsonify({"error": str(e)}), 500
-    
-    else:
-        print("Skippasi tänne.")
 
 @app.route('/api/jopox_form_information')
 def jopox_form_information():
@@ -777,7 +768,7 @@ def jopox_form_information():
     decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
     password = decrypted_password
 
-    scraper = JopoxScraper(username, password)
+    scraper = JopoxScraper(current_user.id, username, password)
     print('starting scraper')
 
     if scraper.login() and scraper.access_admin():
