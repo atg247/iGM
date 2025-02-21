@@ -39,3 +39,6 @@ build/
 muistilista*
 test/
 project_structure.txt
+
+# ignore files in flask_sessions folder
+flask_sessions/
