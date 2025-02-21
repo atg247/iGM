@@ -20,7 +20,10 @@ import logging
 from flask_mail import Mail
 from sqlalchemy import and_
 from cryptography.fernet import Fernet
-from flask import request, jsonify
+from flask import request, jsonify, session
+from flask_session import Session
+
+
 
 
 
@@ -34,6 +37,13 @@ app = Flask(__name__)
 app.config.from_object('config.Config')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key_here')  # Add secret key for sessions
 mail.init_app(app)
+
+app.config['SESSION_TYPE'] = 'filesystem'  # Vaihtoehdot: 'filesystem', 'redis', 'memcached', 'mongodb', jne.
+app.config['SESSION_PERMANENT'] = False  # Istunto ei ole pysyvä (se nollautuu selainistunnon päättyessä)
+app.config['SESSION_USE_SIGNER'] = True  # Lisää turvakerroksen session arvoihin
+app.config['SESSION_FILE_DIR'] = './flask_session'  # Määritä hakemisto, jossa session tiedot tallennetaan
+Session(app)  # Aktivoi Flask-Session
+
 
 #MUISTA POISTAA TÄMÄ VALMIISTA VERSIOSTA!!!!!!!!!!!!!!!!!!!!!!!!
 # Set logging level to DEBUG
@@ -75,6 +85,12 @@ def load_user(user_id):
 # Create tables if they do not exist (for simplicity)
 with app.app_context():
     db.create_all()
+
+
+@app.route('/test_session')
+def test_session():
+    session['test'] = 'Session toimii!'
+    return jsonify({"message": session.get('test')})
 
 # Register route
 @app.route('/register', methods=['GET', 'POST'])
@@ -452,9 +468,7 @@ def get_user_teams():
     
 @app.route('/api/schedules')
 def get_all_schedules():
-    """
-    Fetch schedules for all managed and followed teams, sorted by date and time.
-    """
+    logging.debug('starting get_all_schedules endpoint to fetch games from tulospalvelu')
     try:
         managed_teams = [
             {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "type": 'manage'}
@@ -473,6 +487,7 @@ def get_all_schedules():
 
         # Fetch games for each team
         for team in all_teams:
+            logging.debug(f"Fetching games for {team['team_name']}")
             try:
                 fetcher = GameFetcher(
                     dwl=0,  # Replace with actual value
@@ -601,39 +616,31 @@ def get_all_schedules():
 @app.route('/api/jopox_games')
 @login_required
 def get_jopox_games():
-    print('starting api/jopox_games')
+    logging.debug('starting api/jopox_games')
     username = current_user.jopox_username
     #decrypt password from database
     encrypted_password = current_user.jopox_password
     decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
     password = decrypted_password
     j_team_id = current_user.jopox_team_id
-    print("j_team_id", j_team_id)
 
     scraper = JopoxScraper(current_user.id, username, password)
-    print('starting scraper') 
     descriptions = hae_kalenteri(j_team_id)
-    print ("descriptions:", descriptions[:2])
-    if scraper.login() and scraper.access_admin():
+    logging.debug('starting scraper with jopox_games, calling ensure_logged_in and access_admin')
+    if scraper.access_admin():
         try:
-            print('scraping jopox form information')
             jopox_games = scraper.scrape_jopox_games()
-            print('jopox_games:', jopox_games[:2])
-            #find matching description based on uid and add it to jopox_games
             for game in jopox_games:
                 matching_description = next((desc for desc in descriptions if desc['Uid'] == game['uid']), None)
                 if matching_description:
-                    # Lisää description tiedot jopox_gamesiin
                     game['Lisätiedot'] = matching_description['Lisätiedot']
-
-            return jopox_games
-    
+            return jsonify(jopox_games)
         except Exception as e:
-            # Log the error for debugging
             app.logger.error(f"Error fetching Jopox games: {e}")
-
-            # Return an error response
             return jsonify({"status": "error", "message": str(e)}), 500
+        
+
+        
     
 @app.route('/api/compare', methods=['POST'])
 @login_required
@@ -641,7 +648,7 @@ def compare_games_endpoint():
 
     try:
         # Receive datasets from the frontend
-        print("käynnistetään compare_games_endpoint")
+        logging.debug('starting compare_games_endpoint')
         data = request.get_json()
         tulospalvelu_games = data.get('tulospalvelu_games', [])
         jopox_games = data.get('jopox_games', [])
@@ -659,7 +666,7 @@ def compare_games_endpoint():
 
 @app.route('/api/update_jopox', methods=['POST'])
 def update_jopox():
-    print("launching update_jopox()")
+    logging.debug('starting update_jopox')
     data = request.json
     game = data.get('game')
     best_match = data.get('best_match')
@@ -675,10 +682,11 @@ def update_jopox():
     decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
     password = decrypted_password
 
-    try: 
-        scraper = JopoxScraper(current_user.id, username, password)
-
-        if scraper.login() and scraper.access_admin():
+    scraper = JopoxScraper(current_user.id, username, password)
+    
+    logging.debug('starting scraper with update_jopox, calling ensure_logged_in and access_admin')
+    if scraper.access_admin():
+        try:
             game_data = {
                 "SeasonId": "547",
                 "SubSiteId": "8787",
@@ -705,53 +713,46 @@ def update_jopox():
             scraper.modify_game(game_data, uid)
             return jsonify({"message": "Pelin tiedot muokattu"}), 200
         
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/create_jopox', methods=['POST'])
 def create_jopox():
-    pass
+    logging.debug('starting create_jopox')
     data = request.json
     game = data.get('game')
-
-    print("Game info:", game)
 
     username = current_user.jopox_username
     #decrypt password from database
     encrypted_password = current_user.jopox_password
     decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
     password = decrypted_password
-    print("Username:", username)
-    print("Password:", password)
+    scraper = JopoxScraper(current_user.id, username, password)
 
-    if game:
+    logging.debug('starting scraper with create_jopox, calling ensure_logged_in and access_admin')
+    if scraper.access_admin():
         try: 
-            pass
-            scraper = JopoxScraper(current_user.id, username, password)
-
-            if scraper.login() and scraper.access_admin():
-                game_data = {
-                    "SeasonId": "547",
-                    "SubSiteId": "8787",
-                    "LeagueDropdownList": "15460", #"15116" Treenipelit 24/25, "15449" U12 Sarja lohko, "15460" U12 Sarja lohko 3B
-                    "EventDropDownList": "",
-                    "HomeTeamTextBox": game.get("Punainen", ""),#muokattu S-kiekko Punainen muotoon Punainen - pitää keksiä joku logiikka
-                    "GuestTeamTextBox": game.get("Away Team", ""),
-                    "AwayCheckbox": "", #Tämä pitää setviä kuntoon jos tyhjä niin kotijoukkue on kotijoukkue ja jos "on" niin vierasjoukkue on kotijoukkue.
-                    "GameLocationTextBox": game.get("Location", ""),
-                    "GameDateTextBox": game.get("Date", ""),
-                    "GameStartTimeTextBox": game.get("Time", ""),
-                    "GameDurationTextBox": game.get("GameDurationTextBox", "120"),
-                    "GameDeadlineTextBox": "",
-                    "GameMaxParticipatesTextBox": "",
-                    "FeedGameDropdown": "0",
-                    "GameNotificationTextBox": "",
-                    "SaveGameButton": "Tallenna"
-                    }
-                print("Game data:", game_data)
-                print("Game:", game)
-                scraper.add_game(game_data, game)
-                return jsonify({"message": "Ottelu lisätty. Päivitä sivu nähdäksesi muutokset."}), 200
+            game_data = {
+                "SeasonId": "547",
+                "SubSiteId": "8787",
+                "LeagueDropdownList": "15460", #"15116" Treenipelit 24/25, "15449" U12 Sarja lohko, "15460" U12 Sarja lohko 3B
+                "EventDropDownList": "",
+                "HomeTeamTextBox": game.get("Punainen", ""),#muokattu S-kiekko Punainen muotoon Punainen - pitää keksiä joku logiikka
+                "GuestTeamTextBox": game.get("Away Team", ""),
+                "AwayCheckbox": "", #Tämä pitää setviä kuntoon jos tyhjä niin kotijoukkue on kotijoukkue ja jos "on" niin vierasjoukkue on kotijoukkue.
+                "GameLocationTextBox": game.get("Location", ""),
+                "GameDateTextBox": game.get("Date", ""),
+                "GameStartTimeTextBox": game.get("Time", ""),
+                "GameDurationTextBox": game.get("GameDurationTextBox", "120"),
+                "GameDeadlineTextBox": "",
+                "GameMaxParticipatesTextBox": "",
+                "FeedGameDropdown": "0",
+                "GameNotificationTextBox": "",
+                "SaveGameButton": "Tallenna"
+                }
+            scraper.add_game(game_data, game)
+            return jsonify({"message": "Ottelu lisätty. Päivitä sivu nähdäksesi muutokset."}), 200
             
         except Exception as e:
             return jsonify({"error": str(e)}), 500
@@ -759,9 +760,8 @@ def create_jopox():
 @app.route('/api/jopox_form_information')
 def jopox_form_information():
     
-
+    logging.debug('starting jopox_form_information')
     j_game_id = request.args.get('uid')  # Extract the uid from query parameters
-    print ('j_game_id:', j_game_id)
     username = current_user.jopox_username
     #decrypt password from database
     encrypted_password = current_user.jopox_password
@@ -769,13 +769,10 @@ def jopox_form_information():
     password = decrypted_password
 
     scraper = JopoxScraper(current_user.id, username, password)
-    print('starting scraper')
-
-    if scraper.login() and scraper.access_admin():
+    logging.debug('starting scraper with jopox_form_information, calling access_admin')
+    if scraper.access_admin():
         try:
-            print('scraping jopox form information')
             jopox_form_information = scraper.j_game_details(j_game_id)
-            print('jopox form:', jopox_form_information)
             return jopox_form_information
 
         except Exception as e:
