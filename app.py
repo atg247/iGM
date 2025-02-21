@@ -142,7 +142,20 @@ def login():
         if user and bcrypt.check_password_hash(user.password_hash, form.password.data):
             login_user(user, remember=form.remember.data)  # Pass "remember" flag to login_user()
             flash('You have successfully logged in!', 'success')
-            return redirect(url_for('dashboard'))
+            #check if user has managed or followed teams and redirect to dashboard
+            managed_teams = db.session.query(Team).join(UserTeam).filter(
+                UserTeam.user_id == user.id,
+                UserTeam.relationship_type == 'manage'
+            ).all()
+            followed_teams = db.session.query(Team).join(UserTeam).filter(
+                UserTeam.user_id == user.id,
+                UserTeam.relationship_type == 'follow'
+            ).all()
+            if managed_teams or followed_teams:
+                return redirect(url_for('schedule'))
+            else:
+                return redirect(url_for('dashboard')) 
+            
         else:
             flash('Login failed. Check your username and password.', 'danger')
     return render_template('login.html', form=form)
@@ -226,17 +239,22 @@ def save_jopox_credentials():
     print(f"username saved: {user.jopox_username}")
     print(f"login_url saved: {user.jopox_login_url}")
     #kirjaudutaan jopoxiin ja haetaan joukkuetiedot
-    db.session.commit()
-    scraper = JopoxScraper(current_user.id, username, password)
+    scraper = JopoxScraper(user.id, username, password)
     jopox_credentials = scraper.login_for_credentials()
     logging.info(f"jopox credentials received: {jopox_credentials}")
 
-    print(f"Jopox credentials saved successfully for user {current_user.username}.")
+    # Tallennetaan joukkueen tiedot tietokantaan
+    user.jopox_team_name = jopox_credentials['jopox_team_name']
+    user.jopox_team_id = jopox_credentials['jopox_team_id']
+    user.jopox_calendar_url = jopox_credentials['calendar_url']
+    
+    db.session.commit()
+
+    print(f"Jopox credentials saved successfully for user {user.username}.")
     return jsonify({'message': 'Jopox credentials saved successfully.'}), 200
 
 #select the jopox team id for user account
 @app.route('/dashboard/select_jopox_team', methods=['POST'])
-
 @login_required
 def select_jopox_team():
     data = request.get_json()
@@ -617,15 +635,17 @@ def get_all_schedules():
 @login_required
 def get_jopox_games():
     logging.debug('starting api/jopox_games')
-    username = current_user.jopox_username
+    user = db.session.get(User, current_user.id)
+    username = user.jopox_username
     #decrypt password from database
-    encrypted_password = current_user.jopox_password
+    encrypted_password = user.jopox_password
     decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
     password = decrypted_password
-    j_team_id = current_user.jopox_team_id
+    j_team_id = user.jopox_team_id
 
-    scraper = JopoxScraper(current_user.id, username, password)
-    descriptions = hae_kalenteri(j_team_id)
+    scraper = JopoxScraper(user.id, username, password)
+    calendar_url = user.jopox_calendar_url
+    descriptions = hae_kalenteri(calendar_url)
     logging.debug('starting scraper with jopox_games, calling ensure_logged_in and access_admin')
     if scraper.access_admin():
         try:

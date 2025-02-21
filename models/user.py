@@ -16,6 +16,7 @@ class User(db.Model, UserMixin):
     jopox_team_id = db.Column(db.String(100), nullable=True)  # Id of the team managed in Jopox
     jopox_team_name = db.Column(db.String(50), nullable=True)  # Name of the team managed in Jopox
     jopox_login_url = db.Column(db.String(150), nullable=True)  # URL for Jopox login
+    jopox_calendar_url = db.Column(db.String(150), nullable=True)  # URL for Jopox calendar
     jopox_username = db.Column(db.String(50), nullable=True)
     jopox_password = db.Column(db.LargeBinary, nullable=True)  # Salattu salasana
 

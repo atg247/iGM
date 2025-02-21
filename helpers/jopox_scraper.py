@@ -146,30 +146,49 @@ class JopoxScraper:
         if response.status_code == 200:
             logging.info("Login successful!")
             
-            jopox_credentials = []
+            jopox_credentials = {}
             
             soup = BeautifulSoup(response.text, 'html.parser')
             title = soup.title.string.strip()
             jopox_team_name = title.split('Jopox -', 1)[1].strip()
-            logging.info(jopox_team_name)
 
             a_tag = soup.find('a', href=re.compile(r'\d+'))
-
-            # Poimi ja tulosta numerot (poimimme vain ensimmäisen osan href-attribuutista)
-            if a_tag:
-                jopox_team_id = re.search(r'\d+', a_tag['href']).group()  # Numerosarja stringinä
+            
+            jopox_team_id = re.search(r'\d+', a_tag['href']).group()  # Numerosarja stringinä
                 
             logging.info(f"Poimittu joukkueen tunnus: {jopox_team_id}")
-            #add jopox credentials:
-            jopox_credentials.append({'jopox_team_name': jopox_team_name})
-            jopox_credentials.append({'jopox_team_id': jopox_team_id})
-                    
+            logging.info (f"haetut credentialit:{jopox_credentials}") 
+
+            calendar_url = self.fetch_calendar_url(jopox_team_id)
+            
             #logging.info("Cookies after login: %s", self.session.cookies)
-            return jopox_credentials
+            return {
+                'jopox_team_id': jopox_team_id,
+                'jopox_team_name': jopox_team_name,
+                'calendar_url': calendar_url
+            }
     
         else:
             logging.error("Login failed!")
-            return False    
+            return False
+        
+    def fetch_calendar_url(self, jopox_team_id):
+        try:
+            url = self.login_url
+            calendarpage_url = self.login_url.replace('/login', f'/calendar/club/{jopox_team_id}')
+            response = self.session.get(calendarpage_url)
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+            icalUrlContainer = soup.find('div', {'id': 'icalUrlContainer'})
+            calendar_url = icalUrlContainer.text.strip()
+            logging.info(f"calendar_url: {calendar_url}")
+            return calendar_url
+        except Exception as e:
+            logging.error(f"Error fetching calendar URL: {e}")
+
+
+
+        response = self.session.get(url)
 
     def modify_game(self, game_data, uid):
         mod_game_url = f"https://hallinta3.jopox.fi//Admin/HockeyPox2020/Games/Game.aspx?gId={uid}"

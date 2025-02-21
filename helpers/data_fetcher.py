@@ -49,14 +49,12 @@ def get_jopox_events():
     response.raise_for_status()
     return response.json
 
-def hae_kalenteri(team_id):
+def hae_kalenteri(calendar_url):
     descriptions = []
-    print("jopox_team_id------------------>:", team_id)
-    ics_url = f'https://ics.jopox.fi/hockeypox/calendar/ical.php?ics=true&e=t&cal=U122013_{team_id}'  # Replace with the actual ICS URL
-
+    
     # Step 2: Fetch the ICS file
     try:
-        response = requests.get(ics_url)
+        response = requests.get(calendar_url)
         response.raise_for_status()  # Raise an error for bad responses
         ics_content = response.text
     except requests.exceptions.RequestException as e:
