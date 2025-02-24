@@ -88,7 +88,9 @@ function loadTeams() {
 
             // Store the jopox managed team in a variable
             const jopoxManagedTeam = response.jopox_managed_team;
-
+            const jopox_url = response.jopox_url;
+            const jopox_username = response.jopox_username;
+            
             // Update the HTML element with the jopox managed team
             // Update the HTML element with the jopox managed team
             if (jopoxManagedTeam) {
@@ -210,9 +212,36 @@ $('#dashboardForm').on('submit', function (e) {
 });
 
 $(document).ready(function () {
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('activate_jopox') === 'True') {
+        $('#jopoxAuthModal').modal('show');
+    }
+
     // Aktivoi Jopox-yhteys -painike
     $('#activateJopox').click(function () {
         $('#jopoxAuthModal').modal('show');  // Näytä modaalinen ikkuna
+    });
+
+    // Muokkaa Jopox-tietojasi -painike
+    $('#editJopox').click(function () {
+
+        // Hae tallennetut tiedot backendistä ja aseta ne lomakkeeseen
+        $.get('/dashboard/get_jopox_credentials', function (jopoxData) {
+            const jopoxLoginUrl = jopoxData.login_url;
+            const jopoxUsername = jopoxData.username;
+            const passwordSaved = jopoxData.password_saved;
+
+            console.log ('Jopox-tiedot:', jopoxData);
+
+            $('#jopoxLoginUrl').val(jopoxLoginUrl);
+            $('#jopoxUsername').val(jopoxUsername);
+            if (passwordSaved) {
+                $('#jopoxPassword').val('');  // Jätä salasana tyhjäksi, koska sitä ei näytetä
+            }
+
+            $('#jopoxAuthModal').modal('show');
+        });
     });
 
     // Tietojen tallentaminen Jopoxiin
@@ -244,34 +273,6 @@ $(document).ready(function () {
         });
     });
 });
-
-//this is a selector for user to select the jopox teamid from the dropdown that is submitted to backend for his user profile
-$('#jopox_teamidselector').submit(function () {
-    event.preventDefault();
-    const jopoxTeamId = $('#jopox_team_id').val();
-    const jopoxTeamName = $('#jopox_team_id option:selected').text();
-    console.log('jopoxTeamId:', jopoxTeamId);
-    console.log('jopoxTeamName:', jopoxTeamName);
-    $.ajax({
-        url: '/dashboard/select_jopox_team',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({ jopoxTeamId: jopoxTeamId, jopoxTeamName: jopoxTeamName }),
-        success: function (response) {
-            console.log('Success:', response);
-            loadTeams(); // Refresh lists and modal with latest data after update
-
-        },
-        error: function (xhr) {
-            alert('An error occurred: ' + xhr.responseText);
-        }
-    });
-    if (!jopoxTeamId) {
-        alert('Valitse joukkue ennen lähettämistä.');
-        return;
-    }
-});
-
 
 // Handle remove teams confirmation
 $('#confirmRemoveTeams').click(function () {

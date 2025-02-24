@@ -216,7 +216,25 @@ def dashboard():
     app.logger.debug(f"Followed teams raw data: {followed_teams}")
 
 
-    return render_template('dashboard.html', managed_teams=managed_teams, followed_teams=followed_teams)
+    jopox_data = {
+        'login_url': current_user.jopox_login_url,
+        'username': current_user.jopox_username,
+        'password_saved': current_user.jopox_password is not None,
+    }
+
+    return render_template('dashboard.html', managed_teams=managed_teams, followed_teams=followed_teams, jopox_data=jopox_data)
+
+@app.route('/dashboard/get_jopox_credentials', methods=['GET'])
+@login_required
+def get_jopox_credentials():
+    print("Getting Jopox credentials for user", current_user.username)
+    user = db.session.get(User, current_user.id)
+    jopox_data = {
+        'login_url': user.jopox_login_url,
+        'username': user.jopox_username,
+        'password_saved': user.jopox_password is not None,}
+    print(f"Jopox data: {jopox_data}")  
+    return jsonify(jopox_data)
 
 @app.route('/dashboard/save_jopox_credentials', methods=['POST'])
 def save_jopox_credentials():
