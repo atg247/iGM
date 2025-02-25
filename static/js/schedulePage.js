@@ -34,6 +34,21 @@ const app = Vue.createApp({
         };
     },
     methods: {
+        
+        showJopoxAuthModal(callback) {
+            $('#jopoxAuthModal').modal('show');
+    
+            $('#jopoxAuthForm').off('submit').on('submit', function (e) {
+                e.preventDefault();
+                
+                const jopoxUsername = $('#jopoxUsername').val();
+                const jopoxPassword = $('#jopoxPassword').val();
+    
+                $('#jopoxAuthModal').modal('hide');
+                callback(jopoxUsername, jopoxPassword);
+            });
+        },
+        
         fetchGamesAndCompare() {
             this.isLoading = true;
     
@@ -872,6 +887,30 @@ template:
                 <button class="action-button" type="button" @click="submitForm">Päivitä</button>
             </div>
         </form>
+    </div>
+</div>
+
+<div class="modal fade" id="jopoxAuthModal" tabindex="-1" aria-labelledby="jopoxAuthModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="jopoxAuthModalLabel">Syötä Jopox-tunnukset</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="jopoxAuthForm">
+            <div class="mb-3">
+              <label for="jopoxUsername" class="form-label">Jopox Käyttäjätunnus</label>
+              <input type="text" id="jopoxUsername" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="jopoxPassword" class="form-label">Jopox Salasana</label>
+              <input type="password" id="jopoxPassword" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Kirjaudu</button>
+          </form>
+        </div>
+      </div>
     </div>
 </div>
 

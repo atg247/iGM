@@ -101,6 +101,30 @@
   </div>
 </div>
 
+<div class="modal fade" id="jopoxAuthModal" tabindex="-1" aria-labelledby="jopoxAuthModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="jopoxAuthModalLabel">Syötä Jopox-tunnukset</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="jopoxAuthForm">
+            <div class="mb-3">
+              <label for="jopoxUsername" class="form-label">Jopox Käyttäjätunnus</label>
+              <input type="text" id="jopoxUsername" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label for="jopoxPassword" class="form-label">Jopox Salasana</label>
+              <input type="password" id="jopoxPassword" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Kirjaudu</button>
+          </form>
+        </div>
+      </div>
+    </div>
+</div>
+
 <!-- Jopox Managed Team -->
 <h2>Jopox-joukkueesi:</h2>
 {% if jopox_managed_team %}
