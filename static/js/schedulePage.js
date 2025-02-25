@@ -205,7 +205,7 @@ const app = Vue.createApp({
                 musta: '#282828', // Light Gray
                 punainen: '#ff5151', // Light Red
                 sininen: '#2c778f', // Light Blue
-                keltainen: '#ffff08', // Light Yellow
+                keltainen: '#f0f095', // Light Yellow
                 valkoinen: '#cccccc', // Light White
                 vihreä: '#137f13', // Light Green
             };
@@ -507,8 +507,9 @@ const app = Vue.createApp({
                 }
             }
 
+
             if (data.AwayCheckbox == false) {
-                if (tulospalveluGame['Away Team'].trim() !== data.guest_team.trim()) {
+                if (tulospalveluGame['Away Team'].trim().toLowerCase().normalize() !== data.guest_team.trim().toLowerCase().normalize()) {
                     this.form.guest_team = tulospalveluGame['Away Team'];
                     console.log('T:', tulospalveluGame['Away Team'], 'J:', data.guest_team);
                     this.updatedFields.guest_team = true;
@@ -519,7 +520,7 @@ const app = Vue.createApp({
             }
             
             if (data.AwayCheckbox == true) {
-                if (tulospalveluGame['Home Team'].trim() !== data.guest_team.trim()) {
+                if (tulospalveluGame['Home Team'].trim().toLowerCase().normalize() !== data.guest_team.trim().toLowerCase().normalize()) {
                     this.form.guest_team = tulospalveluGame['Home Team'];
                     console.log('T:', tulospalveluGame['Home Team'], 'J:', data.guest_team);
                     this.updatedFields.guest_team = true;

@@ -2,6 +2,7 @@ import requests
 from ics import Calendar
 import pandas as pd
 import datetime
+import logging
 
 def get_levels(season):
     url = "https://tulospalvelu.leijonat.fi/helpers/getLevels.php"
@@ -64,6 +65,9 @@ def hae_kalenteri(calendar_url):
     # Step 3: Parse the ICS file
     calendar = Calendar(ics_content)
 
+    logging.debug(f"calendar fetched.")
+
+
         # Step 4: Extract events into a structured format
     for event in calendar.events:
         # Extract details about each event
@@ -79,7 +83,8 @@ def hae_kalenteri(calendar_url):
                 "Lisätiedot": description,  # Assuming description contains level information
                 "Uid": uid.split('_')[-1]
             })
-
+    logging.debug(f"found {len(descriptions)} events from calendar.")
+    
     if descriptions:
         return descriptions
     else:

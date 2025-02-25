@@ -8,6 +8,8 @@ from ics import Calendar
 from models.user import db, User
 from flask import session
 import json
+from urllib.parse import urljoin
+
 
 
 
@@ -21,7 +23,7 @@ class JopoxScraper:
         self.user = db.session.get(User, user_id)
         self.login_url = self.user.jopox_login_url
         self.admin_login_url = self.login_url.replace('/login', '/adminlogin')
-        self.base_url = "https://hallinta3.jopox.fi//Admin/HockeyPox2020/Games/Games.aspx"
+        self.base_url = None
         self.session = requests.Session()
         self.username = username
         self.password = password
@@ -118,10 +120,32 @@ class JopoxScraper:
         logging.info("get to admin_login_url with cookies: %s", self.cookies)
         if response.status_code == 200:
             logging.info("Admin access successful!")
+            self.base_url = self.get_jopox_base_url(response)
+
             return True
         else:
             logging.error("Admin access failed!")
             return False
+
+    def get_jopox_base_url(self, response):
+
+        # Sivuston perus-URL
+        BASE_URL = "https://hallinta3.jopox.fi/"
+
+        # Haetaan HTML-sisältö
+        logging.debug("Fetching admin login page for base URL extraction...")
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        script_tag = soup.find('script', string=lambda text: text and 'siteRoot' in text)
+        game_link = soup.find('a', href=lambda href: href and 'Games/Games.aspx' in href)
+        site_root = script_tag.string.split('siteRoot: "')[1].split('"')[0]
+        base_url = urljoin(BASE_URL, site_root)
+        logging.info(f"Base URL: {base_url}")
+        return base_url
+
+
+        
 
     def login_for_credentials(self):    
         url = self.login_url
@@ -191,8 +215,9 @@ class JopoxScraper:
         response = self.session.get(url)
 
     def modify_game(self, game_data, uid):
-        mod_game_url = f"https://hallinta3.jopox.fi//Admin/HockeyPox2020/Games/Game.aspx?gId={uid}"
-        url = mod_game_url
+        #muodosta mod_game_url yhdistämällä self.base_url ja Games/Game.aspx?gId=uid
+        mod_game_url = urljoin(self.base_url, f"Games/Game.aspx?gId={uid}")
+        
         # Load the form page
         response = self.session.get(mod_game_url, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -241,7 +266,7 @@ class JopoxScraper:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
             "Content-Type": "application/x-www-form-urlencoded",
-            "Referer": "https://hallinta3.jopox.fi/Admin/HockeyPox2020/Games/Game.aspx",
+            "Referer": f"{mod_game_url}",
         }
 
         response = self.session.post(mod_game_url, data=payload, headers=headers)
@@ -261,7 +286,9 @@ class JopoxScraper:
             return "Game added successfully!"
 
     def add_game(self, game_data, game):
-        add_game_url = "https://hallinta3.jopox.fi/Admin/HockeyPox2020/Games/Game.aspx"
+        
+        #muodosta add_game_url yhdistämällä self.base_url ja Games/Game.aspx
+        add_game_url = urljoin(self.base_url, "Games/Game.aspx")
 
         # Load the form page
         response = self.session.get(add_game_url, headers={
@@ -376,12 +403,17 @@ class JopoxScraper:
 
 
     def scrape_jopox_games(self):
+
         if not self.ensure_logged_in():
             return []
-        all_j_games_url = "https://hallinta3.jopox.fi//Admin/HockeyPox2020/Games/Games.aspx"
         
+        #muodosta all_j_games_url yhdistämällä self.base_url ja Games/Games.aspx   
+        all_j_games_url = urljoin(self.base_url, "Games/Games.aspx")
+        logging.info(f"all_j_games_url: {all_j_games_url}")         
         # Haetaan ensimmäinen sivu
         soup = self.fetch_page(all_j_games_url)
+        logging.debug("Fetched first page")
+
         last_page = self.get_last_page_number(soup)
 
         jopox_games = []  # Kerätään peli-info listaan
@@ -464,7 +496,9 @@ class JopoxScraper:
     def j_game_details(self, j_game_id):
 
         try:
-            j_game_url = f"https://hallinta3.jopox.fi//Admin/HockeyPox2020/Games/Game.aspx?gId={j_game_id}"
+            #muodosta j_game_url yhdistämällä self.base_url ja Games/Game.aspx?gId=j_game_id
+            j_game_url = urljoin(self.base_url, f"Games/Game.aspx?gId={j_game_id}")
+            logging.info(f"j_game_url: {j_game_url}")            
             response = self.session.get(j_game_url, headers={
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
                     "Referer": j_game_url,
@@ -534,4 +568,3 @@ class JopoxScraper:
         except Exception as e:
             logging.error("Error parsing game details: %s", e)
             raise e
-        

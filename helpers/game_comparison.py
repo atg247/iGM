@@ -178,23 +178,25 @@ def compare_games(jopox_games, tulospalvelu_games):
             #logging.info('Score after teams: %s', score)
 
 
-            # Small Area Game Check
+            # Small Area Game Check - tarkasta löytyykö sana pienpeli lisätiedoista tai j_team_away
             if small_area_game:
-                if 'Lisätiedot' in j_game and j_game['Lisätiedot']:  # Tarkista, että kenttä on olemassa ja ei tyhjä
-                    if 'pienpeli' not in j_game['Lisätiedot'].lower():
-                        reason += "Kyseessä on pienpeli, mutta siitä ei ole mainintaa Jopoxissa. "
-                        color_score_temp += 1
-                    elif 'pienpeli' in j_game['Lisätiedot'].lower():
-                        score += 20
+                logging.info('small_area_game: %s %s', home_team, away_team)
+                logging.info('j_game: %s %s', j_game['joukkueet'], j_game['Lisätiedot'])
+                if 'pienpeli' not in j_game['Lisätiedot'].lower() and 'pienpeli' not in j_game['joukkueet'].lower():
+                    logging.debug('Pienpeli ei löydy j_gamesta: %s tai pienpeli ei ole mainittu %s', j_game['Lisätiedot'], j_game['joukkueet'])
+                    reason += "Kyseessä on pienpeli, mutta siitä ei ole mainintaa Jopoxissa. "
+                    color_score_temp += 1
+                elif 'pienpeli' in j_game['Lisätiedot'].lower() or 'pienpeli' in j_game['joukkueet'].lower():
+                    score += 20
                 #else:
                     #logger.info("Lisätiedot ei ole saatavilla j_game:ssa: %s", j_game)
 
             if not small_area_game:
                 if 'Lisätiedot' in j_game and j_game['Lisätiedot']:
-                    if 'pienpeli' in j_game['Lisätiedot'].lower() and team_score >= 180:
+                    if 'pienpeli' in j_game['Lisätiedot'].lower() or 'pienpeli' in j_game['joukkueet'].lower() and team_score >= 180:
                         reason+="Kyseessä ei ole pienpeli, vaikka Jopoxissa se on mainittu."
                         score -=20
-                    if 'pienpeli' in j_game['Lisätiedot'].lower() and team_score <= 180:
+                    if 'pienpeli' in j_game['Lisätiedot'].lower() or 'pienpeli' in j_game['joukkueet'].lower() and team_score <= 180:
                         reason+="Kyseessä ei ole pienpeli, vaikka Jopoxissa se on mainittu."
                         score -=10
             #logging.info('Score after pienpeli: %s', score)
@@ -214,7 +216,10 @@ def compare_games(jopox_games, tulospalvelu_games):
                     warning_reason = (
                         "En ole varma löysinkö oikean ottelun."
                         "Tarkista Jopoxista, että päivämäärä, joukkueiden nimet ja alkamisaika vastaavat tulospalvelua. "
-                        "Esimerkiksi joukkueiden nimien tai pelipaikan lyhentäminen voi aiheuttaa ongelmia."
+                        "Esimerkiksi joukkueiden nimien tai pelipaikan lyhentäminen voi aiheuttaa ongelmia. "
+                        "Jos ottelun alkamisaikaa ei ole merkitty, käytä Jopoxissa oletusaikaa 07:00. "
+                        "Löydän parhaiten ottelun jos Jopoxissa on merkitty alkamisajaksi todellinen ottelun alkamisaika."
+
                     )
                     #logging.info('WARNING ADDED TO GAME: %s', t_game)
 
