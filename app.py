@@ -8,7 +8,11 @@ from helpers.data_fetcher import get_levels, get_stat_groups, get_teams, hae_kal
 from helpers.game_fetcher import GameFetcher
 from helpers.jopox_scraper import JopoxScraper
 from helpers.game_comparison import compare_games
-from models.user import db, User, Team, UserTeam, TGamesdb
+from models.db import db
+from models.user import User
+from models.userteam import UserTeam
+from models.team import Team
+from models.tgames import TGamesdb
 from forms.registration_form import RegistrationForm
 from forms.login_form import LoginForm
 from forms.forgot_password import ForgotPasswordForm, send_reset_email
