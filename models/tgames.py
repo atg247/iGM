@@ -1,6 +1,6 @@
 #create a table for users game schedule from Tulospalvelu.fi
 
-from models.db import db
+from extensions import db
 
 class TGamesdb(db.Model):
     __tablename__ = 'tgames'

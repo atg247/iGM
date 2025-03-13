@@ -1,4 +1,4 @@
-from models.db import db
+from extensions import db
 
 class Team(db.Model):
     __tablename__ = 'team'

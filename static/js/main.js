@@ -341,47 +341,5 @@ $('#confirmRemoveTeams').click(function () {
     });
 });
 
-    $('#forwardGamesButton').click(function () {
-        const selectedGames = [];
-
-        $('#gamesTable input[name="game_selection"]:checked').each(function () {
-            const row = $(this).closest('tr');
-            const gameData = {
-                game_id: $(this).val(),
-                date: row.find('td:eq(3)').text(),
-                time: row.find('td:eq(4)').text(),
-                home_team: row.find('td:eq(5)').text(),
-                away_team: row.find('td:eq(6)').text(),
-                SmallAreaGame: row.find('td:eq(7)').text(),
-                home_goals: row.find('td:eq(8)').text(),
-                away_goals: row.find('td:eq(9)').text(),
-                location: row.find('td:eq(10)').text(),
-                level_name: row.find('td:eq(11)').text()
-            };
-            selectedGames.push(gameData);
-        });
-
-        if (selectedGames.length === 0) {
-            alert("No games selected. Please select at least one game.");
-            return;
-        }
-
-        $.ajax({
-            url: '/gamefetcher/send_selected_games',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ selected_games: selectedGames }),
-            success: function (response) {
-                if (response.error) {
-                    alert(response.error);
-                } else {
-                    alert(response.message);
-                }
-            },
-            error: function () {
-                alert('Failed to forward the selected games. Please try again.');
-            }
-        });
-}); 
 }); 
 

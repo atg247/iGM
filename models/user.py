@@ -2,7 +2,7 @@ from flask_login import UserMixin
 from flask_bcrypt import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from flask import current_app
-from models.db import db
+from extensions import db
 
 
 # User Table
