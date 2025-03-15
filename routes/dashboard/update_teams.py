@@ -1,7 +1,6 @@
 from flask import request, jsonify, flash
 from flask_login import login_required, current_user
 from sqlalchemy import and_
-from app import app
 from models.team import Team
 from models.userteam import UserTeam
 from extensions import db

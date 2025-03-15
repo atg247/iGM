@@ -3,12 +3,12 @@ import logging
 from flask import jsonify, request
 from flask_login import login_required
 
-from app import app
+from flask import current_app as app
 from helpers.game_comparison import compare_games
 
 from . import api_bp
 
-@api_bp.route('/api/compare', methods=['POST'])
+@api_bp.route('/compare', methods=['POST'])
 @login_required
 def compare_games_endpoint():
 

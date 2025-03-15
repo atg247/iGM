@@ -3,13 +3,13 @@ import logging
 from flask import jsonify, request
 from flask_login import login_required, current_user
 
-from app import app
-from app import cipher_suite
+from flask import current_app
+from security import cipher_suite
 from helpers.jopox_scraper import JopoxScraper
 
 from . import api_bp
 
-@api_bp.route('/api/create_jopox', methods=['POST'])
+@api_bp.route('/create_jopox', methods=['POST'])
 def create_jopox():
     logging.debug('starting create_jopox')
     data = request.json

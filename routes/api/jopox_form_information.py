@@ -3,12 +3,12 @@ import logging
 from flask import jsonify, request
 from flask_login import current_user
 
-from app import cipher_suite
+from security import cipher_suite
 from helpers.jopox_scraper import JopoxScraper
 
 from . import api_bp
 
-@api_bp.route('/api/jopox_form_information')
+@api_bp.route('/jopox_form_information')
 def jopox_form_information():
     
     logging.debug('starting jopox_form_information')

@@ -3,12 +3,12 @@ import logging
 from flask import jsonify, request
 from flask_login import login_required, current_user
 
-from app import cipher_suite
+from security import cipher_suite
 from helpers.jopox_scraper import JopoxScraper
 
 from . import api_bp
 
-@api_bp.route('/api/update_jopox', methods=['POST'])
+@api_bp.route('/update_jopox', methods=['POST'])
 @login_required
 def update_jopox():
     logging.debug('starting update_jopox')

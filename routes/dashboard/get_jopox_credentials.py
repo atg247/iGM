@@ -2,7 +2,6 @@ from flask import jsonify
 from flask_login import login_required, current_user
 from models.user import User
 from extensions import db
-from app import app
 
 from . import dashboard_bp
 

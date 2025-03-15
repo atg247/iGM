@@ -3,14 +3,14 @@ import logging
 from flask import jsonify
 from flask_login import current_user
 
-from app import app
+from flask import current_app as app
 from models.team import Team
 from models.userteam import UserTeam
 
 from . import api_bp
 
 
-@api_bp.route('/api/teams')
+@api_bp.route('/teams')
 def get_user_teams():
     """
     Fetch managed and followed teams for the current user.

@@ -3,7 +3,7 @@ import logging
 from flask import jsonify
 from flask_login import login_required, current_user
 
-from app import app
+from flask import current_app as app
 from extensions import db
 from helpers.game_fetcher import GameFetcher
 from models.team import Team
@@ -12,7 +12,7 @@ from models.userteam import UserTeam
 
 from . import api_bp
 
-@api_bp.route('/api/schedules')
+@api_bp.route('/schedules')
 @login_required
 def get_all_schedules():
     logging.debug('starting get_all_schedules endpoint to fetch games from tulospalvelu')

@@ -30,9 +30,9 @@ def login():
                 UserTeam.relationship_type == 'follow'
             ).all()
             if managed_teams or followed_teams:
-                return redirect(url_for('schedule'))
+                return redirect(url_for('routes.schedule'))
             else:
-                return redirect(url_for('dashboard')) 
+                return redirect(url_for('routes.dashboard')) 
             
         else:
             flash('Login failed. Check your username and password.', 'danger')

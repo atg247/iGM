@@ -2,12 +2,14 @@ from flask import jsonify, request
 from flask_login import login_required, current_user
 from models.user import User
 from extensions import db
-from app import app
-from app import cipher_suite
+from flask import current_app
+from security import cipher_suite
 from helpers.jopox_scraper import JopoxScraper
 import logging
 
-@app.route('/dashboard/save_jopox_credentials', methods=['POST'])
+from . import dashboard_bp
+
+@dashboard_bp.route('/dashboard/save_jopox_credentials', methods=['POST'])
 @login_required
 def save_jopox_credentials():
     data = request.get_json()
