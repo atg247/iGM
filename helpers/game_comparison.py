@@ -1,7 +1,9 @@
+import re
+
 from fuzzywuzzy import fuzz
 from datetime import datetime, timedelta
-import logging
-import re
+
+from logging_config import logger
 
 def parse_sortable_date(date_string):
     """Parse SortableDate string into a date object."""
@@ -17,7 +19,6 @@ def parse_sortable_date(date_string):
 def compare_games(jopox_games, tulospalvelu_games):
     """Compare games from Jopox and Tulospalvelu.fi datasets."""
     # Initialize logging
-    logger = logging.getLogger(__name__)
     
     
     results = []
@@ -31,7 +32,6 @@ def compare_games(jopox_games, tulospalvelu_games):
 
     for t_game in managed_games:
         
-        #logger.info("Processing Tulospalvelu game: %s", t_game)
         
         # Parse date from Tulospalvelu game
         try:
@@ -52,6 +52,9 @@ def compare_games(jopox_games, tulospalvelu_games):
         # Skip games that have already been played before yesterday
         if t_game_datetime < datetime.now() - timedelta(days=1):
             continue
+        
+        logger.debug("Processing Tulospalvelu game: %s", t_game)
+
 
         time = t_game['Time']
         location = t_game['Location'].lower()
@@ -71,7 +74,6 @@ def compare_games(jopox_games, tulospalvelu_games):
 
         for j_game in jopox_games:
             
-#            logging.info('Processing J Game: %s', j_game)
 
             try:
                 # Parse the sortable_date field from Jopox game
@@ -79,8 +81,9 @@ def compare_games(jopox_games, tulospalvelu_games):
             except ValueError:
                 logger.error("Invalid sortable_date format: %s", j_game['sortable_date'])
                 continue
-
-            if j_game_datetime < datetime.now():
+            
+            # Skip games that have already been played before yesterday
+            if j_game_datetime < datetime.now() - timedelta(days=1):
                 continue
             
             # Extract J_Game details
@@ -96,6 +99,8 @@ def compare_games(jopox_games, tulospalvelu_games):
             except ValueError:
                 logger.error("Invalid time format: Tulospalvelu %s vs Jopox %s", time, j_time)
                 continue
+            
+            logger.debug('Processing J Game: %s', j_game)
 
             # Temporary scoring for this Jopox game
             score = 0
@@ -127,7 +132,7 @@ def compare_games(jopox_games, tulospalvelu_games):
             else:
                 reason += f"Ottelun oikea alkamisaika on klo: {time}, mutta Jopoxissa se on klo {j_time}. "
                 color_score_temp += 1
-            #logging.info('Score after time: %s', score)
+            logger.debug('Score after time: %s', score)
 
             
 
@@ -180,10 +185,10 @@ def compare_games(jopox_games, tulospalvelu_games):
 
             # Small Area Game Check - tarkasta löytyykö sana pienpeli lisätiedoista tai j_team_away
             if small_area_game:
-                logging.info('small_area_game: %s %s', home_team, away_team)
-                logging.info('j_game: %s %s', j_game['joukkueet'], j_game['Lisätiedot'])
+                #logger.info('small_area_game: %s %s', home_team, away_team)
+                #logger.info('j_game: %s %s', j_game['joukkueet'], j_game['Lisätiedot'])
                 if 'pienpeli' not in j_game['Lisätiedot'].lower() and 'pienpeli' not in j_game['joukkueet'].lower():
-                    logging.debug('Pienpeli ei löydy j_gamesta: %s tai pienpeli ei ole mainittu %s', j_game['Lisätiedot'], j_game['joukkueet'])
+                #    logger.debug('Pienpeli ei löydy j_gamesta: %s tai pienpeli ei ole mainittu %s', j_game['Lisätiedot'], j_game['joukkueet'])
                     reason += "Kyseessä on pienpeli, mutta siitä ei ole mainintaa Jopoxissa. "
                     color_score_temp += 1
                 elif 'pienpeli' in j_game['Lisätiedot'].lower() or 'pienpeli' in j_game['joukkueet'].lower():
@@ -211,6 +216,7 @@ def compare_games(jopox_games, tulospalvelu_games):
                 best_reason = reason
                 color_score = color_score_temp
                 #Append match to best_matches including score, reason and color_score 
+                logger.debug('Best match updated: %s', best_match)
             
                 if best_match is None or best_score < 105 :
                     warning_reason = (

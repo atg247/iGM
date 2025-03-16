@@ -1,9 +1,8 @@
-from flask import jsonify
+from flask import jsonify, current_app as app
 from flask_login import login_required, current_user
 
 from extensions import db
 from models.user import User
-from flask import current_app as app
 from security import cipher_suite
 from logging_config import logger
 
@@ -37,5 +36,5 @@ def get_jopox_games():
                     game['Lisätiedot'] = matching_description['Lisätiedot']
             return jsonify(jopox_games)
         except Exception as e:
-            current_app.logger.error(f"Error fetching Jopox games: {e}")
+            app.logger.error(f"Error fetching Jopox games: {e}")
             return jsonify({"status": "error", "message": str(e)}), 500

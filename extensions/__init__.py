@@ -10,3 +10,4 @@ mail = Mail()
 login_manager = LoginManager()
 session = Session()
 db = SQLAlchemy()
+
