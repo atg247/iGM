@@ -1,9 +1,10 @@
 from flask import request, jsonify, flash
-from flask_login import login_required, current_user
 from sqlalchemy import and_
+from flask_login import login_required, current_user
+
+from extensions import db
 from models.team import Team
 from models.userteam import UserTeam
-from extensions import db
 
 from . import dashboard_bp
 

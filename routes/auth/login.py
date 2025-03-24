@@ -1,12 +1,11 @@
-from flask import render_template, redirect, url_for, flash
+from flask import session, render_template, redirect, url_for, flash
 from flask_login import login_user, current_user
-from extensions import bcrypt
-from extensions import db
+
+from extensions import bcrypt, db
 from models.user import User
 from models.team import Team
 from models.userteam import UserTeam
 from forms.login_form import LoginForm
-from flask import session
 
 from . import auth_bp
 

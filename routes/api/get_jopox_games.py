@@ -5,7 +5,6 @@ from extensions import db
 from models.user import User
 from security import cipher_suite
 from logging_config import logger
-
 from helpers.jopox_scraper import JopoxScraper
 from helpers.data_fetcher import hae_kalenteri
 

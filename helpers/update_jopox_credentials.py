@@ -1,9 +1,9 @@
-from extensions import session, db
-from models.user import db, User
 from flask_login import current_user
-from security import cipher_suite
+
+from extensions import db
 from helpers.jopox_scraper import JopoxScraper
 from logging_config import logger
+from security import cipher_suite
 
 
 def update_jopox_credentials():

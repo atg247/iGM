@@ -1,5 +1,3 @@
-import logging
-
 from flask import jsonify
 
 from helpers.data_fetcher import get_levels, get_stat_groups, get_teams

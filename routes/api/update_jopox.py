@@ -12,15 +12,15 @@ from . import api_bp
 @api_bp.route('/update_jopox', methods=['POST'])
 @login_required
 def update_jopox():
-    logging.debug('starting update_jopox')
+    logger.debug('starting update_jopox')
     data = request.json
     game = data.get('game')
     best_match = data.get('best_match')
     form = data.get('form')
     uid = best_match.get('uid')
-    logging.debug('NEW FORM: %s', form)
+    logger.debug('NEW FORM: %s', form)
     away = form.get('AwayCheckbox', None)
-    logging.debug('AWAYBOX: %s', away)
+    logger.debug('AWAYBOX: %s', away)
 
     username = current_user.jopox_username
     #decrypt password from database
@@ -54,8 +54,8 @@ def update_jopox():
                 "SaveGameButton": "Tallenna"
                 }
             
-            logging.info(f"STARTING scraper to modify game: {uid}")
-            logging.info(f"Scraping with data: {game_data}")
+            logger.info(f"STARTING scraper to modify game: {uid}")
+            logger.info(f"Scraping with data: {game_data}")
             scraper.modify_game(game_data, uid)
             return jsonify({"message": "Pelin tiedot muokattu"}), 200
         

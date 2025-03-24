@@ -1,14 +1,16 @@
 import os
+
 from flask import Flask
 from dotenv import load_dotenv
 from flask_migrate import Migrate
 from logging_config import logger
+
 from extensions import bcrypt, mail, login_manager, session, db
+from models.user import User 
 from routes.route import routes_bp
 from routes.api import api_bp
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
-from models.user import User 
 
 
 def create_app():

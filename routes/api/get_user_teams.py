@@ -1,9 +1,7 @@
-import logging
-
 from flask import jsonify
 from flask_login import current_user
-
 from flask import current_app as app
+
 from models.team import Team
 from models.userteam import UserTeam
 

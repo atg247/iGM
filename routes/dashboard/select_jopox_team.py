@@ -1,5 +1,6 @@
 from flask import request, jsonify
 from flask_login import login_required, current_user
+
 from extensions import db
 
 from . import dashboard_bp

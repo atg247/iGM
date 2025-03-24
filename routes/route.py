@@ -1,13 +1,12 @@
 #route.py
 
 from flask import Blueprint, render_template, jsonify, session
-from flask_login import login_required
+from flask_login import login_required, current_user
 from flask import current_app as app
 
 from models.team import Team
 from models.userteam import UserTeam
 from extensions import db
-from flask_login import current_user
 from logging_config import logger
 from helpers import update_jopox_credentials
 

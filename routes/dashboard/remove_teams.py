@@ -1,5 +1,3 @@
-import logging
-
 from flask import request, jsonify
 from flask_login import login_required, current_user
 

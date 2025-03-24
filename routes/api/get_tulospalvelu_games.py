@@ -1,10 +1,8 @@
-import logging
 import pandas as pd
 
 from flask import request, jsonify
 
 from helpers.game_fetcher import GameFetcher
-
 
 from routes.api import api_bp
 

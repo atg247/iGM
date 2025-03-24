@@ -1,15 +1,16 @@
 import os
 import requests
-from bs4 import BeautifulSoup
 import logging
-from datetime import datetime, timedelta
 import re
-from ics import Calendar
-from models.user import db, User
+import json
+
+from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 from flask_login import current_user
 from flask import session
-import json
 from urllib.parse import urljoin
+
+from models.user import db, User
 from logging_config import logger
     
 class JopoxScraper:

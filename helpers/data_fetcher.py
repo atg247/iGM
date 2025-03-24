@@ -1,7 +1,5 @@
 import requests
 from ics import Calendar
-import pandas as pd
-import datetime
 import logging
 
 def get_levels(season):

@@ -1,15 +1,13 @@
-import logging
-
 from flask import jsonify
 from flask_login import login_required, current_user
-
 from flask import current_app as app
+
 from extensions import db
 from helpers.game_fetcher import GameFetcher
+from logging_config import logger
 from models.team import Team
 from models.tgames import TGamesdb
 from models.userteam import UserTeam
-from logging_config import logger
 
 from . import api_bp
 

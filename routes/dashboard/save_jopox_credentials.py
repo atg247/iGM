@@ -1,11 +1,11 @@
 from flask import jsonify, request
 from flask_login import login_required, current_user
+
 from models.user import User
 from extensions import db
-from flask import current_app
 from security import cipher_suite
 from helpers.jopox_scraper import JopoxScraper
-import logging
+from logging_config import logger
 
 from . import dashboard_bp
 
@@ -33,7 +33,7 @@ def save_jopox_credentials():
     #kirjaudutaan jopoxiin ja haetaan joukkuetiedot
     scraper = JopoxScraper(user.id, username, password)
     jopox_credentials = scraper.login_for_credentials()
-    logging.info(f"jopox credentials received: {jopox_credentials}")
+    logger.info(f"jopox credentials received: {jopox_credentials}")
 
     # Tallennetaan joukkueen tiedot tietokantaan
     user.jopox_team_name = jopox_credentials['jopox_team_name']

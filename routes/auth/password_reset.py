@@ -1,7 +1,8 @@
 from flask import render_template, redirect, url_for, flash
-from models.user import User
+
 from extensions import db
 from forms.reset_password_form import ResetPasswordForm
+from models.user import User
 
 from . import auth_bp
 

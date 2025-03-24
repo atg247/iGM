@@ -1,4 +1,5 @@
 from flask import render_template, redirect, url_for, flash
+
 from forms.forgot_password_form import ForgotPasswordForm
 from forms.forgot_password_form import send_reset_email
 from models.user import User

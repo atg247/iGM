@@ -1,5 +1,6 @@
 from flask import jsonify
 from flask_login import login_required, current_user
+
 from models.team import Team
 from models.userteam import UserTeam
 

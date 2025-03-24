@@ -1,5 +1,4 @@
 # UserTeam Association Table
-
 from extensions import db
 
 class UserTeam(db.Model):

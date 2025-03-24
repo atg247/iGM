@@ -1,9 +1,6 @@
-import logging
-
 from flask import jsonify, request
 from flask_login import login_required
 
-from flask import current_app as app
 from helpers.game_comparison import compare_games
 from logging_config import logger
 
