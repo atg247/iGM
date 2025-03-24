@@ -8,6 +8,8 @@ from models.team import Team
 from models.userteam import UserTeam
 from extensions import db
 from flask_login import current_user
+from logging_config import logger
+from helpers import update_jopox_credentials
 
 
 routes_bp = Blueprint('routes', __name__, static_folder="static", template_folder="templates")
@@ -20,10 +22,12 @@ def test_session():
 @routes_bp.route('/schedule')
 @login_required
 def schedule():
+    update_jopox_credentials()
     return render_template('otteluhaku.html')
   
 @routes_bp.route('/')
 def index():
+    logger.debug('Index route')
     if 'user_id' in session:
         return index_logged()
     else:

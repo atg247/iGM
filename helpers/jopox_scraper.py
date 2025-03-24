@@ -6,16 +6,11 @@ from datetime import datetime, timedelta
 import re
 from ics import Calendar
 from models.user import db, User
+from flask_login import current_user
 from flask import session
 import json
 from urllib.parse import urljoin
-
-
-
-
-
-
-# Configure logging to a file
+from logging_config import logger
     
 class JopoxScraper:
     def __init__(self, user_id, username, password):
@@ -30,17 +25,19 @@ class JopoxScraper:
         self.cookies = None
         self.last_login_time = None
         self.event_validation_data = None
-
         self.load_session_from_flask()
 
     def save_session_to_flask(self):
         """Tallentaa istunnon evästeet ja validointitiedot Flask-sessioniin"""
+        session["user_id"] = current_user.id
         session["jopox_cookies"] = json.dumps(self.session.cookies.get_dict())
         session["jopox_validation"] = json.dumps(self.event_validation_data)
         session["jopox_last_login"] = self.last_login_time.isoformat() if self.last_login_time else None
 
     def load_session_from_flask(self):
         """Lataa aiemmin tallennetun istunnon evästeet ja validointitiedot Flask-sessionista"""
+        if session.get("user_id") != self.user.id:
+            self.clear_session()
         if "jopox_cookies" in session:
             self.session.cookies.update(json.loads(session["jopox_cookies"]))
         if "jopox_validation" in session:
@@ -58,6 +55,12 @@ class JopoxScraper:
         '__EVENTVALIDATION': eventvalidation,
         '__VIEWSTATEGENERATOR': viewstategenerator
         }
+    
+    def clear_session(self):
+        session.pop("user_id", None)
+        session.pop("jopox_cookies", None)
+        session.pop("jopox_validation", None)
+        session.pop("jopox_last_login", None)
 
     def login(self):
         url = self.login_url
@@ -144,9 +147,6 @@ class JopoxScraper:
         logging.info(f"Base URL: {base_url}")
         return base_url
 
-
-        
-
     def login_for_credentials(self):    
         url = self.login_url
         response = self.session.get(url)
@@ -169,9 +169,7 @@ class JopoxScraper:
 
         if response.status_code == 200:
             logging.info("Login successful!")
-            
-            jopox_credentials = {}
-            
+                       
             soup = BeautifulSoup(response.text, 'html.parser')
             title = soup.title.string.strip()
             jopox_team_name = title.split('Jopox -', 1)[1].strip()
@@ -180,12 +178,12 @@ class JopoxScraper:
             
             jopox_team_id = re.search(r'\d+', a_tag['href']).group()  # Numerosarja stringinä
                 
-            logging.info(f"Poimittu joukkueen tunnus: {jopox_team_id}")
-            logging.info (f"haetut credentialit:{jopox_credentials}") 
+            logger.debug(f"Poimittu joukkueen tunnus: {jopox_team_id}")
+            logger.debug(f"Poimittu joukkueen nimi: {jopox_team_name}")
 
             calendar_url = self.fetch_calendar_url(jopox_team_id)
-            
-            #logging.info("Cookies after login: %s", self.session.cookies)
+            logger.debug(f"calendar_url: {calendar_url}")
+
             return {
                 'jopox_team_id': jopox_team_id,
                 'jopox_team_name': jopox_team_name,
@@ -224,17 +222,22 @@ class JopoxScraper:
             "Referer": mod_game_url,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         })
-        logging.info("Fetching game form page response status code: %d", response.status_code)
+        logger.info("Fetching game form page response status code: %d", response.status_code)
         #logging.info("Fetching game form page response text: %s", response.text)
 
         if response.status_code != 200:
-            logging.error("Failed to load form page!")
+            logger.error("Failed to load form page!")
             return
-        logging.info('modify_game(): fetching event validation data...')
+        logger.info('modify_game(): fetching event validation data...')
 
         # Parse HTML and extract necessary values
         event_validation_data = self.get_event_validation(response)            
-        logging.info("Event validation data: %s", event_validation_data)
+        logger.info("Event validation data: %s", event_validation_data)
+        season = self.get_season_id(response)
+        subsite = self.get_subsite_id(response)
+
+        logger.debug(f'game_data: {game_data}')
+
         # Build payload
         payload = {
             "__EVENTTARGET": "",
@@ -243,8 +246,8 @@ class JopoxScraper:
             "__VIEWSTATE": event_validation_data['__VIEWSTATE'],
             "__VIEWSTATEGENERATOR": event_validation_data['__VIEWSTATEGENERATOR'],
             "__EVENTVALIDATION": event_validation_data['__EVENTVALIDATION'],            "UsernameTextBox": self.username,
-            #"ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSeasons": game_data.get("SeasonId", ""),
-            #"ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSubSites": game_data.get("SubSiteId", ""),
+            "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSeasons": season,
+            "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSubSites": subsite,
             #"ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
             "ctl00$MainContentPlaceHolder$GamesBasicForm$LeagueDropdownList": game_data.get("LeagueDropdownList", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$EventDropDownList": game_data.get("EventDropDownList", ""),
@@ -270,9 +273,9 @@ class JopoxScraper:
         }
 
         response = self.session.post(mod_game_url, data=payload, headers=headers)
-        #logging.info("Add game response status code: %d", response.status_code)
-        #logging.info("Add game response text: %s", response.text)
-        #logging.info("Add game response headers: %s", response.headers)
+        #logger.debug("Modify game response status code: %d", response.status_code)
+        #logger.debug("Modify game response text: %s", response.text)
+        #logger.debug("Modify game response headers: %s", response.headers)
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -284,6 +287,28 @@ class JopoxScraper:
         else:
             logging.info("Game added successfully or no error message received.")
             return "Game added successfully!"
+
+    def get_season_id(self, response):
+        try:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            season_dropdown = soup.find('select', {'id': 'MenuContentPlaceHolder_MainMenu_SiteSelector1_DropDownListSeasons'})
+            season_id = season_dropdown.find('option', selected=True)['value']
+            logger.debug(f"Season ID: {season_id}")
+            return season_id
+        except Exception as e:
+            logging.error(f"Error getting season ID: {e}")
+    
+    def get_subsite_id(self, response):
+        try:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            subsite_dropdown = soup.find('select', {'id': 'MenuContentPlaceHolder_MainMenu_SiteSelector1_DropDownListSubSites'})
+            subsite_id = subsite_dropdown.find('option', selected=True)['value']
+            logger.debug(f"Subsite ID: {subsite_id}")
+            return subsite_id
+        except Exception as e:
+            logging.error(f"Error getting subsite ID: {e}")
+    
+
 
     def add_game(self, game_data, game):
         
@@ -305,6 +330,8 @@ class JopoxScraper:
 
         # Parse HTML and extract necessary values
         event_validation_data = self.get_event_validation(response)
+        season = self.get_season_id(response)
+        subsite = self.get_subsite_id(response)
         team_name = game.get('Team Name')            
         HomeTeamTextBox = self.homeTeamTextBox(response, team_name)
 
@@ -317,8 +344,8 @@ class JopoxScraper:
             "__VIEWSTATEGENERATOR": event_validation_data['__VIEWSTATEGENERATOR'],
             "__EVENTVALIDATION": event_validation_data['__EVENTVALIDATION'],            
             "UsernameTextBox": self.username,
-            "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSeasons": game_data.get("SeasonId", ""),
-            "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSubSites": game_data.get("SubSiteId", ""),
+            "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSeasons": season,
+            "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSubSites": subsite,
             #"ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
             "ctl00$MainContentPlaceHolder$GamesBasicForm$LeagueDropdownList": game_data.get("LeagueDropdownList", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$EventDropDownList": game_data.get("EventDropDownList", ""),
@@ -446,7 +473,6 @@ class JopoxScraper:
 
         # Käydään läpi kaikki jäljellä olevat sivut
         for page in range(2, last_page + 1):
-            print(f"Processing page {page}")
             page_url = f"https://hallinta3.jopox.fi//Admin/HockeyPox2020/Games/Games.aspx?Page={page}"
             soup = self.fetch_page(page_url)
 
@@ -506,21 +532,43 @@ class JopoxScraper:
                 })
         
             soup = BeautifulSoup(response.text, 'html.parser')
+            logger.debug(f'j_game_details(): soup: {soup}')
 
             league_dropdown = soup.find('select', {'id': 'LeagueDropdownList'})
+            league_selected = {}
+            league_options = []
             if league_dropdown:
-                league_selected_tag = league_dropdown.find('option', selected=True)
-                league_selected = league_selected_tag.text.strip() if league_selected_tag else ''
-                league_options = [option.text.strip() for option in league_dropdown.find_all('option') if not option.get('selected')]
-            
+                for option in league_dropdown.find_all('option'):
+                    value = option.get('value', '').strip()
+                    text = option.text.strip()
+                    option_data = {"value": value, "text": text}
+                    if option.has_attr('selected'):
+                        league_selected = option_data
+                    else:
+                        league_options.append(option_data)
             else:
-                league_selected = ''
+                league_selected = {}
                 league_options = []
             
-            event_selected_tag = soup.find('select', {'id': 'EventDropDownList'}).find('option', selected=True)
-            event_selected = event_selected_tag.text.strip() if event_selected_tag else ''
-            event_options = [option.text.strip() for option in soup.find('select', {'id': 'EventDropDownList'}).find_all('option') if not option.get('selected')]
-            
+            event_dropdown = soup.find('select', {'id': 'EventDropDownList'})
+            event_selected = {}
+            event_options = []
+            if event_dropdown:
+                for option in event_dropdown.find_all('option'):
+                    value = option.get('value', '').strip()
+                    text = option.text.strip()
+                    option_data = {"value": value, "text": text}
+                    if option.has_attr('selected'):
+                        event_selected = option_data
+                    else:
+                        # Skip empty value
+                        if value:
+                            event_options.append(option_data)
+            else:
+                event_selected = {}
+                event_options = []
+
+
             SiteNameLabel_tag = soup.find('span', {'id': 'MainContentPlaceHolder_GamesBasicForm_SitenameLabel'})
             SiteNameLabel = SiteNameLabel_tag.text.strip() if SiteNameLabel_tag else ''
             

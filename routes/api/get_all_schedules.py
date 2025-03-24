@@ -9,13 +9,13 @@ from helpers.game_fetcher import GameFetcher
 from models.team import Team
 from models.tgames import TGamesdb
 from models.userteam import UserTeam
+from logging_config import logger
 
 from . import api_bp
 
 @api_bp.route('/schedules')
 @login_required
 def get_all_schedules():
-    logging.debug('starting get_all_schedules endpoint to fetch games from tulospalvelu')
     try:
         managed_teams = [
             {"team_name": team.team_name, "team_id": team.team_id, "season": team.season, "stat_group_id": team.statgroup, "type": 'manage'}
@@ -34,7 +34,7 @@ def get_all_schedules():
 
         # Fetch games for each team
         for team in all_teams:
-            logging.debug(f"Fetching games for {team['team_name']}")
+            logger.debug(f"Fetching games for {team['team_name']}")
             try:
                 fetcher = GameFetcher(
                     dwl=0,  # Replace with actual value

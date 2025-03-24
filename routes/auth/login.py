@@ -6,6 +6,7 @@ from models.user import User
 from models.team import Team
 from models.userteam import UserTeam
 from forms.login_form import LoginForm
+from flask import session
 
 from . import auth_bp
 
@@ -16,6 +17,7 @@ def login():
         return redirect(url_for('dashboard'))
     form = LoginForm()
     if form.validate_on_submit():
+        session.clear()
         user = User.query.filter_by(username=form.username.data).first()
         if user and bcrypt.check_password_hash(user.password_hash, form.password.data):
             login_user(user, remember=form.remember.data)  # Pass "remember" flag to login_user()
@@ -36,4 +38,5 @@ def login():
             
         else:
             flash('Login failed. Check your username and password.', 'danger')
+
     return render_template('login.html', form=form)

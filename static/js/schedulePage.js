@@ -424,15 +424,28 @@ const app = Vue.createApp({
             .then(response => response.json())
             .then(data => {
 
-                // Populate the form with the fetched data
-                this.form.league_selected = data.league_selected || '';
-                this.form.league_options = data.league_options || []; 
-                if (this.form.league_selected && !this.form.league_options.includes(this.form.league_selected)) {
+                this.form.league_selected = data.league_selected || null;
+                this.form.league_options = data.league_options || [];
+
+                // Tarkistetaan onko league_selected jo mukana listassa arvon perusteella
+                if (
+                    this.form.league_selected &&
+                    !this.form.league_options.some(opt => opt.value === this.form.league_selected.value)
+                ) {
                     this.form.league_options.push(this.form.league_selected);
                 }
-                console.log('data:',data)    
-                this.form.event_selected = data.event_selected || '';
+
+                this.form.event_selected = data.event_selected || null;
                 this.form.event_options = data.event_options || [];
+
+                // Sama logiikka eventille (valinnainen riippuen käytöstä)
+                if (
+                    this.form.event_selected &&
+                    !this.form.event_options.some(opt => opt.value === this.form.event_selected.value)
+                ) {
+                    this.form.event_options.push(this.form.event_selected);
+                }
+
                 this.form.SiteNameLabel = data.SiteNameLabel || '';
                 this.form.HomeTeamTextbox = data.HomeTeamTextbox || '';
                 this.form.guest_team = data.guest_team || '';
@@ -811,9 +824,12 @@ template:
             <div>
                 <label for="league">Sarja:</label>
                 <select id="league" v-model="form.league_selected">
-                    <!-- Luo vaihtoehdot ja valitse oikea oletusarvo -->
-                    <option v-for="option in form.league_options" :key="option" :value="option">
-                        {{ option }}
+                    <option 
+                        v-for="option in form.league_options" 
+                        :key="option.value" 
+                        :value="option"
+                    >
+                        {{ option.text }}
                     </option>
                 </select>
             </div>

@@ -81,10 +81,11 @@ def compare_games(jopox_games, tulospalvelu_games):
             except ValueError:
                 logger.error("Invalid sortable_date format: %s", j_game['sortable_date'])
                 continue
-            
+
             # Skip games that have already been played before yesterday
             if j_game_datetime < datetime.now() - timedelta(days=1):
                 continue
+
             
             # Extract J_Game details
             j_time = j_game['aika']
