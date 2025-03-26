@@ -14,6 +14,7 @@ const app = Vue.createApp({
             selectedGame: null, // To store the game details for the modal
             showPlayedGames: false, // Controls whether played games are shown 
             showUpdateJopoxModal: false, // Päivitä Jopox -modalin näkyvyys
+            showCreateJopoxModal: false, // Luo Jopox -modalin näkyvyys
             form: {
                 league_selected: '',
                 league_options: [],
@@ -28,6 +29,10 @@ const app = Vue.createApp({
                 game_start_time: '',
                 game_duration: '',
                 game_public_info: ''
+            },
+            createJopoxForm: {
+                league_selected: '',
+                league_options: []
             },
             updatedFields: {} // Will hold the fields that have been updated
 
@@ -589,10 +594,48 @@ const app = Vue.createApp({
                 alert('Päivityksessä tapahtui virhe.');
             });
         },
+ 
+        openCreateModal(game) {
+            this.selectedGame = game; // Tallenna valittu peli
+            console.log('Valittu peli:', game);
+            const level = game['Level Name'];
+
+
+            console.log('Tarkastetaan level:', level);
+            fetch(`/api/check_level?level=${level}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Level data:', data);
+
+                this.createJopoxForm.league_options = data.league_options || [];
+                this.createJopoxForm.league_selected = this.createJopoxForm.league_options.find(
+                    opt => opt.value === data.league_selected
+                ) || this.createJopoxForm.league_options[0] || null;
+                
+                this.showCreateJopoxModal = true; // Näytä Päivitä Jopox -modal
+                
+            })
+
+             // Käytetään nextTick asettamaan sisältö oikein contenteditable-kenttään
+            
+
+            .catch(error => {
+                console.error('Error fetching Jopox data:', error);
+            });
+
+
+        },
+
+
 
         createJopox(game) {
+            
+            // disable this function for now
+            return;
 
-        
             const payload = { 
                 game: game // Lähetetään pelin tiedot backendille
             };
@@ -620,6 +663,11 @@ const app = Vue.createApp({
     
         // Sulje Päivitä Jopox -modal
         closeUpdateModal() {
+            this.showUpdateJopoxModal = false;
+            this.selectedGame = null;
+        },
+
+        closeCreateModal() {
             this.showUpdateJopoxModal = false;
             this.selectedGame = null;
         },
@@ -754,7 +802,7 @@ template:
                 
                 <button class="update-jopox-btn"
                     v-if="!isPastDay(date) && !isNotManagedTeam(game)"
-                    @click.stop="game.match_status === 'red' ? createJopox(game) : openUpdateModal(game)">
+                    @click.stop="game.match_status === 'red' ? openCreateModal(game) : openUpdateModal(game)">
                     <span class="status-text">
                         {{ game.match_status === 'red' ? 'Luo Jopoxiin' : 'Päivitä Jopox' }}
                     </span>
@@ -887,6 +935,28 @@ template:
             <div class="button-container">
                 <button class="cancel-button" type="button" @click="closeUpdateModal">Peruuta</button>
                 <button class="action-button" type="button" @click="submitForm">Päivitä</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div v-if="showCreateJopoxModal" class="modal-window2">
+    <div class="modal-content">
+        <div class="modal-close" @click="closeCreateModal">&times;</div>
+        <h2>Luo Jopox</h2>
+        <form id="jpx-create-form">
+            <!-- Sarja -->
+            <div>
+                <label for="league">Sarja:</label>
+                <select id="league" v-model="createJopoxForm.league_selected">
+                    <option 
+                        v-for="option in createJopoxForm.league_options" 
+                        :key="option.value" 
+                        :value="option"
+                    >
+                        {{ option.text }}
+                    </option>
+                </select>
             </div>
         </form>
     </div>

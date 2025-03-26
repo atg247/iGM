@@ -15,6 +15,7 @@ class TGamesdb(db.Model):
     away_goals = db.Column(db.String(50), nullable=False)
     location = db.Column(db.String(150), nullable=False)
     level_name = db.Column(db.String(150), nullable=False)
+    stat_group_name = db.Column(db.String(50), nullable=False)
     small_area_game = db.Column(db.String(50), nullable=False)
     team_name = db.Column(db.String(150), nullable=False)
     type = db.Column(db.String(50), nullable=False)

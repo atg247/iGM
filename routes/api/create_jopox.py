@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 
 from security import cipher_suite
 from helpers.jopox_scraper import JopoxScraper
+from logging_config import logger
 
 from . import api_bp
 
@@ -22,15 +23,16 @@ def create_jopox():
     password = decrypted_password
     scraper = JopoxScraper(current_user.id, username, password)
 
-    logging.debug('starting scraper with create_jopox, calling ensure_logged_in and access_admin')
+    logger.debug('starting create_jopox, calling ensure_logged_in and access_admin')
+    logger.debug('data: %s', data)
+
     if scraper.access_admin():
         try: 
             game_data = {
-                "SeasonId": "547",
-                "SubSiteId": "8787",
-                "LeagueDropdownList": "15460", #"15116" Treenipelit 24/25, "15449" U12 Sarja lohko, "15460" U12 Sarja lohko 3B
+                
+                "LeagueDropdownList": "", #"15116" Treenipelit 24/25, "15449" U12 Sarja lohko, "15460" U12 Sarja lohko 3B
                 "EventDropDownList": "",
-                "HomeTeamTextBox": game.get("Punainen", ""),#muokattu S-kiekko Punainen muotoon Punainen - pitää keksiä joku logiikka
+                "HomeTeamTextBox": game.get("Home Team", ""),#muokattu S-kiekko Punainen muotoon Punainen - pitää keksiä joku logiikka
                 "GuestTeamTextBox": game.get("Away Team", ""),
                 "AwayCheckbox": "", #Tämä pitää setviä kuntoon jos tyhjä niin kotijoukkue on kotijoukkue ja jos "on" niin vierasjoukkue on kotijoukkue.
                 "GameLocationTextBox": game.get("Location", ""),

@@ -35,7 +35,6 @@ def update_jopox():
             game_data = {
                 "SeasonId": "547",
                 "SubSiteId": "8787",
-                #hae oikea league_id league_selected arvolla
                 "LeagueDropdownList": form.get("league_selected", {}).get("value", ""), 
                 "EventDropDownList": form.get("event_selected", {}).get("value", ""),
                 "HomeTeamTextBox": form.get("HomeTeamTextbox", ""),#muokattu S-kiekko Punainen muotoon Punainen - pitää keksiä joku logiikka

@@ -116,6 +116,7 @@ def get_all_schedules():
                         away_goals=game['Away Goals'],
                         location=game['Location'],
                         level_name=game['Level Name'],
+                        stat_group_name=game['Stat Group Name'],
                         small_area_game=game['Small Area Game'],
                         team_name=game['Team Name'],
                         type=game['Type'],
@@ -131,6 +132,7 @@ def get_all_schedules():
             
             except Exception as e:
                 app.logger.error(f"Error processing game {game['Game ID']}: {str(e)}")
+        print("Example of managed games: ", managed_games[0])
 
         try:
             db.session.commit()
@@ -143,6 +145,28 @@ def get_all_schedules():
             app.logger.debug(f"Updated games: {updated_games}")
         if added_games:
             app.logger.debug(f"Added games: {added_games}")
+
+        #Create one simulated game and include it in the DataFrame
+        simulated_game = {
+            
+            "Game ID": "2020202020",
+            "SortableDate": "Thu, 10 Jul 2025 00:00:00 GMT",
+            "Date": "10.07.2025",
+            "Team ID": "1368626574",
+            "Team Name": "S-Kiekko Punainen",
+            "Time": "12:00",
+            "Home Team": "S-Kiekko Punainen",
+            "Away Team": "Simulated away team",
+            "Home Goals": "",
+            "Away Goals": "",
+            "Location": "Simulated location",
+            "Level Name": "U12 Sarja lohko 3B",
+            "Small Area Game": "0",
+            "Type": "manage"
+        }
+        managed_games.append(simulated_game)
+
+
 
         return jsonify({
             "managed_games": managed_games,

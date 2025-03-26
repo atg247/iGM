@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ottelun Tulospalvelu</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .form-group button {
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ottelun Tulospalvelu</h1>
+        <form id="matchForm">
+            <div class="form-group">
+                <label for="Home Team">Kotijoukkue</label>
+                <input type="text" id="Home Team" name="Home Team" value="S-Kiekko Sininen" required>
+            </div>
+            <div class="form-group">
+                <label for="Away Team">Vierasjoukkue</label>
+                <input type="text" id="Away Team" name="Away Team" value="Testi" required>
+            </div>
+            <div class="form-group">
+                <label for="Date">Ottelupäivä</label>
+                <input type="text" id="Date" name="Date" value="03.07.2025" required>
+            </div>
+            <div class="form-group">
+                <label for="gameId">Ottelun ID</label>
+                <input type="text" id="gameId" name="gameId" value="45399" required>
+            </div>
+            <div class="form-group">
+                <label for="Level Name">Taso</label>
+                <input type="text" id="Level Name" name="Level Name" value="U12 lohko 3B" required>
+            </div>
+            <div class="form-group">
+                <label for="Location">Sijainti</label>
+                <input type="text" id="Location" name="Location" value="Seinäjoki 2" required>
+            </div>
+            <div class="form-group">
+                <label for="smallAreaGame">Pieni Alue Peli</label>
+                <input type="text" id="smallAreaGame" name="smallAreaGame" value="0" required>
+            </div>
+            <div class="form-group">
+                <label for="teamId">Joukkueen ID</label>
+                <input type="text" id="teamId" name="teamId" value="1368626270" required>
+            </div>
+            <div class="form-group">
+                <label for="Team Name">Joukkueen Nimi</label>
+                <input type="text" id="Team Name" name="Team Name" value="S-Kiekko Sininen" required>
+            </div>
+            <div class="form-group">
+                <label for="Time">Aika</label>
+                <input type="text" id="Time" name="Time" value="14:45" required>
+            </div>
+            <div class="form-group">
+                <label for="type">Tyyppi</label>
+                <input type="text" id="type" name="type" value="manage" required>
+            </div>
+            <div class="form-group">
+                <button type="submit">Tallenna</button>
+            </div>
+        </form>
+    </div>
+    <script>
+        document.getElementById('matchForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+            console.log("sending data to backend:", data);
+            fetch('/api/create_jopox', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ game: data })
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log(result);
+                alert(result.message || result.error);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while creating the game.');
+            });
+        });
+    </script>
+</body>
+</html>

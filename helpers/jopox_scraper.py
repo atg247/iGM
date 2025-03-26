@@ -308,7 +308,59 @@ class JopoxScraper:
             return subsite_id
         except Exception as e:
             logging.error(f"Error getting subsite ID: {e}")
-    
+
+    def get_league_id(self, response):
+        #find all leagues from the dropdown list
+        logger.debug("Getting league ID's")
+        try:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            league_dropdown = soup.find('select', {'id': 'LeagueDropdownList'})
+            league_selected = {}
+            league_options = []
+            if league_dropdown:
+                for option in league_dropdown.find_all('option'):
+                    value = option.get('value', '').strip()
+                    text = option.text.strip()
+                    option_data = {"value": value, "text": text}
+                    if option.has_attr('selected'):
+                        league_selected = option_data
+                    else:
+                        league_options.append(option_data)
+            else:
+                league_selected = {}
+                league_options = []
+            logger.debug(f"League selected: {league_selected}")
+            logger.debug(f"League options: {league_options}")
+
+            return {
+                "league_selected": league_selected,
+                "league_options": league_options
+            } 
+        
+
+        except Exception as e:
+            logging.error(f"Error getting league ID's: {e}")
+
+    def define_league(self, level):
+        add_game_url = urljoin(self.base_url, "Games/Game.aspx")
+
+        # Load the form page
+        response = self.session.get(add_game_url, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Referer": add_game_url,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        })
+        #logging.info("Fetching game form page response status code: %d", response.status_code)
+        #logging.info("Fetching game form page response text: %s", response.text)
+
+        if response.status_code != 200:
+            logging.error("Failed to load form page!")
+            return
+
+        leagues = self.get_league_id(response)      
+
+        return leagues
+
 
 
     def add_game(self, game_data, game):
@@ -333,6 +385,14 @@ class JopoxScraper:
         event_validation_data = self.get_event_validation(response)
         season = self.get_season_id(response)
         subsite = self.get_subsite_id(response)
+        leagues = self.get_league_id(response)
+        league_options = leagues.get("league_options", [])
+        logger.debug(f"Level Name: {game.get('Level Name')}")
+        
+
+
+        logger.debug(f'game_data: {game_data}')
+        logger.debug(f'game: {game}')
         team_name = game.get('Team Name')            
         HomeTeamTextBox = self.homeTeamTextBox(response, team_name)
 
@@ -396,7 +456,8 @@ class JopoxScraper:
         }
 
         response = self.session.post(add_game_url, data=payload, headers=headers)
-        logging.info("Add game response status code: %d", response.status_code)
+        logger.info("Add game response status code: %d", response.status_code)
+        logger.debug("Add game response text: %s", response.text)
 
         soup = BeautifulSoup(response.text, 'html.parser')
         error_message = soup.find('textarea', {'id': 'ErrorTextBox'})
@@ -532,25 +593,14 @@ class JopoxScraper:
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
                 })
         
-            soup = BeautifulSoup(response.text, 'html.parser')
-            logger.debug(f'j_game_details(): soup: {soup}')
-
-            league_dropdown = soup.find('select', {'id': 'LeagueDropdownList'})
-            league_selected = {}
-            league_options = []
-            if league_dropdown:
-                for option in league_dropdown.find_all('option'):
-                    value = option.get('value', '').strip()
-                    text = option.text.strip()
-                    option_data = {"value": value, "text": text}
-                    if option.has_attr('selected'):
-                        league_selected = option_data
-                    else:
-                        league_options.append(option_data)
-            else:
-                league_selected = {}
-                league_options = []
+            leagues = self.get_league_id(response)
+            #extract leagues to league_selected and league_options
+            league_selected = leagues.get("league_selected")
+            league_options = leagues.get("league_options")
             
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+
             event_dropdown = soup.find('select', {'id': 'EventDropDownList'})
             event_selected = {}
             event_options = []

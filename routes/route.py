@@ -66,3 +66,7 @@ def dashboard():
 
     return render_template('dashboard.html', managed_teams=managed_teams, followed_teams=followed_teams, jopox_data=jopox_data)
 
+@routes_bp.route('/simulator')
+def simulator():
+    return render_template('simulator.html')
+
