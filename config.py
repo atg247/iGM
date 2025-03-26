@@ -13,6 +13,10 @@ sqlite_path = os.path.join(instance_dir, 'hockey_data.db')
 class Config:
 
     uri = os.getenv('DATABASE_URL')
+    
+    if uri and uri.startswith("postgres://"):
+        uri = uri.replace("postgres://", "postgresql://", 1)
+
     if not uri:
         uri = f"sqlite:///{sqlite_path}"
 
