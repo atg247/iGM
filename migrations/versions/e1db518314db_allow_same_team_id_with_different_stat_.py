@@ -1,3 +1,6 @@
+# Tämä kommentti pakottaa Gitin näkemään tiedoston muuttuneena
+
+
 """Allow same team_id with different stat_groups
 
 Revision ID: e1db518314db
