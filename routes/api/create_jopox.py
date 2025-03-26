@@ -15,6 +15,9 @@ def create_jopox():
     logging.debug('starting create_jopox')
     data = request.json
     game = data.get('game')
+    level = data.get('level')
+    logger.debug('game: %s', game)
+    logger.debug('level: %s', level)
 
     username = current_user.jopox_username
     #decrypt password from database
@@ -45,7 +48,7 @@ def create_jopox():
                 "GameNotificationTextBox": "",
                 "SaveGameButton": "Tallenna"
                 }
-            scraper.add_game(game_data, game)
+            scraper.add_game(game_data, game, level)
             return jsonify({"message": "Ottelu lisätty. Päivitä sivu nähdäksesi muutokset."}), 200
             
         except Exception as e:

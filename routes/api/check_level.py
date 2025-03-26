@@ -22,8 +22,8 @@ def check_level():
 
     if scraper.access_admin():
         try:
-            leagues = scraper.define_league(level)
-            return leagues
+            league = scraper.define_league(level)
+            return league
 
         except Exception as e:
             return jsonify({"error": str(e)}), 500

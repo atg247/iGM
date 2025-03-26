@@ -357,13 +357,71 @@ class JopoxScraper:
             logging.error("Failed to load form page!")
             return
 
-        leagues = self.get_league_id(response)      
+        leagues = self.get_league_id(response)
 
-        return leagues
+        #compare level to league_options and return the league_id with best match. Match is based on the league_options text that has most in common with level.
+        best_match = 0
+        best_league_id = ''
+        for league in leagues.get("league_options", []):
+            match = len(os.path.commonprefix([league.get('text'), level]))
+            if match > best_match:
+                best_match = match
+                best_league_id = league.get('value')
+                logger.debug(f"Match: {match}")
+        
+        logger.debug(f"Best match: {best_match}")
+        
+
+        #if no good enough match is found, start function to create new league
+        if best_match < 5:
+            logger.debug("No good enough match found, starting to create new league")
+            return self.create_league(level)
+        else:
+            return best_league_id
 
 
+    def create_league(self, level):
+        add_league_url = urljoin(self.base_url, "Ajax/Leagues.aspx/SaveLeague")
 
-    def add_game(self, game_data, game):
+        # create new league by posting to add_league_url
+        payload = {
+            "league": {"id": None, "type": 1, "name": level, "description": ""}
+        }
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Referer": urljoin(self.base_url, "Games/Games.aspx"),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Content-Type": "application/json"
+        }
+
+        #log the session.post content, cookies and headers
+        logger.info("Attempting to create new league with name: %s", level)
+        logger.debug("POSTing to URL: %s", add_league_url)
+        logger.debug("Create league payload: %s", payload)
+        logger.debug("Create league cookies: %s", self.session.cookies)
+        logger.debug("Create league headers: %s", headers)
+
+        response = self.session.post(add_league_url, json=payload, headers=headers)
+
+        logger.info("Create league response status code: %d", response.status_code)
+        logger.debug("Create league response text: %s", response.text)
+
+        try:
+            response_data = response.json()
+            logger.info("Create league response JSON: %s", response_data)
+            if response_data.get("d") == True:
+                logger.info("League created successfully!")
+
+                return self.define_league(level)
+            else:
+                logger.error("Failed to create league, server responded: %s", response_data)
+                return None
+        except Exception as e:
+            logger.exception("Error decoding create_league response JSON: %s", e)
+            return None
+        
+    def add_game(self, game_data, game, level):
         
         #muodosta add_game_url yhdistämällä self.base_url ja Games/Game.aspx
         add_game_url = urljoin(self.base_url, "Games/Game.aspx")
@@ -408,7 +466,7 @@ class JopoxScraper:
             "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSeasons": season,
             "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSubSites": subsite,
             #"ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$LeagueDropdownList": game_data.get("LeagueDropdownList", ""),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$LeagueDropdownList": level,
             "ctl00$MainContentPlaceHolder$GamesBasicForm$EventDropDownList": game_data.get("EventDropDownList", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$HomeTeamTextBox": HomeTeamTextBox,
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GuestTeamTextBox": game_data.get("GuestTeamTextBox", ""),

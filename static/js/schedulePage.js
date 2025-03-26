@@ -632,11 +632,13 @@ const app = Vue.createApp({
 
 
         createJopox(game) {
-            
-            // disable this function for now
-            return;
+
+            // haetaan valittu level createFormista
+            const level = this.createJopoxForm.league_selected.value;
+            // haetaan valittu peli
 
             const payload = { 
+                level: level, // Lomakkeen tiedot
                 game: game // Lähetetään pelin tiedot backendille
             };
 
@@ -650,7 +652,7 @@ const app = Vue.createApp({
             .then(response => response.json())
             .then(data => {
                 alert('Jopox-päivitys onnistui: ' + data.message);
-
+                this.closeCreateModal();
                 // Päivitetään ottelun status vihreäksi, koska se nyt löytyy Jopoxista
                 //game.match_status = "green"; 
             })
@@ -668,7 +670,7 @@ const app = Vue.createApp({
         },
 
         closeCreateModal() {
-            this.showUpdateJopoxModal = false;
+            this.showCreateJopoxModal = false; // Correctly toggle the create modal visibility
             this.selectedGame = null;
         },
 
@@ -678,6 +680,14 @@ const app = Vue.createApp({
                 return reason.replace(/\. /g, '<br>');
             }
             return '';
+        },
+
+        submitCreateForm() {
+            // game passed as argument to createJopox
+            this.createJopox(this.selectedGame);
+            
+            
+            this.closeCreateModal();
         },
 
         submitForm() {
@@ -827,7 +837,7 @@ template:
             <div class="bottomRow">
                 <p class="gameTime"> Klo {{ game.Time || 'Aika ei saatavilla' }}</p>
                 <p class="gameLocation">{{ game.Location || 'Paikka ei saatavilla' }}</p>
-                <p class="gameStatgroup">{{ game['Level Name'] }}</p>
+                <p class="gameStatgroup" style="font-size: 75%;">{{ game['Stat Group Name'] }}</p>
             </div>
 
             <!-- Expanded Section for Jopox Details -->
@@ -957,6 +967,10 @@ template:
                         {{ option.text }}
                     </option>
                 </select>
+            </div>
+            <div class="button-container">
+                <button class="cancel-button" type="button" @click="closeCreateModal">Peruuta</button>
+                <button class="action-button" type="button" @click="submitCreateForm">Päivitä</button>
             </div>
         </form>
     </div>

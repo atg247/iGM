@@ -160,7 +160,8 @@ def get_all_schedules():
             "Home Goals": "",
             "Away Goals": "",
             "Location": "Simulated location",
-            "Level Name": "U12 Sarja lohko 3B",
+            "Level Name": "TESTISARJA",
+            "Stat Group Name":"TESTISTATGROUP",
             "Small Area Game": "0",
             "Type": "manage"
         }
