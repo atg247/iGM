@@ -14,7 +14,6 @@ const app = Vue.createApp({
             selectedGame: null, // To store the game details for the modal
             showPlayedGames: false, // Controls whether played games are shown 
             showUpdateJopoxModal: false, // Päivitä Jopox -modalin näkyvyys
-            showCreateJopoxModal: false, // Luo Jopox -modalin näkyvyys
             form: {
                 league_selected: '',
                 league_options: [],
@@ -29,10 +28,6 @@ const app = Vue.createApp({
                 game_start_time: '',
                 game_duration: '',
                 game_public_info: ''
-            },
-            createJopoxForm: {
-                league_selected: '',
-                league_options: []
             },
             updatedFields: {} // Will hold the fields that have been updated
 
@@ -499,6 +494,15 @@ const app = Vue.createApp({
                 this.form.game_start_time = data.game_start_time;
             }
 
+            //compare dates
+            if (tulospalveluGame.Date !== data.game_date) {
+                console.log('päivämäärät eivät täsmää!')
+                this.form.game_date = tulospalveluGame.Date;
+                this.updatedFields.game_date = true; // Mark as updated
+            } else {
+                this.form.game_date = data.game_date;
+            }
+
             if (tulospalveluGame.Location !== data.game_location) {
                 this.form.game_location = tulospalveluGame.Location;
                 this.updatedFields.game_location = true; // Mark as updated
@@ -594,12 +598,12 @@ const app = Vue.createApp({
                 alert('Päivityksessä tapahtui virhe.');
             });
         },
- 
-        openCreateModal(game) {
+
+        createJopox(game) {
+            
             this.selectedGame = game; // Tallenna valittu peli
             console.log('Valittu peli:', game);
             const level = game['Level Name'];
-
 
             console.log('Tarkastetaan level:', level);
             fetch(`/api/check_level?level=${level}`, {
@@ -609,68 +613,35 @@ const app = Vue.createApp({
             .then(response => response.json())
             .then(data => {
                 console.log('Level data:', data);
-
-                this.createJopoxForm.league_options = data.league_options || [];
-                this.createJopoxForm.league_selected = this.createJopoxForm.league_options.find(
-                    opt => opt.value === data.league_selected
-                ) || this.createJopoxForm.league_options[0] || null;
-                
-                this.showCreateJopoxModal = true; // Näytä Päivitä Jopox -modal
-                
-            })
-
-             // Käytetään nextTick asettamaan sisältö oikein contenteditable-kenttään
-            
-
-            .catch(error => {
-                console.error('Error fetching Jopox data:', error);
-            });
-
-
-        },
-
-
-
-        createJopox(game) {
-
-            // haetaan valittu level createFormista
-            const level = this.createJopoxForm.league_selected.value;
-            // haetaan valittu peli
-
-            const payload = { 
-                level: level, // Lomakkeen tiedot
-                game: game // Lähetetään pelin tiedot backendille
-            };
-
-            console.log("Lähetetään uusi Jopox-tapahtuma:", payload);
-
-            fetch('/api/create_jopox', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+        
+                // Päivitetään payload vasta tässä vaiheessa, kun level data on saatavilla
+                const payload = { 
+                    level: data,       // Tämä on nyt level_id, esim. "1234"
+                    game: game
+                };
+        
+                console.log("Lähetetään uusi Jopox-tapahtuma:", payload);
+        
+                return fetch('/api/create_jopox', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
             })
             .then(response => response.json())
             .then(data => {
                 alert('Jopox-päivitys onnistui: ' + data.message);
-                this.closeCreateModal();
-                // Päivitetään ottelun status vihreäksi, koska se nyt löytyy Jopoxista
-                //game.match_status = "green"; 
+                game.match_status = "green";  // Päivitä pelin status
             })
-
             .catch(error => {
                 console.error('Virhe Jopox-päivityksessä:', error);
                 alert('Päivityksessä tapahtui virhe.');
             });
         },
-    
+
         // Sulje Päivitä Jopox -modal
         closeUpdateModal() {
             this.showUpdateJopoxModal = false;
-            this.selectedGame = null;
-        },
-
-        closeCreateModal() {
-            this.showCreateJopoxModal = false; // Correctly toggle the create modal visibility
             this.selectedGame = null;
         },
 
@@ -682,13 +653,7 @@ const app = Vue.createApp({
             return '';
         },
 
-        submitCreateForm() {
-            // game passed as argument to createJopox
-            this.createJopox(this.selectedGame);
-            
-            
-            this.closeCreateModal();
-        },
+  
 
         submitForm() {
             // Handle form submission logic here
@@ -812,7 +777,7 @@ template:
                 
                 <button class="update-jopox-btn"
                     v-if="!isPastDay(date) && !isNotManagedTeam(game)"
-                    @click.stop="game.match_status === 'red' ? openCreateModal(game) : openUpdateModal(game)">
+                    @click.stop="game.match_status === 'red' ? createJopox(game) : openUpdateModal(game)">
                     <span class="status-text">
                         {{ game.match_status === 'red' ? 'Luo Jopoxiin' : 'Päivitä Jopox' }}
                     </span>
@@ -950,31 +915,6 @@ template:
     </div>
 </div>
 
-<div v-if="showCreateJopoxModal" class="modal-window2">
-    <div class="modal-content">
-        <div class="modal-close" @click="closeCreateModal">&times;</div>
-        <h2>Luo Jopox</h2>
-        <form id="jpx-create-form">
-            <!-- Sarja -->
-            <div>
-                <label for="league">Sarja:</label>
-                <select id="league" v-model="createJopoxForm.league_selected">
-                    <option 
-                        v-for="option in createJopoxForm.league_options" 
-                        :key="option.value" 
-                        :value="option"
-                    >
-                        {{ option.text }}
-                    </option>
-                </select>
-            </div>
-            <div class="button-container">
-                <button class="cancel-button" type="button" @click="closeCreateModal">Peruuta</button>
-                <button class="action-button" type="button" @click="submitCreateForm">Päivitä</button>
-            </div>
-        </form>
-    </div>
-</div>
 
 
 
