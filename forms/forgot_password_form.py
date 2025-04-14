@@ -1,10 +1,10 @@
+from flask import url_for
+from flask_mail import Message
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, Email
-from flask import url_for, current_app
-from flask_mail import Message
-from helpers.extensions import mail
 
+from extensions import mail
 class ForgotPasswordForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     submit = SubmitField('Request Password Reset')

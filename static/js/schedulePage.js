@@ -424,15 +424,28 @@ const app = Vue.createApp({
             .then(response => response.json())
             .then(data => {
 
-                // Populate the form with the fetched data
-                this.form.league_selected = data.league_selected || '';
-                this.form.league_options = data.league_options || []; 
-                if (this.form.league_selected && !this.form.league_options.includes(this.form.league_selected)) {
+                this.form.league_selected = data.league_selected || null;
+                this.form.league_options = data.league_options || [];
+
+                // Tarkistetaan onko league_selected jo mukana listassa arvon perusteella
+                if (
+                    this.form.league_selected &&
+                    !this.form.league_options.some(opt => opt.value === this.form.league_selected.value)
+                ) {
                     this.form.league_options.push(this.form.league_selected);
                 }
-                console.log('data:',data)    
-                this.form.event_selected = data.event_selected || '';
+
+                this.form.event_selected = data.event_selected || null;
                 this.form.event_options = data.event_options || [];
+
+                // Sama logiikka eventille (valinnainen riippuen käytöstä)
+                if (
+                    this.form.event_selected &&
+                    !this.form.event_options.some(opt => opt.value === this.form.event_selected.value)
+                ) {
+                    this.form.event_options.push(this.form.event_selected);
+                }
+
                 this.form.SiteNameLabel = data.SiteNameLabel || '';
                 this.form.HomeTeamTextbox = data.HomeTeamTextbox || '';
                 this.form.guest_team = data.guest_team || '';
@@ -479,6 +492,15 @@ const app = Vue.createApp({
                 this.updatedFields.game_start_time = true; // Mark as updated
             } else {
                 this.form.game_start_time = data.game_start_time;
+            }
+
+            //compare dates
+            if (tulospalveluGame.Date !== data.game_date) {
+                console.log('päivämäärät eivät täsmää!')
+                this.form.game_date = tulospalveluGame.Date;
+                this.updatedFields.game_date = true; // Mark as updated
+            } else {
+                this.form.game_date = data.game_date;
             }
 
             if (tulospalveluGame.Location !== data.game_location) {
@@ -578,33 +600,45 @@ const app = Vue.createApp({
         },
 
         createJopox(game) {
+            
+            this.selectedGame = game; // Tallenna valittu peli
+            console.log('Valittu peli:', game);
+            const level = game['Level Name'];
 
+            console.log('Tarkastetaan level:', level);
+            fetch(`/api/check_level?level=${level}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Level data:', data);
         
-            const payload = { 
-                game: game // Lähetetään pelin tiedot backendille
-            };
-
-            console.log("Lähetetään uusi Jopox-tapahtuma:", payload);
-
-            fetch('/api/create_jopox', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+                // Päivitetään payload vasta tässä vaiheessa, kun level data on saatavilla
+                const payload = { 
+                    level: data,       // Tämä on nyt level_id, esim. "1234"
+                    game: game
+                };
+        
+                console.log("Lähetetään uusi Jopox-tapahtuma:", payload);
+        
+                return fetch('/api/create_jopox', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
             })
             .then(response => response.json())
             .then(data => {
                 alert('Jopox-päivitys onnistui: ' + data.message);
-
-                // Päivitetään ottelun status vihreäksi, koska se nyt löytyy Jopoxista
-                //game.match_status = "green"; 
+                game.match_status = "green";  // Päivitä pelin status
             })
-
             .catch(error => {
                 console.error('Virhe Jopox-päivityksessä:', error);
                 alert('Päivityksessä tapahtui virhe.');
             });
         },
-    
+
         // Sulje Päivitä Jopox -modal
         closeUpdateModal() {
             this.showUpdateJopoxModal = false;
@@ -618,6 +652,8 @@ const app = Vue.createApp({
             }
             return '';
         },
+
+  
 
         submitForm() {
             // Handle form submission logic here
@@ -766,7 +802,7 @@ template:
             <div class="bottomRow">
                 <p class="gameTime"> Klo {{ game.Time || 'Aika ei saatavilla' }}</p>
                 <p class="gameLocation">{{ game.Location || 'Paikka ei saatavilla' }}</p>
-                <p class="gameStatgroup">{{ game['Level Name'] }}</p>
+                <p class="gameStatgroup" style="font-size: 75%;">{{ game['Stat Group Name'] }}</p>
             </div>
 
             <!-- Expanded Section for Jopox Details -->
@@ -811,9 +847,12 @@ template:
             <div>
                 <label for="league">Sarja:</label>
                 <select id="league" v-model="form.league_selected">
-                    <!-- Luo vaihtoehdot ja valitse oikea oletusarvo -->
-                    <option v-for="option in form.league_options" :key="option" :value="option">
-                        {{ option }}
+                    <option 
+                        v-for="option in form.league_options" 
+                        :key="option.value" 
+                        :value="option"
+                    >
+                        {{ option.text }}
                     </option>
                 </select>
             </div>
@@ -821,7 +860,7 @@ template:
             <!-- Kotijoukkue -->
             <div :class="{'updated-field': updatedFields.HomeTeamTextbox}">
                 <label for="home_team">{{form.SiteNameLabel}}</label>
-                <input type="text" id="home_team" v-model="form.HomeTeamTextbox" placeholder="Kotijoukkue">
+                <input type="text" id="home_team" v-model="form.HomeTeamTextbox" placeholder="Lisänimi (ei pakollinen)">
             </div>
 
             <!-- Vastustaja -->
@@ -875,6 +914,7 @@ template:
         </form>
     </div>
 </div>
+
 
 
 

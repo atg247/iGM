@@ -28,6 +28,7 @@ class GameFetcher:
             response = requests.post(url, data=payload)
             response.raise_for_status()
             self.games = response.json()  # Assuming the response is a list of games directly
+
             return None  # No error
         except requests.RequestException as e:
             return f"Error fetching games: {str(e)}"
@@ -54,11 +55,13 @@ class GameFetcher:
                     'Home Goals': game.get('HomeGoals', 'N/A'),
                     'Away Goals': game.get('AwayGoals', 'N/A'),
                     'Location': game.get('RinkName', 'N/A'),
-                    'Level Name': level_data.get('LevelName', 'N/A'),
+                    'Level Name': game.get('LevelName', 'N/A'),
+                    'Stat Group Name': game.get('StatGroupName', 'N/A'),
                     'Small Area Game': game.get('SmallAreaGame', 'N/A')
                 }
                 games_info.append(game_info)
 
         games_df = pd.DataFrame(games_info)
         games_df['Date'] = pd.to_datetime(games_df['Date'], format='%d.%m.%Y', errors='coerce', dayfirst=True)
+        print("example of games_df", games_df)
         return games_df

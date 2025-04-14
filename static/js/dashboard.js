@@ -4,7 +4,7 @@ $(document).ready(function () {
     $('#season').change(function () {
         const season = $(this).val();
         if (season) {
-            $.get(`/gamefetcher/get_levels/${season}`, function (data) {
+            $.get(`api/gamefetcher/get_levels/${season}`, function (data) {
                 let levelOptions = '<option value="">Valitse taso</option>';
                 data.forEach(function (level) {
                     levelOptions += `<option value="${level.LevelID}">${level.LevelName}</option>`;
@@ -24,7 +24,7 @@ $(document).ready(function () {
         const levelId = $(this).val();
         const season = $('#season').val();
         if (levelId) {
-            $.get(`/gamefetcher/get_statgroups/${season}/${levelId}/0`, function (data) {
+            $.get(`api/gamefetcher/get_statgroups/${season}/${levelId}/0`, function (data) {
                 let statGroupOptions = '<option value="">Valitse sarja/lohko</option>';
                 data.forEach(function (statGroup) {
                     statGroupOptions += `<option value="${statGroup.StatGroupID}">${statGroup.StatGroupName}</option>`;
@@ -42,7 +42,7 @@ $(document).ready(function () {
         let selectedStatGroupName = $('#statgroups option:selected').text(); // Get selected stat group name
     
         if (statGroupId) {
-            $.get(`/gamefetcher/get_teams/${season}/${statGroupId}`, function (data) {
+            $.get(`api/gamefetcher/get_teams/${season}/${statGroupId}`, function (data) {
                 if (Array.isArray(data.Teams)) {
                     let teamOptions = '';
                     
@@ -68,7 +68,7 @@ $(document).ready(function () {
 // Function to load the latest teams data from the server
 function loadTeams() {
     return $.ajax({
-        url: '/dashboard/get_ManagedFollowed', // Assumes a backend endpoint to fetch the latest teams data
+        url: 'dashboard/get_ManagedFollowed', // Assumes a backend endpoint to fetch the latest teams data
         method: 'GET',
         success: function (response) {
             console.log('Hallinnoidut joukkueet:', response);
@@ -248,7 +248,7 @@ $(document).ready(function () {
     $('#jopoxAuthForm').submit(function (e) {
         e.preventDefault();
         
-        const jopoxLoginUrl = $('#jopoxLoginUrl').val();
+        const jopoxLoginUrl = $('https://login.jopox.fi').val();
         const jopoxUsername = $('#jopoxUsername').val();
         const jopoxPassword = $('#jopoxPassword').val();
 

@@ -6,7 +6,7 @@
     Seurattavilla joukkueilla tarkoitetaan joukkueita, joiden otteluohjelman haluat näyttää taulukossa lainapelaajien suunnittelemiseksi.</p>
 
 <!-- Form for fetching games -->
-<form id="dashboardForm" method="POST" action="{{ url_for('update_teams') }}" class="mt-4">
+<form id="dashboardForm" method="POST" action="{{ url_for('dashboard.update_teams') }}" class="mt-4">
     <div class="container">
         <h2>Welcome, {{ current_user.username }}!</h2>
         <p>Valitse joukkueet/peliryhmät, jotka haluat lisätä hallinnoitavaksi tai seurattavaksi.</p>
@@ -77,13 +77,8 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <p>Syötä Jopox-käyttäjätunnuksesi ja -salasanasi. Nämä tiedot tallennetaan turvallisesti ja suojataan luotettavasti.</p>
-        <button class="btn btn-info" data-bs-toggle="tooltip" data-bs-placement="top" title="Salasanojen suojaus: Salasanoja ei tallenneta selväkielisinä. Käytämme vahvaa salausta, jotta vain sinun tunnuksesi voivat käyttää niitä.">Miten suojaamme salasanasi?</button>
+        <p>Syötä Jopox-käyttäjätunnuksesi ja -salasanasi.</p>
         <form id="jopoxAuthForm">
-          <div class="mb-3">
-             <label for="jopoxUrl" class="form-label">Jopox-kirjautumisen URL</label>
-             <input type="text" id="jopoxLoginUrl" class="form-control" required>
-          </div>
           <div class="mb-3">
             <label for="jopoxUsername" class="form-label">Jopox Käyttäjätunnus</label>
             <input type="text" id="jopoxUsername" class="form-control" required>
