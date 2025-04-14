@@ -132,7 +132,7 @@ class JopoxScraper:
             logger.error("Pukuhuonetietojen haku epäonnistui:", self.lockerroom_response.status_code)
 
         admin_onetimer = f"https://myapi.jopox.fi/api/v1/adminlogin/{lockerroom_metadata_id}/onetimer?source=selfservice"
-        admin_response = requests.get(admin_onetimer, headers=self.auth_header)
+        admin_response = session.get(admin_onetimer, headers=self.auth_header)
         soup = BeautifulSoup(admin_response.text, "html.parser")
 
         if admin_response.status_code == 200:
