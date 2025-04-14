@@ -21,7 +21,7 @@ def jopox_form_information():
 
     scraper = JopoxScraper(current_user.id, username, password)
     logging.debug('starting scraper with jopox_form_information, calling access_admin')
-    if scraper.access_admin():
+    if scraper.login():
         try:
             jopox_form_information = scraper.j_game_details(j_game_id)
             return jopox_form_information

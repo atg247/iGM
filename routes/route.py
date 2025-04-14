@@ -21,7 +21,7 @@ def test_session():
 @routes_bp.route('/schedule')
 @login_required
 def schedule():
-    update_jopox_credentials()
+    #update_jopox_credentials()
     return render_template('otteluhaku.html')
   
 @routes_bp.route('/')

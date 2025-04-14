@@ -153,7 +153,7 @@ def get_all_schedules():
                 "Game ID": f"202020202{i}",
                 "SortableDate": f"Thu, 0{i+1} Jul 2025 00:00:00 GMT",
                 "Date": f"0{i+1}.07.2025",
-                "Team ID": "1368626270",
+                "Team ID": "1368626576",
                 "Team Name": "S-Kiekko Sininen",
                 "Time": "12:00",
                 "Home Team": "S-Kiekko Sininen",
@@ -161,7 +161,7 @@ def get_all_schedules():
                 "Home Goals": "",
                 "Away Goals": "",
                 "Location": "Simulated location",
-                "Level Name": "U13 A",
+                "Level Name": "TESTISARJA",
                 "Stat Group Name":"TESTISARJA",
                 "Small Area Game": "0",
                 "Type": "manage"

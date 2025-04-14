@@ -8,7 +8,6 @@ from .data_fetcher import (
     get_levels,
     get_stat_groups,
     get_teams,
-    get_jopox_events,
     hae_kalenteri,
 )
 from .update_jopox_credentials import update_jopox_credentials

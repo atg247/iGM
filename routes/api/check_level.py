@@ -20,7 +20,7 @@ def check_level():
 
     scraper = JopoxScraper(current_user.id, username, password)
 
-    if scraper.access_admin():
+    if scraper.login():
         try:
             league = scraper.define_league(level)
             return league

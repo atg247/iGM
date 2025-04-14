@@ -860,7 +860,7 @@ template:
             <!-- Kotijoukkue -->
             <div :class="{'updated-field': updatedFields.HomeTeamTextbox}">
                 <label for="home_team">{{form.SiteNameLabel}}</label>
-                <input type="text" id="home_team" v-model="form.HomeTeamTextbox" placeholder="Kotijoukkue">
+                <input type="text" id="home_team" v-model="form.HomeTeamTextbox" placeholder="Lisänimi (ei pakollinen)">
             </div>
 
             <!-- Vastustaja -->

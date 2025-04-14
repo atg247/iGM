@@ -28,10 +28,11 @@ def get_jopox_games():
     logger.debug(f'Found {len(descriptions)} descriptions for games')
     logger.debug(f'UIDs: {[desc["Uid"] for desc in descriptions]}')
     logger.debug('starting scraper with jopox_games, calling ensure_logged_in and access_admin')
-    if scraper.access_admin():
+    if scraper.login():
+        logger.debug('Admin access granted')
         try:
             jopox_games = scraper.scrape_jopox_games()
-            for game in jopox_games:
+            for game in jopox_games: 
                 logger.debug(f'Processing game {game["uid"]}')
                 matching_description = next((desc for desc in descriptions if desc['Uid'] == game['uid']), None)
                 if matching_description:
@@ -42,3 +43,6 @@ def get_jopox_games():
         except Exception as e:
             app.logger.error(f"Error fetching Jopox games: {e}")
             return jsonify({"status": "error", "message": str(e)}), 500
+    else:   
+        logger.error('Admin access denied')
+        #return jsonify({"status": "error", "message": "Admin access denied"}), 403

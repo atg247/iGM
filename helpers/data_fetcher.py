@@ -27,27 +27,6 @@ def get_teams(season, stat_group_id):
     response.raise_for_status()
     return response.json()
 
-def get_jopox_events():
-    pass#<----------Alla jopox-haun runko
-    url = "https://s-kiekko-app.jopox.fi/www/ajax/calendar.aspx/LoadMoreEvents"
-    cookies = {
-        'ASP.NET_SessionId': '-------',   # Replace with your actual ASP.NET_SessionId value
-        '_utma': '-------',                         # Replace with your actual _utma value
-        '_utmz': '------',                         # Replace with your actual _utmz value
-        '_fbp': '------',                           # Replace with your actual _fbp value
-        'jpx_team_select': '8787',     # Replace with your actual jpx_team_select value
-        'jpxapp': '---------'
-       }
-    headers = { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3',
-        'Referer': 'https://s-kiekko-app.jopox.fi/home/club/8787?web=1',   # Adjust referer if needed, to the page where the request originates from
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
-    payload = {'subsite':8787, 'fromDate': '30.10.2024 00:00', 'clientType': 1 }
-    response = requests.post(url, data=payload, cookies=cookies,  headers=headers)
-    response.raise_for_status()
-    return response.json
-
 def hae_kalenteri(calendar_url):
     descriptions = []
     

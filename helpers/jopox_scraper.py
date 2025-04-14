@@ -15,25 +15,35 @@ from logging_config import logger
     
 class JopoxScraper:
     def __init__(self, user_id, username, password):
-#       self.login_url = "https://s-kiekko-app.jopox.fi/login"
         self.user = db.session.get(User, user_id)
-        self.login_url = self.user.jopox_login_url
+        self.login_url = "https://myapi.jopox.fi/api/v1/myjopoxaccount/login" #self.user.jopox_login_url
         self.admin_login_url = self.login_url.replace('/login', '/adminlogin')
+        self.admin_page_url = None
+        self.auth_header = None
         self.base_url = None
         self.session = requests.Session()
         self.username = username
         self.password = password
         self.cookies = None
+        self.myJopoxAccountId = None
+        self.token = None
+        self.refresh_token = None
         self.last_login_time = None
         self.event_validation_data = None
+        self.lockerroom_response = None
         self.load_session_from_flask()
 
     def save_session_to_flask(self):
-        """Tallentaa istunnon evästeet ja validointitiedot Flask-sessioniin"""
+        """Tallentaa käyttäjän tiedot sekä istunnon evästeet ja validointitiedot Flask-sessioniin"""
         session["user_id"] = current_user.id
         session["jopox_cookies"] = json.dumps(self.session.cookies.get_dict())
         session["jopox_validation"] = json.dumps(self.event_validation_data)
         session["jopox_last_login"] = self.last_login_time.isoformat() if self.last_login_time else None
+        session["tokens"] = json.dumps(self.token) if self.token else None
+        session["refresh_token"] = json.dumps(self.refresh_token) if self.refresh_token else None
+        session["jopox_lockerroom_response"] = json.dumps(self.lockerroom_response.json()) if self.lockerroom_response else None
+        session["admin_page_url"] = self.admin_page_url if self.admin_page_url else None
+        session["auth_header"] = json.dumps(self.auth_header) if self.auth_header else None
 
     def load_session_from_flask(self):
         """Lataa aiemmin tallennetun istunnon evästeet ja validointitiedot Flask-sessionista"""
@@ -62,38 +72,106 @@ class JopoxScraper:
         session.pop("jopox_cookies", None)
         session.pop("jopox_validation", None)
         session.pop("jopox_last_login", None)
+        session.pop("tokens", None)
 
     def login(self):
         url = self.login_url
-        response = self.session.get(url)
-        event_validation_data = self.get_event_validation(response)
         
         login_payload = {
-            "__EVENTTARGET": "",
-            "__EVENTARGUMENT": "",
-            "__VIEWSTATE": event_validation_data['__VIEWSTATE'],
-            "__VIEWSTATEGENERATOR": event_validation_data['__VIEWSTATEGENERATOR'],
-            "__EVENTVALIDATION": event_validation_data['__EVENTVALIDATION'],            "UsernameTextBox": self.username,
-            "UsernameTextBox": self.username,            
-            "PasswordTextBox": self.password,
-            "LoginButton": "Kirjaudu"
-        }
-        logging.debug("sending login data")
-        response = self.session.post(self.login_url, data=login_payload)
+            "username": self.username,
+            "password": self.password
+            }
+
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "origin": "https://login.jopox.fi",
+            "referer": "https://login.jopox.fi/",
+            "user-agent": "Mozilla/5.0"
+            }
+        
+        response = requests.post(url, json=login_payload, headers=headers)
+        logger.debug(f"Kirjautumispyynnön vastaus: {response.status_code}, {response.text}")
+    
         if response.status_code == 200:
-            logging.info("login(): Login successful!")
-            self.cookies = self.session.cookies
-            logging.info("Cookies after login: %s", self.cookies)
-            self.event_validation_data = event_validation_data
+            self.token = response.json().get("tokens", {}).get("accessToken")
+            self.refresh_token = response.json().get("tokens", {}).get("refreshToken")
+           
+            logger.info("✅ Kirjautuminen onnistui.")
+            logger.debug(f"Token: {self.token}")
+            logger.debug(f"Refresh Token: {self.refresh_token}")
+
+            self.auth_header = {
+                "Authorization": f"Bearer {self.token}",
+                "origin": "https://login.jopox.fi",
+                "referer": "https://login.jopox.fi/",
+                "user-agent": "Mozilla/5.0"
+            }
+
+        person_url = "https://myapi.jopox.fi/api/v1/myjopoxaccount/GetMyJopoxPersonDetails"
+        person_response = requests.get(person_url, headers=self.auth_header)
+
+        if person_response.status_code == 200:
+            logger.debug("Käyttäjätiedot:")
+            logger.debug(person_response.json())
+        else:
+            logger.error("❌ Käyttäjätietojen haku epäonnistui:", person_response.status_code)
+
+    # 🧳 4. Hae pukuhuonetiedot
+        lockerroom_url = "https://myapi.jopox.fi/api/v1/lockerrooms"
+        self.lockerroom_response = requests.get(lockerroom_url, headers=self.auth_header)
+
+        if self.lockerroom_response.status_code == 200:
+            logger.debug("🧳 Pukuhuonetiedot:")
+            logger.debug(self.lockerroom_response.json())
+            #get metadataId from lockerroom_response
+            lockerroom_metadata_id = self.lockerroom_response.json().get("lockerRooms")[0].get("metadataId")
+            
+
+        else:
+            logger.error("Pukuhuonetietojen haku epäonnistui:", self.lockerroom_response.status_code)
+
+        admin_onetimer = f"https://myapi.jopox.fi/api/v1/adminlogin/{lockerroom_metadata_id}/onetimer?source=selfservice"
+        admin_response = requests.get(admin_onetimer, headers=self.auth_header)
+        soup = BeautifulSoup(admin_response.text, "html.parser")
+
+        if admin_response.status_code == 200:
+            logger.debug(f"Admin response: {soup.prettify()}")
+        else:
+            logger.error("Admin-tietojen haku epäonnistui:", admin_response.status_code)
+
+        self.admin_page_url = admin_response.json().get("url")
+        logger.debug(f"EI TOIMIVA VERSIO: Session cookies before admin page call: {self.session.cookies.get_dict()}")
+        logger.debug(f"EI TOIMIVA VERSIO: Admin page URL: {self.admin_page_url}")
+        admin_page_response = self.session.get(self.admin_page_url)
+        #log complete request with cookies and headers
+        logger.debug(f"Admin page response status code: {admin_page_response.status_code}")
+        logger.debug(f"Admin page response headers: {admin_page_response.headers}")
+        logger.debug(f"Admin page response cookies: {self.session.cookies.get_dict()}")
+        logger.debug(f"Admin page URL: {self.admin_page_url}")
+        logger.debug(f"Admin page auth header: {self.auth_header}")
+        logger.debug(f"Admin page response URL: {admin_page_response.url}")
+        #logger.debug(f"Admin page response text: {admin_page_response.text}")
+
+        
+        
+        soup = BeautifulSoup(admin_page_response.text, "html.parser")
+        if admin_page_response.status_code == 200:
+            logger.info("login(): Login successful!")
+            #logger.debug(f"admin page: {soup}")
             self.last_login_time = datetime.now()
-
-            self.save_session_to_flask()
-
+            self.base_url = self.get_jopox_base_url(soup)
+            self.event_validation_data = self.get_event_validation(admin_page_response)
+            logger.debug(f"Event validation data: {self.event_validation_data}")
+            #self.save_session_to_flask()
             return True
 
         else:
-            logging.error("Login failed!")
+            print("❌ Admin-sivun tietojen haku epäonnistui:", admin_page_response.status_code)
             return False
+
+       
+
         
     def is_session_valid(self):
         if "jopox_last_login" not in session:
@@ -120,7 +198,7 @@ class JopoxScraper:
                 logging.error("login() failed!")
                 return False
         
-        response = self.session.get(self.admin_login_url, cookies=self.cookies)
+        response = self.session.get(self.session["admin_page_url"], self.auth_header)
         logging.info("get to admin_login_url with cookies: %s", self.cookies)
         if response.status_code == 200:
             logging.info("Admin access successful!")
@@ -131,27 +209,27 @@ class JopoxScraper:
             logging.error("Admin access failed!")
             return False
 
-    def get_jopox_base_url(self, response):
+    def get_jopox_base_url(self, soup):
 
         # Sivuston perus-URL
         BASE_URL = "https://hallinta3.jopox.fi/"
 
         # Haetaan HTML-sisältö
-        logging.debug("Fetching admin login page for base URL extraction...")
-
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
+        logger.debug("Fetching admin login page for base URL extraction...")
+        #logger.debug(f"Soup: {soup.prettify()}")
         script_tag = soup.find('script', string=lambda text: text and 'siteRoot' in text)
         game_link = soup.find('a', href=lambda href: href and 'Games/Games.aspx' in href)
         site_root = script_tag.string.split('siteRoot: "')[1].split('"')[0]
+        logger.debug(f"site_root: {site_root}")
         base_url = urljoin(BASE_URL, site_root)
-        logging.info(f"Base URL: {base_url}")
+        logger.debug(f"Base URL: {base_url}")
         return base_url
 
-    def login_for_credentials(self):    
+    def login_for_credentials(self):
+
         url = self.login_url
         response = self.session.get(url)
-        event_validation_data = self.get_event_validation(response)
+        #event_validation_data = self.get_event_validation(response)
         
         login_payload = {
             "__EVENTTARGET": "",
@@ -312,6 +390,7 @@ class JopoxScraper:
     def get_league_id(self, response):
         #find all leagues from the dropdown list
         logger.debug("Getting league ID's")
+        #logger.debug(f"response: {response.text}")
         try:
             soup = BeautifulSoup(response.text, 'html.parser')
             league_dropdown = soup.find('select', {'id': 'LeagueDropdownList'})
@@ -342,42 +421,59 @@ class JopoxScraper:
             logging.error(f"Error getting league ID's: {e}")
 
     def define_league(self, level):
-        add_game_url = urljoin(self.base_url, "Games/Game.aspx")
+        logger.debug("define_league() started...") 
+        if self.login():
+            add_game_url = urljoin(self.base_url, "Games/Game.aspx")
+            logger.debug("Define_league() started...")
+            logger.debug(f"add_game_url: {add_game_url}")
 
-        # Load the form page
-        response = self.session.get(add_game_url, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            "Referer": add_game_url,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        })
-        #logging.info("Fetching game form page response status code: %d", response.status_code)
-        #logging.info("Fetching game form page response text: %s", response.text)
+            headers={
+                "Authorization": f"Bearer {self.token}",
+                "origin": "https://login.jopox.fi",
+                "referer": "https://login.jopox.fi/",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            }
 
-        if response.status_code != 200:
-            logging.error("Failed to load form page!")
-            return
+            # Load the form page
+            response = self.session.get(add_game_url, headers={
+                "User-Agent": "Mozilla/5.0",
+                "Referer": self.admin_page_url,
+            })
+            logger.debug(f"add_game_url: {add_game_url}")
+            logger.debug(f"Fetching with headers: {headers}")
+            logger.debug("Fetching game form page response status code: %d", response.status_code)
+            #logger.debug("Fetching game form page response text: %s", response.text)
 
-        leagues = self.get_league_id(response)
+            if response.status_code != 200:
+                logger.error("Failed to load form page!")
+                return
 
-        #compare level to league_options and return the league_id with best match. Match is based on the league_options text that has most in common with level.
-        best_match = 0
-        best_league_id = ''
-        for league in leagues.get("league_options", []):
-            match = len(os.path.commonprefix([league.get('text'), level]))
-            if match > best_match:
-                best_match = match
-                best_league_id = league.get('value')
-                logger.debug(f"Match: {match}")
-        
-        logger.debug(f"Best match: {best_match}")
-        
+            leagues = self.get_league_id(response)
+            logger.debug(f"Leagues received from get_league_id: {leagues}")
 
-        #if no good enough match is found, start function to create new league
-        if best_match < 5:
-            logger.debug("No good enough match found, starting to create new league")
-            return self.create_league(level)
-        else:
-            return best_league_id
+            logger.debug(f"Level: {level}")
+
+            #compare level to league_options and return the league_id with best match. Match is based on the league_options text that has most in common with level.
+            best_match = 0
+            best_league_id = ''
+            for league in leagues.get("league_options", []):
+                match = len(os.path.commonprefix([league.get('text'), level]))
+                logger.debug(f"match: {match}")
+                if match > best_match:
+                    best_match = match
+                    best_league_id = league.get('value')
+                    logger.debug(f"Match: {match}")
+            
+            logger.debug(f"Best match: {best_match}")
+            
+
+            #if no good enough match is found, start function to create new league
+            if best_match < 5:
+                logger.debug("No good enough match found, starting to create new league")
+                return self.create_league(level)
+            else:
+                logger.debug(f"returning Best league ID: {best_league_id}")
+                return best_league_id
 
 
     def create_league(self, level):
@@ -422,18 +518,22 @@ class JopoxScraper:
             return None
         
     def add_game(self, game_data, game, level):
-        
+        logger.debug("add_game() started...")
         #muodosta add_game_url yhdistämällä self.base_url ja Games/Game.aspx
         add_game_url = urljoin(self.base_url, "Games/Game.aspx")
-
+        logger.debug(f"add_game_url: {add_game_url}")
+        logger.debug(f"game_data: {game_data}")
         # Load the form page
-        response = self.session.get(add_game_url, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            "Referer": add_game_url,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        })
-        #logging.info("Fetching game form page response status code: %d", response.status_code)
-        #logging.info("Fetching game form page response text: %s", response.text)
+
+        try:
+            response = self.session.get(add_game_url)
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching add_game_url: {e}")
+            return
+
+        logger.info("Fetching game form page response status code: %d", response.status_code)
+        #logger.debug("Fetching game form page response text: %s", response.text)
+
 
         if response.status_code != 200:
             logging.error("Failed to load form page!")
@@ -515,7 +615,7 @@ class JopoxScraper:
 
         response = self.session.post(add_game_url, data=payload, headers=headers)
         logger.info("Add game response status code: %d", response.status_code)
-        logger.debug("Add game response text: %s", response.text)
+        #logger.debug("Add game response text: %s", response.text)
 
         soup = BeautifulSoup(response.text, 'html.parser')
         error_message = soup.find('textarea', {'id': 'ErrorTextBox'})
@@ -551,15 +651,16 @@ class JopoxScraper:
 
     def scrape_jopox_games(self):
 
-        if not self.ensure_logged_in():
+        if not self.login():
             return []
         
         #muodosta all_j_games_url yhdistämällä self.base_url ja Games/Games.aspx   
         all_j_games_url = urljoin(self.base_url, "Games/Games.aspx")
-        logging.info(f"all_j_games_url: {all_j_games_url}")         
+        logger.debug(f"base_url: {self.base_url}")
+        logger.debug(f"all_j_games_url: {all_j_games_url}")         
         # Haetaan ensimmäinen sivu
         soup = self.fetch_page(all_j_games_url)
-        logging.debug("Fetched first page")
+        logger.debug("Fetched first page")
 
         last_page = self.get_last_page_number(soup)
 
@@ -640,11 +741,12 @@ class JopoxScraper:
         return last_page
 
     def j_game_details(self, j_game_id):
-
+        logger.debug(f"j_game_details() started...")
+        logger.debug(f"j_game_id: {j_game_id}")
         try:
             #muodosta j_game_url yhdistämällä self.base_url ja Games/Game.aspx?gId=j_game_id
             j_game_url = urljoin(self.base_url, f"Games/Game.aspx?gId={j_game_id}")
-            logging.info(f"j_game_url: {j_game_url}")            
+            logger.debug(f"j_game_url: {j_game_url}")            
             response = self.session.get(j_game_url, headers={
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
                     "Referer": j_game_url,
@@ -652,10 +754,12 @@ class JopoxScraper:
                 })
         
             leagues = self.get_league_id(response)
+            logger.debug(f"received leagues to j_game_details(): {leagues}")
             #extract leagues to league_selected and league_options
             league_selected = leagues.get("league_selected")
             league_options = leagues.get("league_options")
             
+
 
             soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -677,32 +781,54 @@ class JopoxScraper:
                 event_selected = {}
                 event_options = []
 
+            logger.debug(f"Event selected: {event_selected}")
+
 
             SiteNameLabel_tag = soup.find('span', {'id': 'MainContentPlaceHolder_GamesBasicForm_SitenameLabel'})
             SiteNameLabel = SiteNameLabel_tag.text.strip() if SiteNameLabel_tag else ''
+
+            logger.debug(f"SiteNameLabel: {SiteNameLabel}")
             
-            HomeTeamTextbox_tag = soup.find('input', {'id': 'HomeTeamTextBox'})
-            HomeTeamTextbox = HomeTeamTextbox_tag.get('value').strip() if HomeTeamTextbox_tag else ''
+            try:
+                HomeTeamTextbox_tag = soup.find('input', {'id': 'HomeTeamTextBox'})
+                HomeTeamTextbox = HomeTeamTextbox_tag.get('value').strip() if HomeTeamTextbox_tag else ''
+            except Exception as e:
+                logger.error(f"Error parsing HomeTeamTextbox: {e}")
+                HomeTeamTextbox = ''
+
+            logger.debug(f"HomeTeamTextbox: {HomeTeamTextbox}")
             
             AwayCheckbox_tag = soup.find('input', {'id': 'AwayCheckbox'})
             AwayCheckbox = AwayCheckbox_tag.get('checked') if AwayCheckbox_tag else False
             AwayCheckbox = True if AwayCheckbox else False
             
+            logger.debug(f"AwayCheckbox: {AwayCheckbox}")
+
             guest_team_tag = soup.find('input', {'id': 'GuestTeamTextBox'})
             guest_team = guest_team_tag.get('value').strip() if guest_team_tag else ''
-            
+            # add detailed logging
+            logger.debug(f"guest_team: {guest_team}")
+
+
+
             game_location_tag = soup.find('input', {'id': 'GameLocationTextBox'})
             game_location = game_location_tag.get('value').strip() if game_location_tag else ''
             
+
             game_date_tag = soup.find('input', {'id': 'GameDateTextBox'})
             game_date = game_date_tag.get('value').strip() if game_date_tag else ''
             
+
+            logger.debug(f"game_date: {game_date}")
+
             game_start_time_tag = soup.find('input', {'id': 'GameStartTimeTextBox'})
             game_start_time = game_start_time_tag.get('value').strip() if game_start_time_tag else ''
             
             game_duration_tag = soup.find('input', {'id': 'GameDurationTextBox'})
             game_duration = game_duration_tag.get('value').strip() if game_duration_tag else ''
             
+            logger.debug(f"game_duration: {game_duration}")
+
             game_public_info_tag = soup.find('textarea', {'id': 'GamePublicInfoTextBox'})
             game_public_info = game_public_info_tag.text.strip() if game_public_info_tag else ''
             # Return the parsed data

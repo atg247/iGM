@@ -30,7 +30,7 @@ def update_jopox():
 
     scraper = JopoxScraper(current_user.id, username, password)
 
-    if scraper.access_admin():
+    if scraper.login():
         try:
             game_data = {
                 "SeasonId": "547",

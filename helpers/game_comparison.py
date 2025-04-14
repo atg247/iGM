@@ -22,16 +22,12 @@ def compare_games(jopox_games, tulospalvelu_games):
     
     
     results = []
-    
-    #print("jopox_games comparisonissa:", jopox_games)
-    
 
     managed_games = [managed_game for managed_game in tulospalvelu_games if managed_game['Type'] != 'follow']
     logger.info("Total managed games: %d", len(managed_games))
     logger.info("Total Jopox games: %d", len(jopox_games))
 
-    for t_game in managed_games:
-        
+    for t_game in managed_games:    
         
         # Parse date from Tulospalvelu game
         try:
@@ -46,7 +42,7 @@ def compare_games(jopox_games, tulospalvelu_games):
             })
             continue
 
-        # Extract T_Game details
+        # Extract t_Game details
         date = t_game_datetime.strftime('%Y-%m-%d')
 
         # Skip games that have already been played before yesterday
@@ -135,8 +131,6 @@ def compare_games(jopox_games, tulospalvelu_games):
                 color_score_temp += 1
             logger.debug('Score after time: %s', score)
 
-            
-
             # Location Matching
             location_match_score = fuzz.partial_ratio(location, j_location)
             if location_match_score > 80:
@@ -156,12 +150,11 @@ def compare_games(jopox_games, tulospalvelu_games):
                     color_score_temp += 1                    
                     reason += f"Ottelu pelataan paikassa: {location}, mutta Jopoxiin on merkattu: {j_location}. "
                 
-               
-                                
             else:
                 reason += f"Ottelu pelataan paikassa: {location}, mutta Jopoxiin on merkattu: {j_location}. "
                 color_score_temp += 1
-            #logging.info('Score after location: %s', score)
+
+            logger.debug('Score after location: %s', score)
 
             home_team_match_score = fuzz.partial_ratio(home_team, j_team_home)
             if home_team_match_score > 90:
@@ -181,13 +174,14 @@ def compare_games(jopox_games, tulospalvelu_games):
             team_score = home_team_match_score + away_team_match_score 
             if team_score >= 180:
                 score += 10
-            #logging.info('Score after teams: %s', score)
+            logger.debug('Score after teams: %s', score)
 
             if 'Lisätiedot' in j_game and j_game['Lisätiedot']:
+
         # Small Area Game Check - tarkasta löytyykö sana pienpeli lisätiedoista tai j_team_away
                 if small_area_game:
-                    #logger.info('small_area_game: %s %s', home_team, away_team)
-                    #logger.info('j_game: %s %s', j_game['joukkueet'], j_game['Lisätiedot'])
+                    #logger.debug('small_area_game: %s %s', home_team, away_team)
+                    #logger.debug('j_game: %s %s', j_game['joukkueet'], j_game['Lisätiedot'])
                     if 'pienpeli' not in j_game['Lisätiedot'].lower() and 'pienpeli' not in j_game['joukkueet'].lower():
                     #    logger.debug('Pienpeli ei löydy j_gamesta: %s tai pienpeli ei ole mainittu %s', j_game['Lisätiedot'], j_game['joukkueet'])
                         reason += "Kyseessä on pienpeli, mutta siitä ei ole mainintaa Jopoxissa. "
@@ -195,7 +189,7 @@ def compare_games(jopox_games, tulospalvelu_games):
                     elif 'pienpeli' in j_game['Lisätiedot'].lower() or 'pienpeli' in j_game['joukkueet'].lower():
                         score += 20
                     #else:
-                        #logger.info("Lisätiedot ei ole saatavilla j_game:ssa: %s", j_game)
+                        #logger.debug("Lisätiedot ei ole saatavilla j_game:ssa: %s", j_game)
 
                 if not small_area_game:
                     if 'Lisätiedot' in j_game and j_game['Lisätiedot']:
@@ -205,10 +199,7 @@ def compare_games(jopox_games, tulospalvelu_games):
                         if 'pienpeli' in j_game['Lisätiedot'].lower() or 'pienpeli' in j_game['joukkueet'].lower() and team_score <= 180:
                             reason+="Kyseessä ei ole pienpeli, vaikka Jopoxissa se on mainittu."
                             score -=10
-                #logging.info('Score after pienpeli: %s', score)
-
-
-            
+                #logger.debug('Score after pienpeli: %s', score)
 
             # Update the best match
             if score > best_score:
@@ -228,7 +219,7 @@ def compare_games(jopox_games, tulospalvelu_games):
                         "Löydän parhaiten ottelun jos Jopoxissa on merkitty alkamisajaksi todellinen ottelun alkamisaika."
 
                     )
-                    #logging.info('WARNING ADDED TO GAME: %s', t_game)
+                    #logger.debug('WARNING ADDED TO GAME: %s', t_game)
 
                 elif best_match and best_score > 1:
                     warning_reason = None
