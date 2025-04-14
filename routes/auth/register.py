@@ -35,7 +35,7 @@ def register():
             db.session.commit()  # Only commit if no exceptions raised
             
             flash('Account created successfully! You can now log in.', 'success')
-            return redirect(url_for('login'))
+            return redirect(url_for('auth.login'))
 
         except Exception as e:
             # Rollback the session to prevent any corrupted state

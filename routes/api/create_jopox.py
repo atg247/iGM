@@ -29,7 +29,7 @@ def create_jopox():
     logger.debug('starting create_jopox, calling ensure_logged_in and access_admin')
     logger.debug('data: %s', data)
 
-    if scraper.login():
+    if scraper.access_admin():
         try: 
             game_data = {
                 

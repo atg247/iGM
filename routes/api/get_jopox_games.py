@@ -33,10 +33,8 @@ def get_jopox_games():
         try:
             jopox_games = scraper.scrape_jopox_games()
             for game in jopox_games: 
-                logger.debug(f'Processing game {game["uid"]}')
                 matching_description = next((desc for desc in descriptions if desc['Uid'] == game['uid']), None)
                 if matching_description:
-                    logger.debug(f'Found matching description for game {game["uid"]}')
                     game['Lisätiedot'] = matching_description['Lisätiedot']
                 
             return jsonify(jopox_games)

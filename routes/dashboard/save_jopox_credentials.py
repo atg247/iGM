@@ -32,13 +32,13 @@ def save_jopox_credentials():
     print(f"login_url saved: {user.jopox_login_url}")
     #kirjaudutaan jopoxiin ja haetaan joukkuetiedot
     scraper = JopoxScraper(user.id, username, password)
-    ##jopox_credentials = scraper.login_for_credentials()
-    #logger.info(f"jopox credentials received: {jopox_credentials}")
+    jopox_credentials = scraper.login_for_credentials()
+    logger.info(f"jopox credentials received: {jopox_credentials}")
 
     # Tallennetaan joukkueen tiedot tietokantaan
-    ##user.jopox_team_name = jopox_credentials['jopox_team_name']
-    ##user.jopox_team_id = jopox_credentials['jopox_team_id']
-    ##user.jopox_calendar_url = jopox_credentials['calendar_url']
+    user.jopox_team_name = jopox_credentials['jopox_team_name']
+    user.jopox_team_id = jopox_credentials['jopox_team_id']
+    user.jopox_calendar_url = jopox_credentials['calendar_url']
     
     db.session.commit()
 
