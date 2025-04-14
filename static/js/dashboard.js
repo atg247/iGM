@@ -248,7 +248,7 @@ $(document).ready(function () {
     $('#jopoxAuthForm').submit(function (e) {
         e.preventDefault();
         
-        const jopoxLoginUrl = $('#jopoxLoginUrl').val();
+        const jopoxLoginUrl = $('https://login.jopox.fi').val();
         const jopoxUsername = $('#jopoxUsername').val();
         const jopoxPassword = $('#jopoxPassword').val();
 

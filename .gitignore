@@ -45,3 +45,5 @@ packages_sovellus*
 # ignore files in flask_sessions folder
 flask_session/
 flask_session/*
+flask_session/.gitkeep
+flask_session/.gitignore
