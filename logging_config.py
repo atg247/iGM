@@ -2,11 +2,11 @@ import logging
 
 logging.basicConfig(
     level=logging.DEBUG,
-    filename="comparison.log",  # Voit vaihtaa tiedoston nimen, jos haluat
-    filemode='w',  # Kirjoittaa lokitiedoston aina uudelleen (vaihda 'a' jos haluat lisätä)
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    filename="comparison.log",
+    filemode='w',
+    format='%(asctime)s - %(module)-13.13s - %(funcName)-13.13s - %(levelname)-5s - %(message)s',
+    datefmt='%H:%M:%S'
 )
 
-# Luo globaali loggeri, jota voi käyttää missä tahansa tiedostossa
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # Voit vaihtaa ERROR, WARNING, INFO tarpeen mukaan
+logger.setLevel(logging.DEBUG)

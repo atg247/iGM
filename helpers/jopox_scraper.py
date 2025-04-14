@@ -153,10 +153,10 @@ class JopoxScraper:
         logger.debug(f"Admin page response URL: {admin_page_response.url}")
         #logger.debug(f"Admin page response text: {admin_page_response.text}")
 
-        
+        logger.debug(f"cookies after admin page call: {self.session.cookies.get_dict()}")
         
         soup = BeautifulSoup(admin_page_response.text, "html.parser")
-        if admin_page_response.status_code == 200:
+        if "Default.aspx" in admin_page_response.url:
             logger.info("login(): Login successful!")
             #logger.debug(f"admin page: {soup}")
             self.last_login_time = datetime.now()
