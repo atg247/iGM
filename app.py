@@ -2,8 +2,11 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from flask import Flask
 from dotenv import load_dotenv
+
+load_dotenv()
+
+from flask import Flask
 from flask_migrate import Migrate
 
 from extensions import bcrypt, mail, login_manager, session, db
@@ -16,10 +19,9 @@ from logging_config import logger
 
 
 
-def create_app():
-    if os.path.exists('.env'):
-        load_dotenv()
 
+def create_app():
+    
     basedir = os.path.abspath(os.path.dirname(__file__))
     instance_path = os.path.join(basedir, 'instance')  # 👈 tämä
 
