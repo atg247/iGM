@@ -223,26 +223,23 @@ $(document).ready(function () {
         $('#jopoxAuthModal').modal('show');  // Näytä modaalinen ikkuna
     });
 
-    // Muokkaa Jopox-tietojasi -painike
-    $('#editJopox').click(function () {
+   
+    $('#clearJopox').click(function () {
 
-        // Hae tallennetut tiedot backendistä ja aseta ne lomakkeeseen
-        $.get('/dashboard/get_jopox_credentials', function (jopoxData) {
-            const jopoxLoginUrl = jopoxData.login_url;
-            const jopoxUsername = jopoxData.username;
-            const passwordSaved = jopoxData.password_saved;
+        // Kysy käyttäjältä vahvistus
+        if (confirm('Haluatko varmasti tyhjentää Jopox-tietosi?')) {
 
-            console.log ('Jopox-tiedot:', jopoxData);
+        // kutsu backendin clear_jopox_credentials -funktiota
+        $.get('/dashboard/clear_jopox_credentials', function (response) {
 
-            $('#jopoxLoginUrl').val(jopoxLoginUrl);
-            $('#jopoxUsername').val(jopoxUsername);
-            if (passwordSaved) {
-                $('#jopoxPassword').val('');  // Jätä salasana tyhjäksi, koska sitä ei näytetä
-            }
+            console.log ('Jopox-tiedot:', response);
 
-            $('#jopoxAuthModal').modal('show');
-        });
+            $('#jopoxAuthModal').modal('hide');
+            });
+        }
+
     });
+
 
     // Tietojen tallentaminen Jopoxiin
     $('#jopoxAuthForm').submit(function (e) {

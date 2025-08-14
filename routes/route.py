@@ -61,6 +61,7 @@ def dashboard():
     jopox_data = {
         'login_url': current_user.jopox_login_url,
         'username': current_user.jopox_username,
+        'team_name': current_user.jopox_team_name,
         'password_saved': current_user.jopox_password is not None,
     }
 
