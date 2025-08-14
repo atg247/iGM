@@ -17,11 +17,6 @@ def remove_teams():
             team_id = team['team_id']
             relationship_type = team['relationship_type']
             
-            if relationship_type == 'jopox':
-                current_user.jopox_team_id = None
-                current_user.jopox_team_name = None
-                db.session.commit()
-                continue
             
             # Find and delete the specific UserTeam relationship
             user_team = UserTeam.query.filter_by(
@@ -44,12 +39,10 @@ def remove_teams():
             for team in current_user.teams if team.team_user_entries[0].relationship_type == 'follow'
         ]
 
-        jopox_managed_team = current_user.jopox_team_name
       
         return jsonify({
             "message": "Selected teams removed successfully!",
             "managed_teams": managed_teams,
-            "jopox_managed_team": jopox_managed_team,
             "followed_teams": followed_teams
         }), 200
         

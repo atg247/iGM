@@ -445,3 +445,38 @@ h1,h2 {
         opacity: 1;
     }
 }
+
+/* Classic loading overlay */
+.loading-overlay {
+    display: none; /* toggled by JS */
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 2000;
+}
+
+.loading-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #ffffff;
+    border: 1px solid #35463a;
+    border-radius: 8px;
+    padding: 10px 14px;
+    min-width: 160px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    color: #35463a;
+}
+
+.loading-spinner {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+.loading-text {
+    font-size: 0.9rem;
+}

@@ -64,7 +64,7 @@
 <!-- Activate Jopox Button and center it-->
 
 {% if jopox_data.team_name %}
-    <button id="clearJopox" class="btn btn-primary">Tyhjennä Jopox-tietosi</button>
+    <button id="clearJopox" class="btn btn-danger">Tyhjennä Jopox-tietosi</button>
 {% else %}
     <button id="activateJopox" class="btn btn-primary">Aktivoi Jopox-yhteys</button>
 {% endif %}
@@ -75,7 +75,9 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="jopoxAuthModalLabel">Aktivoi Jopox-yhteys</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
       </div>
       <div class="modal-body">
         <p>Syötä Jopox-käyttäjätunnuksesi ja -salasanasi.</p>
@@ -93,6 +95,14 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Loading indicator -->
+<div id="loadingIndicator" class="loading-overlay" aria-hidden="true">
+    <div class="loading-box">
+        <div class="spinner-border text-secondary loading-spinner" role="status" aria-label="Loading"></div>
+        <div class="loading-text">Ladataan…</div>
+    </div>
 </div>
 
 <!-- Jopox Managed Team -->
@@ -141,19 +151,8 @@
             </div>
             <div class="modal-body">
                 <form id="removeTeamsForm">
-                    <h5>Jopox-joukkueesi</h5>
-                    <ul>
-                        {% if jopox_managed_team %}
-                        <li>
-                            <input type="checkbox" name="teams" value="{{ jopox_managed_team }}" data-relationship="jopox">
-                            {{ jopox_managed_team }}
-                        </li>
-                        {% else %}
-                        <p>No Jopox managed team available.</p>
-                        {% endif %}
-                    </ul>
                     <h5>Hallinnoimasi Joukkueet</h5>
-                    <ul>
+                    <ul id="removeManagedList">
                         {% for team in managed_teams %}
                             <li>
                                 <input type="checkbox" name="teams" value="{{ team.id }}" data-relationship="manage">
@@ -164,7 +163,7 @@
                         {% endfor %}
                     </ul>
                     <h5>Seuraamasi Joukkueet</h5>
-                    <ul>
+                    <ul id="removeFollowedList">
                         {% for team in followed_teams %}
                             <li>
                                 <input type="checkbox" name="teams" value="{{ team.id }}" data-relationship="follow">

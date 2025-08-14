@@ -99,8 +99,8 @@ function loadTeams() {
                 $('#jopoxManagedTeam').text('Et hallinnoi tällä hetkellä mitään Jopox-joukkuetta.');
             }
 
-            // Update modal with the latest data
-            updateRemoveTeamsModal(response.managed_teams, response.followed_teams, response.jopox_managed_team);
+    // Update modal with the latest data
+    updateRemoveTeamsModal(response.managed_teams, response.followed_teams);
         },
         error: function (xhr) {
             console.error("Error fetching teams:", xhr.responseText);
@@ -109,28 +109,13 @@ function loadTeams() {
 }
 
 // Function to update Remove Teams Modal content
-function updateRemoveTeamsModal(managedTeams, followedTeams, jopoxManagedTeam) {
-    const managedTeamsModalList = $('#removeTeamsModal .modal-body ul:eq(1)');
-    const followedTeamsModalList = $('#removeTeamsModal .modal-body ul:eq(2)');
-    const jopoxManagedModalTeam = $('#removeTeamsModal .modal-body ul:eq(0)');
+function updateRemoveTeamsModal(managedTeams, followedTeams) {
+    const managedTeamsModalList = $('#removeManagedList');
+    const followedTeamsModalList = $('#removeFollowedList');
 
-    jopoxManagedModalTeam.empty();
     managedTeamsModalList.empty();
     followedTeamsModalList.empty();
 
-    // Append the Jopox managed team
-    if (jopoxManagedTeam) {
-        jopoxManagedModalTeam.append(`
-            <li>
-                <input type="checkbox" name="teams" value="${jopoxManagedTeam}" data-relationship="jopox">
-                ${jopoxManagedTeam}
-            </li>
-        `);
-    } else {
-        jopoxManagedModalTeam.append('<p>No Jopox managed team available.</p>');
-    }
-
-    // Append the managed teams
     managedTeams.forEach(team => {
         managedTeamsModalList.append(`
             <li>
@@ -140,7 +125,6 @@ function updateRemoveTeamsModal(managedTeams, followedTeams, jopoxManagedTeam) {
         `);
     });
 
-    // Append the followed teams
     followedTeams.forEach(team => {
         followedTeamsModalList.append(`
             <li>
@@ -231,12 +215,14 @@ $(document).ready(function () {
 
         // kutsu backendin clear_jopox_credentials -funktiota
         $.get('/dashboard/clear_jopox_credentials', function (response) {
-
-            console.log ('Jopox-tiedot:', response);
-
-            $('#jopoxAuthModal').modal('hide');
             });
         }
+
+        // päivitä painike jopoxin aktivointiin
+        $('#activateJopox').text('Aktivoi Jopox-yhteys');
+        // Päivitä sivu
+        location.reload();
+
 
     });
 
@@ -259,10 +245,21 @@ $(document).ready(function () {
                 username: jopoxUsername,
                 password: jopoxPassword
             }),
+            // lisää latausindikaattori
+            beforeSend: function () {
+                $('#loadingIndicator').show();
+            },
+            complete: function () {
+                $('#loadingIndicator').hide();
+            },
+            
             success: function (response) {
                 console.log('Jopox-tiedot tallennettu:', response);
                 $('#jopoxAuthModal').modal('hide');  // Sulje modaalinen ikkuna
                 loadTeams();  // Päivitä tiimit
+                // lataa sivu uudelleen
+                location.reload();
+
             },
             error: function (xhr) {
                 alert('Virhe tallentaessa tietoja: ' + xhr.responseText);
