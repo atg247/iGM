@@ -43,6 +43,7 @@ def hae_kalenteri(calendar_url):
     calendar = Calendar(ics_content)
 
     logging.debug(f"calendar fetched.")
+    logging.debug(f"calendar: {calendar}")
 
 
         # Step 4: Extract events into a structured format

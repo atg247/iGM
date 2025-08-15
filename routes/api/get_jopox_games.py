@@ -26,12 +26,7 @@ def get_jopox_games():
     if not user.jopox_password:
         return json_error("Jopox‑salasana puuttuu", 400)
 
-    # 2) Salauksen purku – virheet kiinni
-    try:
-        decrypted_password = cipher_suite.decrypt(user.jopox_password).decode('utf-8')
-    except Exception:
-        app.logger.exception("Password decryption failed")
-        return json_error("Tunnistetietojen käsittely epäonnistui", 500)
+    decrypted_password = cipher_suite.decrypt(user.jopox_password).decode('utf-8')
 
     # 3) Kalenterikuvausten haku – epäonnistuessa jatka tyhjällä
     descriptions = []
@@ -59,7 +54,7 @@ def get_jopox_games():
 
     # 5) Scrapea ja yhdistä kuvaukset turvallisesti
     try:
-        jopox_games = scraper.scrape_jopox_games() or []
+        jopox_games = scraper.scrape_jopox_games()
         # indeksointi turvallisesti .get:illä ettei KeyError kaada
         desc_by_uid = { (d or {}).get('Uid'): d for d in descriptions if isinstance(d, dict) and (d or {}).get('Uid') }
         for g in jopox_games:
@@ -67,7 +62,7 @@ def get_jopox_games():
             if uid and uid in desc_by_uid:
                 g['Lisätiedot'] = desc_by_uid[uid].get('Lisätiedot')
 
-        return jsonify({"status": "ok", "count": len(jopox_games), "data": jopox_games}), 200
+        return jsonify(jopox_games)
 
     except Exception:
         app.logger.exception("Error fetching Jopox games")

@@ -852,6 +852,8 @@ class JopoxScraper:
                 
                 jopox_games.append(game_data)
 
+        logger.debug(f"jopox_games: {jopox_games}")
+
         return jopox_games  # Palautetaan kerätyt pelitiedot
 
     def fetch_page(self, url):

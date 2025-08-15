@@ -105,20 +105,7 @@
     </div>
 </div>
 
-<script>
-    const $loading = document.getElementById('loadingIndicator');
-    function showLoading(){ $loading?.classList.add('is-visible'); }
-    function hideLoading(){ $loading?.classList.remove('is-visible'); }
-  
-    // Näytä kun lomake lähetetään
-    document.addEventListener('DOMContentLoaded', () => {
-      const form = document.getElementById('dashboardForm');
-      if (form) form.addEventListener('submit', showLoading);
-    });
-  
-    // Piilota varmuudeksi kun sivu valmis
-    window.addEventListener('load', hideLoading);
-</script>
+
 
 
 <!-- Jopox Managed Team -->

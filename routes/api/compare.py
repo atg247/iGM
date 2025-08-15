@@ -30,15 +30,9 @@ def compare_games_endpoint():
     tulospalvelu_games = data.get('tulospalvelu_games', [])
     jopox_games = data.get('jopox_games', [])
 
-    if not isinstance(tulospalvelu_games, list) or not isinstance(jopox_games, list):
-        logger.info("compare: payload fields not lists")
-        return json_error("Kenttien 'tulospalvelu_games' ja 'jopox_games' tulee olla listoja", 400)
+    logger.debug(f"tulospalvelu_games: {tulospalvelu_games}")
+    logger.debug(f"jopox_games: {jopox_games}")
 
-    # (Valinnainen, mutta hyödyllinen) kevyt koko-rajaus DDOS/bugien varalle
-    MAX_ITEMS = 2000  # säädä tarpeen mukaan
-    if len(tulospalvelu_games) > MAX_ITEMS or len(jopox_games) > MAX_ITEMS:
-        logger.warning("compare: payload too large")
-        return json_error("Aineisto liian suuri käsiteltäväksi kerralla", 413)  # Payload Too Large
 
     # 4) Suorita vertailu vain jos Jopox-dataa löytyi
     if not jopox_games:
@@ -57,7 +51,4 @@ def compare_games_endpoint():
         return json_error("Vertailu epäonnistui", 502)  # Bad Gateway (ulkoisen/logic layer -tyylinen virhe)
 
     # 6) Onnistunut vastaus yhtenäisellä muodolla
-    return jsonify({
-        "status": "ok",
-        "data": comparison_results
-    }), 200
+    return jsonify(comparison_results), 200

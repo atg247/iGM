@@ -19,8 +19,8 @@ def parse_sortable_date(date_string):
 def compare_games(jopox_games, tulospalvelu_games):
     """Compare games from Jopox and Tulospalvelu.fi datasets."""
     # Initialize logging
-    
-    
+    logger.debug(f"jopox_games  compare_games: {jopox_games}")
+        
     results = []
 
     managed_games = [managed_game for managed_game in tulospalvelu_games if managed_game['Type'] != 'follow']
@@ -69,8 +69,8 @@ def compare_games(jopox_games, tulospalvelu_games):
         warning_reason = ""
 
         for j_game in jopox_games:
-            
-
+            logger.debug(f"j_game: {j_game}")   
+            logger.debug(f"j_game: {j_game['sortable_date']}")   
             try:
                 # Parse the sortable_date field from Jopox game
                 j_game_datetime = datetime.strptime(j_game['sortable_date'], '%Y-%m-%d %H:%M')

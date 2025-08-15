@@ -1,5 +1,25 @@
 $(document).ready(function () {
-   
+
+    (function() {
+        const $loading = $('#loadingIndicator');
+      
+        function showLoading()  { $loading.addClass('is-visible'); }
+        function hideLoading()  { $loading.removeClass('is-visible'); }
+      
+        // Näytä kun ensimmäinen AJAX starttaa, piilota kun KAIKKI ovat valmiit
+        $(document).ajaxStart(showLoading);
+        $(document).ajaxStop(hideLoading);
+      
+        // (valinnainen) jos haluat varmuudeksi piilottaa virheissäkin:
+        $(document).ajaxError(() => { /* ei piiloteta tässä, ajaxStop hoitaa kun kaikki päättyy */ });
+      
+        // Jos overlaylle on joskus jäänyt is-visible (esim. edeltävältä sivulta cached DOM)
+        $(hideLoading);
+      })();
+
+    
+
+    
     // Fetch levels based on season selection
     $('#season').change(function () {
         const season = $(this).val();
@@ -148,6 +168,8 @@ let selectedAction = null; // Tallennetaan painikkeen arvo
 $('#dashboardForm button[type="submit"]').on('click', function () {
     selectedAction = $(this).val(); // Aseta valittu action-arvo
 });
+
+    
 
 // Lomakkeen lähetys JSON-muotoisena
 $('#dashboardForm').on('submit', function (e) {

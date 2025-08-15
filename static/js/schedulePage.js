@@ -50,6 +50,7 @@ const app = Vue.createApp({
                 // Save Tulospalvelu.fi data for rendering game cards
                 if (tulospalveluData && Array.isArray(tulospalveluData.managed_games)) {
                     console.log('Tulospalvelu data:', tulospalveluData);
+                    console.log('Jopox data:', jopoxGames);
 
                     const tulospalveluGames = tulospalveluData.managed_games;  // Käytetään oikeaa kenttää
                     // Filter out duplicate Game IDs
@@ -70,7 +71,7 @@ const app = Vue.createApp({
 
             // Send data to backend for comparison if jopoxGames is not empty
 
-            if (this.hasJopox && jopoxGames && jopoxGames.length > 0) {
+            if (this.hasJopox) {
                 return fetch('/api/compare', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -757,7 +758,7 @@ template:
    
     
     <!-- Followed Teams -->
-    <h1>Seuraamasi joukkueet</h1>
+    <h1 v-if="followedTeams.length > 0">Seuraamasi joukkueet</h1>
     <div class="btn-group">
         <button
             v-for="team in followedTeams"
@@ -781,9 +782,8 @@ template:
 
 
 <div v-if="showJopoxInfo" class="info-banner" role="status" aria-live="polite">
-<strong>Huomio:</strong> Jopox ei ole aktivoitu tälle käyttäjälle.
-Aktivoi: <em>Profiili → Jopox</em> (syötä käyttäjätunnus ja salasana) ja tallenna.
-Ilmoitus häviää automaattisesti, kun alat skrollaamaan.
+  <strong>Huomio:</strong> Jopox ei ole aktivoitu tälle käyttäjälle.
+  <a href="/dashboard"><strong>Aktivoi Jopox täällä.</strong></a>
 </div>
 
 <div v-if="isLoading" id="loadingIndicator" class="loading-overlay is-visible" aria-hidden="true">
