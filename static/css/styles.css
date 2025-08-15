@@ -7,7 +7,7 @@ body {
 
 .my-4
 {
- padding: 0.3rem;
+ padding: 1rem;
 }
 
 .mt-4
@@ -455,6 +455,10 @@ h1,h2 {
     z-index: 2000;
 }
 
+.loading-overlay.is-visible {
+    display: flex;
+}
+
 .loading-box {
     position: absolute;
     top: 50%;
@@ -480,3 +484,15 @@ h1,h2 {
 .loading-text {
     font-size: 0.9rem;
 }
+
+.info-banner{
+    position: sticky;     /* pysyy näkyvissä sivun yläreunassa kunnes skrollaat (piilotetaan ekassa scroll-eventissä) */
+    top: 0;
+    z-index: 1000;
+    padding: 12px 16px;
+    margin: 12px 0 12px 0;
+    background: #e6f7ff;
+    border: 2px solid #1890ff;
+    color: #003a8c;
+    font-size: 0.95rem;
+  }

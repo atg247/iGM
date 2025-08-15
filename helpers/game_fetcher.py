@@ -63,5 +63,5 @@ class GameFetcher:
 
         games_df = pd.DataFrame(games_info)
         games_df['Date'] = pd.to_datetime(games_df['Date'], format='%d.%m.%Y', errors='coerce', dayfirst=True)
-        print("example of games_df", games_df)
+        
         return games_df

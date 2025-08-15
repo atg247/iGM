@@ -29,18 +29,22 @@ const app = Vue.createApp({
                 game_duration: '',
                 game_public_info: ''
             },
-            updatedFields: {} // Will hold the fields that have been updated
+            updatedFields: {}, // Will hold the fields that have been updated
+            hasJopox: false,
+            showJopoxInfo: false
+
 
         };
     },
     methods: {
         fetchGamesAndCompare() {
             this.isLoading = true;
-    
-            // Fetch Tulospalvelu.fi and Jopox data in parallel
+          
             Promise.all([
                 fetch('/api/schedules').then(response => response.json()),
-                fetch('/api/jopox_games').then(response => response.json())
+                this.hasJopox
+                ? fetch('/api/jopox_games').then(r => r.json())
+                : Promise.resolve([]) // ei aktivoitu → ei haeta
             ])
             .then(([tulospalveluData, jopoxGames]) => {
                 // Save Tulospalvelu.fi data for rendering game cards
@@ -64,47 +68,53 @@ const app = Vue.createApp({
                     console.error('Unexpected Tulospalvelu response:', tulospalveluData);
                 }
 
-                //inspect jopoxGames
-                console.log('Jopox data:', jopoxGames);
-            // Send data to backend for comparison
-            return fetch('/api/compare', {
+            // Send data to backend for comparison if jopoxGames is not empty
+
+            if (this.hasJopox && jopoxGames && jopoxGames.length > 0) {
+                return fetch('/api/compare', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         tulospalvelu_games: this.managedGames, // Only unique and managed games sent for comparison
                         jopox_games: jopoxGames, // Assuming Jopox data is in `.data`
                     }),
-                });
-            })
-            .then(response => response.json())
-            .then(comparisonResults => {
-                // Update game cards with comparison results
-                console.log('Comparison results:', comparisonResults);
-                this.managedGames = this.managedGames.map(game => {
-                    const match = comparisonResults.find(
-                        result => result.game['Game ID'] === game['Game ID']
-                    );
-                    return {
-                        ...game,
-                        match_status: match?.match_status || 'red', // Default to red if no match
-                        reason: match?.reason || 'No match found',
-                        best_match: match?.best_match || null, // Include best_match details if available
-                        uid: match?.best_match?.Uid || null, // Include unique UID for later use
-                        warning: match?.warning || null, // Include warning if available
-                    };
-                });
-                this.allGames = this.allGames.map(game => {
-                    const managedGame = this.managedGames.find(
-                        managed => managed['Game ID'] === game['Game ID']
-                    );
-                    if (managedGame) {
-                        // Jos peli löytyy managedGames-listasta, käytä päivitettyjä tietoja
-                        return { ...game, ...managedGame };
-                    }
-                    return game; // Muuten pidä alkuperäinen
+                })
+                .then(response => response.json())
+                .then(comparisonResults => {
+                    // Update game cards with comparison results
+                    console.log('Comparison results:', comparisonResults);
+                    this.managedGames = this.managedGames.map(game => {
+                        const match = comparisonResults.find(
+                            result => result.game['Game ID'] === game['Game ID']
+                        );
+                        return {
+                            ...game,
+                            match_status: match?.match_status || 'red', // Default to red if no match
+                            reason: match?.reason || 'No match found',
+                            best_match: match?.best_match || null, // Include best_match details if available
+                            uid: match?.best_match?.Uid || null, // Include unique UID for later use
+                            warning: match?.warning || null, // Include warning if available
+                        };
+                    });
+                    this.allGames = this.allGames.map(game => {
+                        const managedGame = this.managedGames.find(
+                            managed => managed['Game ID'] === game['Game ID']
+                        );
+                        if (managedGame) {
+                            // Jos peli löytyy managedGames-listasta, käytä päivitettyjä tietoja
+                            return { ...game, ...managedGame };
+                        }
+                        return game; // Muuten pidä alkuperäinen
+                    });
+
+                    this.filterGames();
                 });
 
-                this.filterGames();
+            } else {
+            this.filterGames();
+            return;
+              
+            }
             })
             .catch(error => {
                 console.error('Error during fetching or comparison:', error);
@@ -267,7 +277,7 @@ const app = Vue.createApp({
             } else if (isFollowed) {
                 // Default color for followed teams
                 return {
-                    backgroundColor: '##ffffff', // Default light gray for followed teams
+                    backgroundColor: '#ffffff', // Default light gray for followed teams
                     color: '#000000', // Black text for better contrast
                 };
             }
@@ -653,7 +663,10 @@ const app = Vue.createApp({
             return '';
         },
 
-  
+        dismissJopoxInfo() {
+            this.showJopoxInfo = false;
+            // (listener poistuu automaattisesti, koska { once: true })
+          },
 
         submitForm() {
             // Handle form submission logic here
@@ -681,8 +694,31 @@ const app = Vue.createApp({
     
     
     mounted() {
-        this.fetchTeams(); // Fetch teams first
-        this.fetchGamesAndCompare(); // Fetch games and run comparison
+
+        fetch('/api/jopox_status')
+        .then(r => r.json())
+        .then(s => {
+          console.log('s:', s);
+          this.hasJopox = !!(s && s.active);
+          console.log('hasJopox:', this.hasJopox);
+          this.showJopoxInfo = !this.hasJopox;
+          if (this.showJopoxInfo) {
+            // Piilota heti kun käyttäjä skrollaa (yksi kerta riittää)
+            window.addEventListener('scroll', this.dismissJopoxInfo, { once: true, passive: true });
+          }
+        })
+        .catch(() => {
+          // Jos status ei saada, käyttäydy varovasti: ei näytetä Jopox-osia eikä banneria
+          this.hasJopox = false;
+          this.showJopoxInfo = false;
+        })
+        .finally(() => {
+          // 2) hae loput normaalisti
+          this.fetchTeams();
+          this.fetchGamesAndCompare();
+        });
+    
+    
     },
 
 template: 
@@ -717,6 +753,8 @@ template:
             {{ team.team_name }} - {{ team.stat_group}}
         </button>
     </div>
+
+   
     
     <!-- Followed Teams -->
     <h1>Seuraamasi joukkueet</h1>
@@ -741,10 +779,21 @@ template:
     </div>
 </div>
 
-<!-- Loading Indicator -->
-<div v-if="isLoading" class="my-4">
-    <p>Loading games...</p>
+
+<div v-if="showJopoxInfo" class="info-banner" role="status" aria-live="polite">
+<strong>Huomio:</strong> Jopox ei ole aktivoitu tälle käyttäjälle.
+Aktivoi: <em>Profiili → Jopox</em> (syötä käyttäjätunnus ja salasana) ja tallenna.
+Ilmoitus häviää automaattisesti, kun alat skrollaamaan.
 </div>
+
+<div v-if="isLoading" id="loadingIndicator" class="loading-overlay is-visible" aria-hidden="true">
+  <div class="loading-box">
+    <div class="spinner-border text-secondary loading-spinner" role="status" aria-label="Loading"></div>
+    <div class="loading-text">Ladataan…</div>
+  </div>
+</div>
+
+
 
 <div
     v-for="(games, date) in groupedGames"
@@ -776,7 +825,7 @@ template:
                 </p>
                 
                 <button class="update-jopox-btn"
-                    v-if="!isPastDay(date) && !isNotManagedTeam(game)"
+                    v-if="hasJopox && !isPastDay(date) && !isNotManagedTeam(game)"
                     @click.stop="game.match_status === 'red' ? createJopox(game) : openUpdateModal(game)">
                     <span class="status-text">
                         {{ game.match_status === 'red' ? 'Luo Jopoxiin' : 'Päivitä Jopox' }}
@@ -784,7 +833,7 @@ template:
                 </button>
 
                 <div class="status-box"
-                     v-if="!isPastDay(date) && !isNotManagedTeam(game)"
+                     v-if="hasJopox && !isPastDay(date) && !isNotManagedTeam(game)"
                      @click.stop="toggleModal($event, game.reason)"
                 >
                     <span class="status-text">Jopox:</span>

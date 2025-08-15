@@ -151,13 +151,13 @@ def get_all_schedules():
             simulated_game = {
                 
                 "Game ID": f"202020202{i}",
-                "SortableDate": f"Thu, 0{i+1} Jul 2025 00:00:00 GMT",
-                "Date": f"0{i+1}.07.2025",
-                "Team ID": "1368626576",
+                "SortableDate": f"Thu, 0{i+1} Dec 2025 00:00:00 GMT",
+                "Date": f"0{i+1}.12.2025",
+                "Team ID": "1368626575",
                 "Team Name": "S-Kiekko Sininen",
                 "Time": "12:00",
-                "Home Team": "S-Kiekko Sininen",
-                "Away Team": f"Simulated away team {i}",
+                "Home Team": f"Simulated home team {i}",
+                "Away Team": "S-Kiekko Sininen",
                 "Home Goals": "",
                 "Away Goals": "",
                 "Location": "Simulated location",
