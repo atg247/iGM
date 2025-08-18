@@ -112,10 +112,11 @@ def compare_games(jopox_games, tulospalvelu_games):
                 color_score_temp += 1
 
             # Time Matching
-            if time == "Not scheduled" and j_time == "07:00" or j_time == "00:00":
-                score += 30
+            if time == "Not scheduled" and (j_time == "07:00" or j_time == "00:00"):
+                score += 30 
                 reason += "Ottelun alkamisaika ei ole määritetty Tulospalvelussa. Jopox-aika vastaa oletusta (07:00). "
                 color_score_temp += 1
+
             elif time == "07:00" and j_time == "07:00":
                 score += 30
                 reason += "Ottelun alkamisaika Tulospalvelussa on 07:00. Jopox-aika vastaa oletusta (07:00). "
