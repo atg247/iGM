@@ -554,8 +554,6 @@ class JopoxScraper:
         logger.debug("define_league() started...") 
         if self.login():
             add_game_url = urljoin(self.base_url, "Games/Game.aspx")
-            logger.debug("Define_league() started...")
-            logger.debug(f"add_game_url: {add_game_url}")
 
             headers={
                 "Authorization": f"Bearer {self.token}",
@@ -673,11 +671,6 @@ class JopoxScraper:
         event_validation_data = self.get_event_validation(response)
         season = self.get_season_id(response)
         subsite = self.get_subsite_id(response)
-        leagues = self.get_league_id(response)
-        league_options = leagues.get("league_options", [])
-        logger.debug(f"Level Name: {game.get('Level Name')}")
-        
-
 
         logger.debug(f'game_data: {game_data}')
         logger.debug(f'game: {game}')

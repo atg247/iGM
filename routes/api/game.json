@@ -1,0 +1,27 @@
+
+{
+    "level": 16465,
+    "game": {
+      "Away Goals": "",
+      "Away Team": "S-Kiekko Sininen",
+      "Date": "02.12.2025",
+      "Game ID": "2020202021",
+      "Home Goals": "",
+      "Home Team": "Simulated home team 1",
+      "Level Name": "TESTISARJA",
+      "Location": "Simulated location",
+      "Small Area Game": "0",
+      "SortableDate": "Thu, 02 Dec 2025 00:00:00 GMT",
+      "Stat Group Name": "TESTISARJA",
+      "Team ID": "1368626575",
+      "Team Name": "S-Kiekko Sininen",
+      "Time": "12:00",
+      "Type": "manage",
+      "match_status": "red",
+      "reason": "En löytänyt ottelua Jopoxista.",
+      "best_match": null,
+      "uid": null,
+      "warning": null
+    }
+  }
+  
