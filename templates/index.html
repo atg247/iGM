@@ -1,15 +1,24 @@
 {% extends "layout.html" %}
 {% block content %}
+   
     <div class="container">
-        <h2>Tervetuloa testaamaan iGM-sovellusta!</h2>
-    </br>
-    </div>
-    <div class="container">
-        <h2>Sovelluksen käyttö</h2>
+        <h2 class="text-center">Sovelluksen käyttö</h2>
+        <br>
         <p>1. Rekisteröidy tai kirjaudu sovellukseen.</p>
-        <p>1. Valitse hallinnoimasi ja seuraamasi joukkueet kohdasta "Omien joukkueiden valinta"</p>
-        <p>2. Tarkastele valitsemiesi joukkueiden otteluita kohdassa "Omien joukkueiden ottelut"</p>
-        <p>3. Voit käyttää "Vapaa otteluohjelmahaku" -toimintoa hakeaksesi minkä tahansa joukkueen ohjelman. </p>
+        <p>2. Valitse hallinnoimasi ja seuraamasi joukkueet kohdasta "Omien joukkueiden valinta"</p>
+        <p>3. Aktivoi Jopox-yhteys.</p>
+        <p>4. Tarkastelejoukkueidesi otteluita kohdassa "Omien joukkueiden ottelut"</p>
         
     </div>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-7">
+                <a class="btn btn-primary btn-lg btn-block" href="{{ url_for('auth.login') }}">Kirjaudu</a>
+                <a class="btn btn-secondary btn-lg btn-block" href="{{ url_for('auth.register') }}">Rekisteröidy</a>
+            </div>
+        </div>
+    </div>
+
+
 {% endblock %}

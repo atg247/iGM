@@ -3,8 +3,8 @@ from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired
 
 class LoginForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    remember = BooleanField('Remember Me')  # Add the "Remember Me" checkbox
-    submit = SubmitField('Login')
+    username = StringField('Käyttäjätunnus', validators=[DataRequired()])
+    password = PasswordField('Salasana', validators=[DataRequired()])
+    remember = BooleanField('Muista kirjautumiseni')  # Add the "Remember Me" checkbox
+    submit = SubmitField('Kirjaudu')
 

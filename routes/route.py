@@ -11,6 +11,7 @@ from logging_config import logger
 from helpers import update_jopox_credentials
 
 
+
 routes_bp = Blueprint('routes', __name__, static_folder="static", template_folder="templates")
 
 @routes_bp.route('/test_session')

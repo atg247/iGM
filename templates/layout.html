@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   
-/>
 </head>
 
 <body>
@@ -35,16 +34,16 @@
                         <a class="nav-link" href="{{ url_for('routes.schedule') }}">Omien joukkueiden ottelut</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">Kirjaudu ulos</a>
                     </li>
                 {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="/aloitus">Aloitus</a>
+                        <a class="nav-link" href="/">Aloitus</a>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+                        <a class="nav-link" href="{{ url_for('auth.login') }}">Kirjaudu</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.register') }}">Register</a>
+                        <a class="nav-link" href="{{ url_for('auth.register') }}">Rekisteröidy</a>
                     </li>
                 {% endif %}
             </ul>
