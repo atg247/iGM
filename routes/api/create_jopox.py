@@ -68,8 +68,8 @@ def define_away_game(game):
     t_away_team = game.get("Away Team", "") #S-Kiekko Sininen
     j_home_team = game.get("Team Name", "") #S-Kiekko Sininen
     
-    home_team_score = fuzz.partial_ratio(t_home_team, j_home_team)
-    away_team_score = fuzz.partial_ratio(t_away_team, j_home_team)
+    home_team_score = fuzz.ratio(t_home_team, j_home_team)
+    away_team_score = fuzz.ratio(t_away_team, j_home_team)
     
 
 

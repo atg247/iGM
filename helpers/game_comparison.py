@@ -157,14 +157,14 @@ def compare_games(jopox_games, tulospalvelu_games):
 
             logger.debug('Score after location: %s', score)
 
-            home_team_match_score = fuzz.partial_ratio(j_team_home, home_team)
+            home_team_match_score = fuzz.ratio(j_team_home, home_team)
             if home_team_match_score > 90:
                 score += 15
             else:
                 reason += f"Kotijoukkueen pitäisi olla {home_team}"
                 color_score_temp += 1
 
-            away_team_match_score = fuzz.partial_ratio(j_team_away, away_team)
+            away_team_match_score = fuzz.ratio(j_team_away, away_team)
             if away_team_match_score > 90:
                 score += 15
 
