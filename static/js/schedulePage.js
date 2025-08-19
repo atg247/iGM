@@ -31,7 +31,18 @@ const app = Vue.createApp({
             },
             updatedFields: {}, // Will hold the fields that have been updated
             hasJopox: false,
-            showJopoxInfo: false
+            showJopoxInfo: false,
+            toast: {
+                show: false,
+                type: 'success',   // 'success' | 'warning' | 'error'
+                message: ''
+              },
+            toastTimer: null,
+            icons: {
+                check: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+                error: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8v5m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`
+              }
+
 
 
         };
@@ -83,7 +94,6 @@ const app = Vue.createApp({
                 .then(response => response.json())
                 .then(comparisonResults => {
                     // Update game cards with comparison results
-                    console.log('Comparison results:', comparisonResults);
                     this.managedGames = this.managedGames.map(game => {
                         const match = comparisonResults.find(
                             result => result.game['Game ID'] === game['Game ID']
@@ -93,9 +103,10 @@ const app = Vue.createApp({
                             match_status: match?.match_status || 'red', // Default to red if no match
                             reason: match?.reason || 'No match found',
                             best_match: match?.best_match || null, // Include best_match details if available
-                            uid: match?.best_match?.Uid || null, // Include unique UID for later use
+                            uid: match?.best_match?.uid || null, // Include unique UID for later use
                             warning: match?.warning || null, // Include warning if available
                         };
+                        
                     });
                     this.allGames = this.allGames.map(game => {
                         const managedGame = this.managedGames.find(
@@ -641,12 +652,12 @@ const app = Vue.createApp({
             })
             .then(response => response.json())
             .then(data => {
-                alert('Jopox-päivitys onnistui: ' + data.message);
-                game.match_status = "green";  // Päivitä pelin status
+                this.showToast('Jopox-päivitys onnistui: ' + data.message, 'success');
+                //game.match_status = "green";  // Päivitä pelin status
+                return this.fetchGamesAndCompare(); // hae tulospalvelu + vertailu uudestaan
             })
             .catch(error => {
-                console.error('Virhe Jopox-päivityksessä:', error);
-                alert('Päivityksessä tapahtui virhe.');
+                this.showToast('Jopox-päivitys epäonnistui.', 'error');
             });
         },
 
@@ -674,6 +685,29 @@ const app = Vue.createApp({
             this.updateJopox()
             this.closeUpdateModal();
         },
+
+        showToast(message, type = 'success', ms = 1000) {
+            // pysy reaktiivisena: päivitä kentät, älä korvaa koko objektia
+            if (this.toastTimer) clearTimeout(this.toastTimer);
+          
+            // sulje, jotta animaatio ja ajastin varmasti resetöityvät
+            this.toast.show = false;
+          
+            this.toast.message = message;
+            this.toast.type = type;
+          
+            // odota yksi "tick" ja näytä
+            this.$nextTick(() => {
+              this.toast.show = true;
+              this.toastTimer = setTimeout(() => { this.toast.show = false; }, ms);
+            });
+        }
+
+
+
+
+
+
         
     },
     
@@ -691,6 +725,27 @@ const app = Vue.createApp({
         
             return groups;
         },
+
+        toastVariant() {
+            // fallback jos joku joskus asettaa tyypin tyhjäksi
+            const t = (this.toast?.type || 'success');
+            return {
+              isSuccess: t === 'success',
+              isWarning: t === 'warning',
+              isError:   t === 'error',
+            };
+          },
+          toastBgClass() {
+            // jos käytät Bootstrapia, näillä pääsee nopeasti eteenpäin
+            if (this.toastVariant.isSuccess) return 'bg-success';
+            if (this.toastVariant.isWarning) return 'bg-warning';
+            return 'bg-danger';
+          },
+          toastIconClass() {
+            if (this.toastVariant.isSuccess) return 'bi bi-check-circle';
+            if (this.toastVariant.isWarning) return 'bi bi-exclamation-triangle';
+            return 'bi bi-x-circle';
+        }
     },
     
     
@@ -793,6 +848,28 @@ template:
   </div>
 </div>
 
+<teleport to="body">
+  <div class="igm-toast-container">
+    <transition name="igmtoast">
+      <div
+        v-if="toast.show"
+        class="igm-toast"
+        :class="toastBgClass"
+        role="status" aria-live="polite" aria-atomic="true"
+      >
+        <div class="d-flex igm-toast__inner">
+          <div class="igm-toast__icon" v-html="toastVariant.isSuccess ? icons.check : icons.error"></div>
+          <div class="igm-toast__content">
+            <div class="igm-toast__title">{{ toastVariant.isSuccess ? 'Onnistui' : 'Huomio' }}</div>
+            <div class="igm-toast__message">{{ toast.message }}</div>
+          </div>
+          <button type="button" class="igm-toast__close" @click="toast.show=false" aria-label="Sulje">×</button>
+        </div>
+      </div>
+    </transition>
+  </div>
+</teleport>
+
 
 
 <div
@@ -810,6 +887,7 @@ template:
 
     <!-- Game Info Cards -->
     <div class="game-cards">
+
     <div
         v-for="game in games"
         :key="game['Game ID'] + '-' + game['Team ID']"
@@ -817,6 +895,7 @@ template:
         :style="getRowStyle(game)"
         @click="toggleGameDetails(game['Game ID'])"
     >
+    
         <div class="gameInfo1">
             <div class="topRow">
                 <p class="gameTeams">
