@@ -502,84 +502,76 @@ const app = Vue.createApp({
         },
     
         compareUpdates(game, data) {
-            const tulospalveluGame = game; // Assuming this is the managed game from Tulospalvelu
-            const jopoxData = data|| {}; // Assuming the best match from Jopox
-            console.log('game.best_match:', data)
-            // Reset updatedFields before comparing
+            const tp = game;          // Tulospalvelu (uusi totuus)
+            const jx = data || {};    // Jopox (nykyiset arvot lomakkeelta/API:sta)
             this.updatedFields = {};
-
-            // Compare fields and mark them as updated if they differ
-            if (tulospalveluGame.Time !== data.game_start_time) {
-                console.log('ajat eivät täsmää!')
-                this.form.game_start_time = tulospalveluGame.Time;
-                this.updatedFields.game_start_time = true; // Mark as updated
+          
+            // Pieni normalisoija nimivertailuihin
+            const clean = s => (s ?? '')
+              .toString()
+              .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // poista aksentit
+              .replace(/\s+/g, ' ')
+              .trim()
+              .toLowerCase();
+          
+            const managedTeam = clean(tp['Team Name']);           // oma joukkue
+            const tpHome      = clean(tp['Home Team']);
+            const tpAway      = clean(tp['Away Team']);
+          
+            // Onko oma joukkue vieras TP:n mukaan?
+            const shouldAway = (tpAway === managedTeam);          // true = vieraspeli, false = kotipeli
+          
+            const changes = [];
+          
+            // Apu: kirjaa muutos, päivitä form ja updatedFields
+            const mark = (key, label, oldVal, newVal) => {
+              if ((oldVal ?? '') !== (newVal ?? '')) {
+                this.updatedFields[key] = true;
+                changes.push(`${label}: '${oldVal ?? '—'}' → '${newVal ?? '—'}'`);
+              }
+              this.form[key] = newVal;
+            };
+          
+            // 1) Vierasottelu-ruksi (korjataan jos väärä)
+            const oldAway = !!jx.AwayCheckbox;
+            if (oldAway !== shouldAway) {
+              this.updatedFields.AwayCheckbox = true;
+              this.form.AwayCheckbox = shouldAway;
+              changes.push(`Vierasottelu: ${oldAway ? '✓' : '—'} → ${shouldAway ? '✓' : '—'}`);
             } else {
-                this.form.game_start_time = data.game_start_time;
+              this.form.AwayCheckbox = oldAway;
             }
-
-            //compare dates
-            if (tulospalveluGame.Date !== data.game_date) {
-                console.log('päivämäärät eivät täsmää!')
-                this.form.game_date = tulospalveluGame.Date;
-                this.updatedFields.game_date = true; // Mark as updated
+          
+            // 2) Aika / pvm / paikka TP:n mukaan
+            mark('game_start_time', 'Aloitusaika', jx.game_start_time, tp.Time);
+            mark('game_date',       'Pvm',         jx.game_date,       tp.Date);
+            mark('game_location',   'Paikka',      jx.game_location,   tp.Location);
+          
+            // 3) Vastustaja: jos vieraspeli → vastustaja on TP Home Team, muutoin TP Away Team
+            const opponentFromTP = shouldAway ? tp['Home Team'] : tp['Away Team'];
+            mark('guest_team', 'Vastustaja', jx.guest_team, opponentFromTP);
+          
+            // 4) Oma lisänimi (HomeTeamTextbox) – pitää löytyä oman joukkueen nimestä oikealla puolella
+            const ownNameOnThisSide = shouldAway ? tp['Away Team'] : tp['Home Team'];
+            const alias = (jx.HomeTeamTextbox ?? '').toString().trim();
+            if (alias && !clean(ownNameOnThisSide).includes(clean(alias))) {
+              this.updatedFields.HomeTeamTextbox = true;
+              // Emme korvaa arvoa automaattisesti, vain varoitamme:
+              changes.push(`Joukkueen lisänimi: '${alias}' ei löydy nimestä '${ownNameOnThisSide}'`);
             } else {
-                this.form.game_date = data.game_date;
+              this.form.HomeTeamTextbox = jx.HomeTeamTextbox || '';
             }
-
-            if (tulospalveluGame.Location !== data.game_location) {
-                this.form.game_location = tulospalveluGame.Location;
-                this.updatedFields.game_location = true; // Mark as updated
+          
+            // 5) Näytä tiivis yhteenveto
+            if (changes.length) {
+              // jos alias varoitus mukana → 'warning', muuten 'info'
+              const tone = this.updatedFields.HomeTeamTextbox ? 'warning' : 'info';
+              this.showToast('Päivitetään seuraavat kentät:\n• ' + changes.join('\n• '), tone, 7000);
             } else {
-                this.form.game_location = data.game_location;
+              this.showToast('Ei päivitettävää – tiedot ovat jo ajan tasalla.', 'info', 2500);
             }
-
-            console.log('game:', game)
-                        
-            // Check if HomeTeamTextbox text is found within Home Team from the game
-            if (data.AwayCheckbox == false){
-                if (!game['Home Team'].toLowerCase().includes(data.HomeTeamTextbox.toLowerCase())) {
-                    console.log('Home Team:', game['Home Team'], 'Jopox:', data.HomeTeamTextbox.toLowerCase());
-                    this.updatedFields.HomeTeamTextbox = true; // Mark this field as updated
-                    this.showToast('Tarkasta onko peliryhmä oikea!', 'warning', 3000);
-                }
-            }
-
-            if (data.AwayCheckbox == true){
-                if (!game['Away Team'].toLowerCase().includes(data.HomeTeamTextbox.toLowerCase())) {
-                    console.log('Away Team:', game['Away Team'], 'Jopox:', data.HomeTeamTextbox.toLowerCase());
-                    this.updatedFields.HomeTeamTextbox = true; // Mark this field as updated
-                    this.showToast('Tarkasta onko peliryhmä oikea!', 'warning', 3000);
-                }
-            }
-
-
-            if (data.AwayCheckbox == false) {
-                if (tulospalveluGame['Away Team'].trim().toLowerCase().normalize() !== data.guest_team.trim().toLowerCase().normalize()) {
-                    this.form.guest_team = tulospalveluGame['Away Team'];
-                    console.log('T:', tulospalveluGame['Away Team'], 'J:', data.guest_team);
-                    this.updatedFields.guest_team = true;
-                }
-                else {
-                    this.form.guest_team = data.guest_team;
-                }
-            }
-            
-            if (data.AwayCheckbox == true) {
-                if (tulospalveluGame['Home Team'].trim().toLowerCase().normalize() !== data.guest_team.trim().toLowerCase().normalize()) {
-                    this.form.guest_team = tulospalveluGame['Home Team'];
-                    console.log('T:', tulospalveluGame['Home Team'], 'J:', data.guest_team);
-                    this.updatedFields.guest_team = true;
-                } 
-                else {
-                    this.form.guest_team = data.guest_team;
-                }
-            }
-    
-            const changed = Object.keys(this.updatedFields).join(', ');
-            this.showToast(`Päivitettyjä kenttiä: ${changed || 'ei muutoksia'}`, 'info', 4000);
-            
-            // Populate other form fields as needed (league, event, etc.)
-        },
+          },
+          
 
           // Kun käyttäjä muokkaa sisältöä, päivitetään Vue data
         syncContent(event) {

@@ -550,7 +550,12 @@ h1,h2 {
 .igm-toast__icon  { display: grid; place-items: center; width: 28px; height: 28px; }
 .igm-toast__content { display:flex; flex-direction:column; gap:2px; min-width:0; }
 .igm-toast__title   { font-weight:600; line-height:1.1; }
-.igm-toast__message { font-size:.95rem; opacity:.95; word-break:break-word; }
+.igm-toast__message { 
+    font-size:.95rem;
+    opacity:.95;
+    word-break:break-word;
+    white-space: pre-line;
+ }
 
 .igm-toast__close{
   appearance: none; border: 0; background: transparent; color: rgba(255,255,255,.8);
