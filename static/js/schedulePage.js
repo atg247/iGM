@@ -31,7 +31,6 @@ const app = Vue.createApp({
             },
             updatedFields: {}, // Will hold the fields that have been updated
             hasJopox: false,
-            showJopoxInfo: false,
             toast: {
                 show: false,
                 type: 'success',   // 'success' | 'warning' | 'error'
@@ -40,7 +39,9 @@ const app = Vue.createApp({
             toastTimer: null,
             icons: {
                 check: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-                error: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8v5m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`
+                warn:  `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 9v4m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+                error: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8v5m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+                info: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 9v4m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
               }
 
 
@@ -539,7 +540,7 @@ const app = Vue.createApp({
                 if (!game['Home Team'].toLowerCase().includes(data.HomeTeamTextbox.toLowerCase())) {
                     console.log('Home Team:', game['Home Team'], 'Jopox:', data.HomeTeamTextbox.toLowerCase());
                     this.updatedFields.HomeTeamTextbox = true; // Mark this field as updated
-                    alert('Tarkasta onko peliryhmä oikea!');
+                    this.showToast('Tarkasta onko peliryhmä oikea!', 'warning', 3000);
                 }
             }
 
@@ -547,7 +548,7 @@ const app = Vue.createApp({
                 if (!game['Away Team'].toLowerCase().includes(data.HomeTeamTextbox.toLowerCase())) {
                     console.log('Away Team:', game['Away Team'], 'Jopox:', data.HomeTeamTextbox.toLowerCase());
                     this.updatedFields.HomeTeamTextbox = true; // Mark this field as updated
-                    alert('Tarkasta onko peliryhmä oikea!');
+                    this.showToast('Tarkasta onko peliryhmä oikea!', 'warning', 3000);
                 }
             }
 
@@ -575,6 +576,7 @@ const app = Vue.createApp({
             }
     
             console.log('Updated fields:', this.updatedFields)
+            this.showToast('Päivitettyjä kenttiä:', 'info', 4000);
             // Populate other form fields as needed (league, event, etc.)
         },
 
@@ -587,6 +589,7 @@ const app = Vue.createApp({
         // Lähetä tiedot backendille päivitystä varten
         updateJopox() {
 
+            this.isLoading = true;
             // Päivitetään `game_public_info` contenteditable-divistä ennen lomakkeen lähetystä
             const contentDiv = document.getElementById("public_info");
             if (contentDiv) {
@@ -612,13 +615,14 @@ const app = Vue.createApp({
             })
             .then(response => response.json())
             .then(data => {
-                alert('Jopox-päivitys onnistui: ' + data.message);
+                this.showToast('Jopox-päivitys onnistui: ' + data.message, 'success', 3000);
                 this.closeUpdateModal(); // Sulje modal päivityksen jälkeen
             })
             .catch(error => {
                 console.error('Virhe Jopox-päivityksessä:', error);
-                alert('Päivityksessä tapahtui virhe.');
+                this.showToast('Päivityksessä tapahtui virhe.', 'error', 3000);
             });
+            this.fetchGamesAndCompare();
         },
 
         createJopox(game) {
@@ -675,10 +679,6 @@ const app = Vue.createApp({
             return '';
         },
 
-        dismissJopoxInfo() {
-            this.showJopoxInfo = false;
-            // (listener poistuu automaattisesti, koska { once: true })
-          },
 
         submitForm() {
             // Handle form submission logic here
@@ -686,7 +686,7 @@ const app = Vue.createApp({
             this.closeUpdateModal();
         },
 
-        showToast(message, type = 'success', ms = 1000) {
+        showToast(message, type = 'success', ms = 3000) {
             // pysy reaktiivisena: päivitä kentät, älä korvaa koko objektia
             if (this.toastTimer) clearTimeout(this.toastTimer);
           
@@ -727,7 +727,6 @@ const app = Vue.createApp({
         },
 
         toastVariant() {
-            // fallback jos joku joskus asettaa tyypin tyhjäksi
             const t = (this.toast?.type || 'success');
             return {
               isSuccess: t === 'success',
@@ -735,17 +734,14 @@ const app = Vue.createApp({
               isError:   t === 'error',
             };
           },
-          toastBgClass() {
-            // jos käytät Bootstrapia, näillä pääsee nopeasti eteenpäin
-            if (this.toastVariant.isSuccess) return 'bg-success';
-            if (this.toastVariant.isWarning) return 'bg-warning';
-            return 'bg-danger';
-          },
-          toastIconClass() {
-            if (this.toastVariant.isSuccess) return 'bi bi-check-circle';
-            if (this.toastVariant.isWarning) return 'bi bi-exclamation-triangle';
-            return 'bi bi-x-circle';
-        }
+
+          toastToneClass() {
+            return {
+              'is-success': this.toastVariant.isSuccess,
+              'is-warning': this.toastVariant.isWarning,
+              'is-error':   this.toastVariant.isError,
+            };
+          }
     },
     
     
@@ -754,20 +750,12 @@ const app = Vue.createApp({
         fetch('/api/jopox_status')
         .then(r => r.json())
         .then(s => {
-          console.log('s:', s);
-          this.hasJopox = !!(s && s.active);
-          console.log('hasJopox:', this.hasJopox);
-          this.showJopoxInfo = !this.hasJopox;
-          if (this.showJopoxInfo) {
-            // Piilota heti kun käyttäjä skrollaa (yksi kerta riittää)
-            window.addEventListener('scroll', this.dismissJopoxInfo, { once: true, passive: true });
-          }
+            this.hasJopox = !!(s && s.active);
+            if (!this.hasJopox) {
+              this.showToast('Jopox ei ole aktivoitu tälle käyttäjälle. Aktivoi Jopox Ohjaamosta.', 'warning', 6000);
+            }
         })
-        .catch(() => {
-          // Jos status ei saada, käyttäydy varovasti: ei näytetä Jopox-osia eikä banneria
-          this.hasJopox = false;
-          this.showJopoxInfo = false;
-        })
+        
         .finally(() => {
           // 2) hae loput normaalisti
           this.fetchTeams();
@@ -836,11 +824,6 @@ template:
 </div>
 
 
-<div v-if="showJopoxInfo" class="info-banner" role="status" aria-live="polite">
-  <strong>Huomio:</strong> Jopox ei ole aktivoitu tälle käyttäjälle.
-  <a href="/dashboard"><strong>Aktivoi Jopox täällä.</strong></a>
-</div>
-
 <div v-if="isLoading" id="loadingIndicator" class="loading-overlay is-visible" aria-hidden="true">
   <div class="loading-box">
     <div class="spinner-border text-secondary loading-spinner" role="status" aria-label="Loading"></div>
@@ -848,27 +831,33 @@ template:
   </div>
 </div>
 
+
+
+
 <teleport to="body">
   <div class="igm-toast-container">
     <transition name="igmtoast">
       <div
         v-if="toast.show"
         class="igm-toast"
-        :class="toastBgClass"
+        :class="toastToneClass"
         role="status" aria-live="polite" aria-atomic="true"
       >
         <div class="d-flex igm-toast__inner">
-          <div class="igm-toast__icon" v-html="toastVariant.isSuccess ? icons.check : icons.error"></div>
-          <div class="igm-toast__content">
-            <div class="igm-toast__title">{{ toastVariant.isSuccess ? 'Onnistui' : 'Huomio' }}</div>
-            <div class="igm-toast__message">{{ toast.message }}</div>
-          </div>
+            <div class="igm-toast__icon"
+                v-html="toastVariant.isSuccess ? icons.check : (toastVariant.isWarning ? icons.warn : icons.error)">
+            </div>
+
+            <div class="igm-toast__title">
+            {{ toastVariant.isSuccess ? 'Onnistui' : (toastVariant.isError ? 'Virhe' : 'Huomio') }}
+            </div>
           <button type="button" class="igm-toast__close" @click="toast.show=false" aria-label="Sulje">×</button>
         </div>
       </div>
     </transition>
   </div>
 </teleport>
+
 
 
 
