@@ -547,9 +547,10 @@ h1,h2 {
 
  /* Sisus */
 .igm-toast__inner { align-items: center; gap: 12px; padding: 12px 14px; }
-.igm-toast__icon  { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; }
-.igm-toast__title   { font-weight: 600; line-height: 1.1; }
-.igm-toast__message { font-size: .95rem; opacity: .95; }
+.igm-toast__icon  { display: grid; place-items: center; width: 28px; height: 28px; }
+.igm-toast__content { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.igm-toast__title   { font-weight:600; line-height:1.1; }
+.igm-toast__message { font-size:.95rem; opacity:.95; word-break:break-word; }
 
 .igm-toast__close{
   appearance: none; border: 0; background: transparent; color: rgba(255,255,255,.8);
@@ -570,6 +571,7 @@ h1,h2 {
 .igm-toast.is-success { --tone: #22c55e; }
 .igm-toast.is-error   { --tone: #ef4444; }
 .igm-toast.is-warning { --tone: #f59e0b; }
+.igm-toast.is-info    { --tone: #007bff; }
 
 
 /* --- Fade in/out paikallaan --- */

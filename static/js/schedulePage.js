@@ -575,8 +575,9 @@ const app = Vue.createApp({
                 }
             }
     
-            console.log('Updated fields:', this.updatedFields)
-            this.showToast('Päivitettyjä kenttiä:', 'info', 4000);
+            const changed = Object.keys(this.updatedFields).join(', ');
+            this.showToast(`Päivitettyjä kenttiä: ${changed || 'ei muutoksia'}`, 'info', 4000);
+            
             // Populate other form fields as needed (league, event, etc.)
         },
 
@@ -732,6 +733,7 @@ const app = Vue.createApp({
               isSuccess: t === 'success',
               isWarning: t === 'warning',
               isError:   t === 'error',
+              isInfo:    t === 'info',
             };
           },
 
@@ -740,6 +742,7 @@ const app = Vue.createApp({
               'is-success': this.toastVariant.isSuccess,
               'is-warning': this.toastVariant.isWarning,
               'is-error':   this.toastVariant.isError,
+              'is-info':    this.toastVariant.isInfo,
             };
           }
     },
@@ -752,7 +755,7 @@ const app = Vue.createApp({
         .then(s => {
             this.hasJopox = !!(s && s.active);
             if (!this.hasJopox) {
-              this.showToast('Jopox ei ole aktivoitu tälle käyttäjälle. Aktivoi Jopox Ohjaamosta.', 'warning', 6000);
+              this.showToast('Jopox ei ole aktivoitu tälle käyttäjälle. Aktivoi Jopox <a href="/dashboard" style="color: lightblue; font-weight: bold;">täällä</a>.', 'warning', 7000);
             }
         })
         
@@ -844,14 +847,22 @@ template:
         role="status" aria-live="polite" aria-atomic="true"
       >
         <div class="d-flex igm-toast__inner">
-            <div class="igm-toast__icon"
-                v-html="toastVariant.isSuccess ? icons.check : (toastVariant.isWarning ? icons.warn : icons.error)">
-            </div>
+          <div class="igm-toast__icon"
+               v-html="toastVariant.isSuccess ? icons.check : (toastVariant.isWarning ? icons.warn : (toastVariant.isInfo ? icons.info : icons.error))">
+          </div>
 
+          <!-- TÄMÄ BLOKKI PUUTTUI -->
+          <div class="igm-toast__content">
             <div class="igm-toast__title">
-            {{ toastVariant.isSuccess ? 'Onnistui' : (toastVariant.isError ? 'Virhe' : 'Huomio') }}
+              {{ toastVariant.isSuccess ? 'Onnistui'
+               : (toastVariant.isError ? 'Virhe'
+               : (toastVariant.isWarning ? 'Huomio' : 'Info')) }}
             </div>
-          <button type="button" class="igm-toast__close" @click="toast.show=false" aria-label="Sulje">×</button>
+            <div class="igm-toast__message" v-html="toast.message"></div>
+          </div>
+
+          <button type="button" class="igm-toast__close"
+                  @click="toast.show=false" aria-label="Sulje">×</button>
         </div>
       </div>
     </transition>
