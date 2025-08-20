@@ -566,9 +566,9 @@ const app = Vue.createApp({
             if (changes.length) {
               // jos alias varoitus mukana → 'warning', muuten 'info'
               const tone = this.updatedFields.HomeTeamTextbox ? 'warning' : 'info';
-              this.showToast('Päivitetään seuraavat kentät:\n• ' + changes.join('\n• '), tone, 7000);
+              this.showToast('Ehdotetut muutokset:\n• ' + changes.join('\n• '), tone, 7000);
             } else {
-              this.showToast('Ei päivitettävää – tiedot ovat jo ajan tasalla.', 'info', 2500);
+              this.showToast('Tiedot ovat ajan tasalla.', 'info', 2500);
             }
           },
           
@@ -608,7 +608,7 @@ const app = Vue.createApp({
             })
             .then(response => response.json())
             .then(data => {
-                this.showToast('Jopox-päivitys onnistui: ' + data.message, 'success', 3000);
+                this.showToast('Jopox-päivitys onnistui.', 'success', 3000);
                 this.closeUpdateModal(); // Sulje modal päivityksen jälkeen
             })
             .catch(error => {
@@ -649,7 +649,7 @@ const app = Vue.createApp({
             })
             .then(response => response.json())
             .then(data => {
-                this.showToast('Jopox-päivitys onnistui: ' + data.message, 'success');
+                this.showToast('Ottelu lisätty Jopoxiin.', 'success');
                 //game.match_status = "green";  // Päivitä pelin status
                 return this.fetchGamesAndCompare(); // hae tulospalvelu + vertailu uudestaan
             })
@@ -838,21 +838,18 @@ template:
         :class="toastToneClass"
         role="status" aria-live="polite" aria-atomic="true"
       >
-        <div class="d-flex igm-toast__inner">
+        <div class="igm-toast__inner">
           <div class="igm-toast__icon"
-               v-html="toastVariant.isSuccess ? icons.check : (toastVariant.isWarning ? icons.warn : (toastVariant.isInfo ? icons.info : icons.error))">
+               v-html="toastVariant.isSuccess ? icons.check
+                        : (toastVariant.isWarning ? icons.warn : icons.error)">
           </div>
 
-          <!-- TÄMÄ BLOKKI PUUTTUI -->
+          <!-- Sisältö: otsikko + viesti -->
           <div class="igm-toast__content">
-            <div class="igm-toast__title">
-              {{ toastVariant.isSuccess ? 'Onnistui'
-               : (toastVariant.isError ? 'Virhe'
-               : (toastVariant.isWarning ? 'Huomio' : 'Info')) }}
-            </div>
-            <div class="igm-toast__message" v-html="toast.message"></div>
+            <div class="igm-toast__message">{{ toast.message }}</div>
           </div>
 
+          <!-- Sulje oikeaan yläkulmaan -->
           <button type="button" class="igm-toast__close"
                   @click="toast.show=false" aria-label="Sulje">×</button>
         </div>
@@ -860,6 +857,7 @@ template:
     </transition>
   </div>
 </teleport>
+
 
 
 

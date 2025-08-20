@@ -19,11 +19,11 @@ def parse_sortable_date(date_string):
 def compare_games(jopox_games, tulospalvelu_games):
     """Compare games from Jopox and Tulospalvelu.fi datasets."""
     # Initialize logging
-    logger.debug(f"jopox_games  compare_games: {jopox_games}")
         
     results = []
 
     managed_games = [managed_game for managed_game in tulospalvelu_games if managed_game['Type'] != 'follow']
+    logger.info('Comparing games from Tulospalvelu and Jopox')
     logger.info("Total managed games: %d", len(managed_games))
     logger.info("Total Jopox games: %d", len(jopox_games))
 
@@ -49,9 +49,6 @@ def compare_games(jopox_games, tulospalvelu_games):
         if t_game_datetime < datetime.now() - timedelta(days=1):
             continue
 
-        logger.debug("Processing Tulospalvelu game: %s", t_game)
-
-
         time = t_game['Time']
         location = t_game['Location'].lower()
         small_area_game = t_game['Small Area Game'] == '1'
@@ -69,8 +66,6 @@ def compare_games(jopox_games, tulospalvelu_games):
         warning_reason = ""
 
         for j_game in jopox_games:
-            logger.debug(f"j_game: {j_game}")   
-            logger.debug(f"j_game: {j_game['sortable_date']}")   
             try:
                 # Parse the sortable_date field from Jopox game
                 j_game_datetime = datetime.strptime(j_game['sortable_date'], '%Y-%m-%d %H:%M')
@@ -97,7 +92,6 @@ def compare_games(jopox_games, tulospalvelu_games):
                 logger.error("Invalid time format: Tulospalvelu %s vs Jopox %s", time, j_time)
                 continue
             
-            logger.debug('Processing J Game: %s', j_game)
 
             # Temporary scoring for this Jopox game
             score = 0
@@ -179,18 +173,12 @@ def compare_games(jopox_games, tulospalvelu_games):
 
             if 'Lisätiedot' in j_game and j_game['Lisätiedot']:
 
-        # Small Area Game Check - tarkasta löytyykö sana pienpeli lisätiedoista tai j_team_away
                 if small_area_game:
-                    #logger.debug('small_area_game: %s %s', home_team, away_team)
-                    #logger.debug('j_game: %s %s', j_game['joukkueet'], j_game['Lisätiedot'])
                     if 'pienpeli' not in j_game['Lisätiedot'].lower() and 'pienpeli' not in j_game['joukkueet'].lower():
-                    #    logger.debug('Pienpeli ei löydy j_gamesta: %s tai pienpeli ei ole mainittu %s', j_game['Lisätiedot'], j_game['joukkueet'])
                         reason += "Kyseessä on pienpeli, mutta siitä ei ole mainintaa Jopoxissa. "
                         color_score_temp += 1
                     elif 'pienpeli' in j_game['Lisätiedot'].lower() or 'pienpeli' in j_game['joukkueet'].lower():
                         score += 20
-                    #else:
-                        #logger.debug("Lisätiedot ei ole saatavilla j_game:ssa: %s", j_game)
 
                 if not small_area_game:
                     if 'Lisätiedot' in j_game and j_game['Lisätiedot']:
@@ -200,7 +188,6 @@ def compare_games(jopox_games, tulospalvelu_games):
                         if 'pienpeli' in j_game['Lisätiedot'].lower() or 'pienpeli' in j_game['joukkueet'].lower() and team_score <= 180:
                             reason+="Kyseessä ei ole pienpeli, vaikka Jopoxissa se on mainittu."
                             score -=10
-                #logger.debug('Score after pienpeli: %s', score)
 
             # Update the best match
             if score > best_score:
@@ -208,7 +195,7 @@ def compare_games(jopox_games, tulospalvelu_games):
                 best_match = j_game
                 best_reason = reason
                 color_score = color_score_temp
-                #Append match to best_matches including score, reason and color_score 
+
                 logger.debug('Best match updated: %s', best_match)
             
                 if best_match is None or best_score < 105 :
@@ -220,7 +207,6 @@ def compare_games(jopox_games, tulospalvelu_games):
                         "Löydän parhaiten ottelun jos Jopoxissa on merkitty alkamisajaksi todellinen ottelun alkamisaika."
 
                     )
-                    #logger.debug('WARNING ADDED TO GAME: %s', t_game)
 
                 elif best_match and best_score > 1:
                     warning_reason = None

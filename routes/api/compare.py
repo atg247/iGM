@@ -30,10 +30,6 @@ def compare_games_endpoint():
     tulospalvelu_games = data.get('tulospalvelu_games', [])
     jopox_games = data.get('jopox_games', [])
 
-    logger.debug(f"tulospalvelu_games: {tulospalvelu_games}")
-    logger.debug(f"jopox_games: {jopox_games}")
-
-
     # 4) Suorita vertailu vain jos Jopox-dataa löytyi
     if not jopox_games:
         logger.info("compare: skipped – no jopox_games provided")
@@ -49,6 +45,8 @@ def compare_games_endpoint():
     except Exception:
         app.logger.exception("compare: compare_games raised")
         return json_error("Vertailu epäonnistui", 502)  # Bad Gateway (ulkoisen/logic layer -tyylinen virhe)
+
+    logger.info('comparison completed')
 
     # 6) Onnistunut vastaus yhtenäisellä muodolla
     return jsonify(comparison_results), 200

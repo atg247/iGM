@@ -58,7 +58,7 @@ def create_jopox():
                 "SaveGameButton": "Tallenna"
                 }
             scraper.add_game(game_data, game, level)
-            return jsonify({"message": "Ottelu lisätty. Päivitä sivu nähdäksesi muutokset."}), 200
+            return jsonify({"message": "Ottelu lisätty Jopoxiin."}), 200
             
         except Exception as e:
             return jsonify({"error": str(e)}), 500
