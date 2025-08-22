@@ -50,7 +50,8 @@ def create_jopox():
 
 
     for item in items:
-        game = (item or {}).get('game') or {}
+        game = item.get("game")
+        logger.debug('game: %s', game)
         if not game:
             results.append({ 'status': 'error', 'error': 'missing_game' })
             continue
@@ -72,19 +73,15 @@ def create_jopox():
             "SaveGameButton": "Tallenna"
         }
 
-        game["game_data"] = game_data
-
-        games_to_add.append(game)
-    
+        games_to_add.append({
+            "game": game,
+            "game_data": game_data
+        })
     
     try:
         logger.debug('example of games to add: %s', games_to_add)
-        
         results = scraper.add_game(games_to_add)
-
         logger.debug('results: %s', results)
-
-
 
     except Exception as e:
         logger.exception('Error while creating game')

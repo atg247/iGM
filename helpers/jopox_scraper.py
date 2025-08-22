@@ -545,10 +545,10 @@ class JopoxScraper:
                 if best_match < 5:
                     logger.debug("No good enough match found, starting to create new league")
                     created_league = self.create_league(level)
-                    item["LeagueDropdownList"] = created_league
+                    game["LeagueDropdownList"] = created_league
                 else:
                     logger.debug(f"returning Best league ID: {best_league_id}")
-                    item["LeagueDropdownList"] = best_league_id
+                    game["LeagueDropdownList"] = best_league_id
             return items
 
 
@@ -594,12 +594,18 @@ class JopoxScraper:
 
 #17:27:51 - create_jopox  - create_jopox  - DEBUG - example of games to add: [{'Away Goals': '', 'Away Team': 'S-Kiekko Sininen', 'Date': '03.12.2025', 'Game ID': '2020202022', 'Home Goals': '', 'Home Team': 'Simulated home team 2', 'Level Name': 'TESTISARJA', 'Location': 'Simulated location', 'Small Area Game': '0', 'SortableDate': 'Thu, 03 Dec 2025 00:00:00 GMT', 'Stat Group Name': 'TESTISARJA', 'Team ID': '1368626575', 'Team Name': 'S-Kiekko Sininen', 'Time': '12:00', 'Type': 'manage', 'match_status': 'red', 'reason': 'En löytänyt ottelua Jopoxista.', 'best_match': None, 'uid': None, 'warning': None, 'away_checkbox': 'on', 'away_team': 'Simulated home team 2', 'game_data': {'LeagueDropdownList': '', 'EventDropDownList': '', 'HomeTeamTextBox': 'S-Kiekko Sininen', 'GuestTeamTextBox': 'Simulated home team 2', 'AwayCheckbox': 'on', 'GameLocationTextBox': 'Simulated location', 'GameDateTextBox': '03.12.2025', 'GameStartTimeTextBox': '12:00', 'GameDurationTextBox': '120', 'GameDeadlineTextBox': '', 'GameMaxParticipatesTextBox': '', 'FeedGameDropdown': '0', 'GameNotificationTextBox': '', 'SaveGameButton': 'Tallenna'}}]
 
-
-        for game in games_to_add:
-            game_data = game.get("game_data")
-            game = game.get("game")
-
+        logger.debug(f'games_to_add: {games_to_add}')
+        for item in games_to_add:
+            
+            if isinstance(item, dict) and "game" in item:
+                game = item["game"]
+                game_data = item.get("game_data", {})
+            else:
+                game = item
+                game_data = item.get("game_data", {})
+                
             logger.debug(f'game_data: {game_data}')
+            logger.debug(f'game: {game}')
 
             try:
                 response = self.session.get(add_game_url)
