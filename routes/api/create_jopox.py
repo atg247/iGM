@@ -37,53 +37,58 @@ def create_jopox():
     logger.debug('Request contains %d item(s)', len(items))
 
     results = []
+    games_to_add = []
 
     items = define_away_game(items)
-    logger.debug('Example of items after define_away_game: %s', items[0])
 
     if not scraper.access_admin():
         return jsonify({ 'items': [{ 'status': 'error', 'error': 'admin_access_failed' }] }), 500
 
+    items = scraper.define_league(items)
+
+    logger.debug('Example of items after define_league: %s', items)
+
+
     for item in items:
-        try:
-            game = (item or {}).get('game') or {}
-            if not game:
-                results.append({ 'status': 'error', 'error': 'missing_game' })
-                continue
+        game = (item or {}).get('game') or {}
+        if not game:
+            results.append({ 'status': 'error', 'error': 'missing_game' })
+            continue
+
+        game_data = {
+            "LeagueDropdownList": game.get("LeagueDropdownList", ""),
+            "EventDropDownList": "",
+            "HomeTeamTextBox": game.get("Team Name", ""),
+            "GuestTeamTextBox": game.get("away_team", ""),
+            "AwayCheckbox": game.get("away_checkbox", ""),
+            "GameLocationTextBox": game.get("Location", ""),
+            "GameDateTextBox": game.get("Date", ""),
+            "GameStartTimeTextBox": game.get("Time", ""),
+            "GameDurationTextBox": game.get("GameDurationTextBox", "120"),
+            "GameDeadlineTextBox": "",
+            "GameMaxParticipatesTextBox": "",
+            "FeedGameDropdown": "0",
+            "GameNotificationTextBox": "",
+            "SaveGameButton": "Tallenna"
+        }
+
+        game["game_data"] = game_data
+
+        games_to_add.append(game)
+    
+    
+    try:
+        logger.debug('example of games to add: %s', games_to_add)
+        
+        results = scraper.add_game(games_to_add)
+
+        logger.debug('results: %s', results)
 
 
-            # Resolve league by TP level name found inside game
-            level_name = game.get('Level Name', '') or ''
-            league_id = scraper.define_league(level_name) if level_name else ''
 
-            game_data = {
-                "LeagueDropdownList": league_id or "",
-                "EventDropDownList": "",
-                "HomeTeamTextBox": game.get("Team Name", ""),
-                "GuestTeamTextBox": game.get("away_team", ""),
-                "AwayCheckbox": game.get("away_checkbox", ""),
-                "GameLocationTextBox": game.get("Location", ""),
-                "GameDateTextBox": game.get("Date", ""),
-                "GameStartTimeTextBox": game.get("Time", ""),
-                "GameDurationTextBox": game.get("GameDurationTextBox", "120"),
-                "GameDeadlineTextBox": "",
-                "GameMaxParticipatesTextBox": "",
-                "FeedGameDropdown": "0",
-                "GameNotificationTextBox": "",
-                "SaveGameButton": "Tallenna"
-            }
-
-            add_result = scraper.add_game(game_data, game, league_id or "")
-
-            # Heuristic success detection
-            if isinstance(add_result, str) and 'error' not in add_result.lower():
-                results.append({ 'status': 'ok', 'game_id': game.get('Game ID'), 'message': add_result })
-            else:
-                results.append({ 'status': 'error', 'game_id': game.get('Game ID'), 'error': add_result or 'unknown_error' })
-
-        except Exception as e:
-            logger.exception('Error while creating game')
-            results.append({ 'status': 'error', 'error': str(e) })
+    except Exception as e:
+        logger.exception('Error while creating game')
+        results.append({ 'status': 'error', 'error': str(e) })
 
     return jsonify({ 'items': results }), 200
 

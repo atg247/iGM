@@ -492,7 +492,7 @@ class JopoxScraper:
         except Exception as e:
             logger.error(f"Error getting league ID's: {e}")
 
-    def define_league(self, level):
+    def define_league(self, items):
         logger.debug("define_league() started...") 
         if self.login():
             add_game_url = urljoin(self.base_url, "Games/Game.aspx")
@@ -521,29 +521,35 @@ class JopoxScraper:
             leagues = self.get_league_id(response)
             logger.debug(f"Leagues received from get_league_id: {leagues}")
 
-            logger.debug(f"Level: {level}")
+            for item in items:
+                game = item.get("game")
+                level = game.get("Level Name")
+                logger.debug(f"Game: {game}")
+                logger.debug(f"Level: {level}")
 
             #compare level to league_options and return the league_id with best match. Match is based on the league_options text that has most in common with level.
-            best_match = 0
-            best_league_id = ''
-            for league in leagues.get("league_options", []):
-                match = len(os.path.commonprefix([league.get('text'), level]))
-                logger.debug(f"match: {match}")
-                if match > best_match:
-                    best_match = match
-                    best_league_id = league.get('value')
-                    logger.debug(f"Match: {match}")
-            
-            logger.debug(f"Best match: {best_match}")
-            
+                best_match = 0
+                best_league_id = ''
+                for league in leagues.get("league_options", []):
+                    match = len(os.path.commonprefix([league.get('text'), level]))
+                    logger.debug(f"match: {match}")
+                    if match > best_match:
+                        best_match = match
+                        best_league_id = league.get('value')
+                        logger.debug(f"Match: {match}")
+                
+                logger.debug(f"Best match: {best_match}")
+                
 
             #if no good enough match is found, start function to create new league
-            if best_match < 5:
-                logger.debug("No good enough match found, starting to create new league")
-                return self.create_league(level)
-            else:
-                logger.debug(f"returning Best league ID: {best_league_id}")
-                return best_league_id
+                if best_match < 5:
+                    logger.debug("No good enough match found, starting to create new league")
+                    created_league = self.create_league(level)
+                    item["LeagueDropdownList"] = created_league
+                else:
+                    logger.debug(f"returning Best league ID: {best_league_id}")
+                    item["LeagueDropdownList"] = best_league_id
+            return items
 
 
     def create_league(self, level):
@@ -577,103 +583,119 @@ class JopoxScraper:
             logger.exception("Error decoding create_league response JSON: %s", e)
             return None
         
-    def add_game(self, game_data, game, level):
+    def add_game(self, games_to_add):
         logger.debug("add_game() started...")
         #muodosta add_game_url yhdistämällä self.base_url ja Games/Game.aspx
         add_game_url = urljoin(self.base_url, "Games/Game.aspx")
 
+        logger.debug(f'games_to_add: {games_to_add}')
 
-        try:
-            response = self.session.get(add_game_url)
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching add_game_url: {e}")
-            return
+        results = []
 
-        if response.status_code != 200:
-            logger.error("Failed to load form page!")
-            return
+#17:27:51 - create_jopox  - create_jopox  - DEBUG - example of games to add: [{'Away Goals': '', 'Away Team': 'S-Kiekko Sininen', 'Date': '03.12.2025', 'Game ID': '2020202022', 'Home Goals': '', 'Home Team': 'Simulated home team 2', 'Level Name': 'TESTISARJA', 'Location': 'Simulated location', 'Small Area Game': '0', 'SortableDate': 'Thu, 03 Dec 2025 00:00:00 GMT', 'Stat Group Name': 'TESTISARJA', 'Team ID': '1368626575', 'Team Name': 'S-Kiekko Sininen', 'Time': '12:00', 'Type': 'manage', 'match_status': 'red', 'reason': 'En löytänyt ottelua Jopoxista.', 'best_match': None, 'uid': None, 'warning': None, 'away_checkbox': 'on', 'away_team': 'Simulated home team 2', 'game_data': {'LeagueDropdownList': '', 'EventDropDownList': '', 'HomeTeamTextBox': 'S-Kiekko Sininen', 'GuestTeamTextBox': 'Simulated home team 2', 'AwayCheckbox': 'on', 'GameLocationTextBox': 'Simulated location', 'GameDateTextBox': '03.12.2025', 'GameStartTimeTextBox': '12:00', 'GameDurationTextBox': '120', 'GameDeadlineTextBox': '', 'GameMaxParticipatesTextBox': '', 'FeedGameDropdown': '0', 'GameNotificationTextBox': '', 'SaveGameButton': 'Tallenna'}}]
+
+
+        for game in games_to_add:
+            game_data = game.get("game_data")
+            game = game.get("game")
+
+            logger.debug(f'game_data: {game_data}')
+
+            try:
+                response = self.session.get(add_game_url)
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error fetching add_game_url: {e}")
+                return
+
+            if response.status_code != 200:
+                logger.error("Failed to load form page!")
+                return
 
         # Parse HTML and extract necessary values
-        event_validation_data = self.get_event_validation(response)
-        season = self.get_season_id(response)
-        subsite = self.get_subsite_id(response)
+            event_validation_data = self.get_event_validation(response)
+            season = self.get_season_id(response)
+            subsite = self.get_subsite_id(response)
 
-        logger.debug(f'game_data: {game_data}')
-        logger.debug(f'game: {game}')
-        team_name = game.get('Team Name')            
-        HomeTeamTextBox = self.homeTeamTextBox(response, team_name)
 
-        # Build payload
-        payload = {
-            "__EVENTTARGET": "",
-            "__EVENTARGUMENT": "",
-            "__LASTFOCUS": "",
-            "__VIEWSTATE": event_validation_data['__VIEWSTATE'],
-            "__VIEWSTATEGENERATOR": event_validation_data['__VIEWSTATEGENERATOR'],
-            "__EVENTVALIDATION": event_validation_data['__EVENTVALIDATION'],            
-            "UsernameTextBox": self.username,
-            "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSeasons": season,
-            "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSubSites": subsite,
-            #"ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$LeagueDropdownList": level,
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$EventDropDownList": game_data.get("EventDropDownList", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$HomeTeamTextBox": HomeTeamTextBox,
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GuestTeamTextBox": game_data.get("GuestTeamTextBox", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$AwayCheckbox": game_data.get("AwayCheckbox", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameLocationTextBox": game_data.get("GameLocationTextBox", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDateTextBox": game_data.get("GameDateTextBox", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameStartTimeTextBox": game_data.get("GameStartTimeTextBox", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDurationTextBox": game_data.get("GameDurationTextBox", "120"),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", "0"),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": f"""
-            {game.get('Home Team')} - {game.get('Away Team')}<br>
-            {'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli'}<br>
-            <br>
-            {game.get('Location')}<br>
-            <br>
-            <br>                    
-            Kokoontuminen tuntia ennen ottelun alkua.<br>
-            <br>
-            Joukkue:
-            <br>
-            """,#Tähän kenttään logiikka, jolla määritetään tarvitaanko toimitsijoita ja niin, että huomioi pienpelit,
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": f"""
-            Ottelu {game.get('GameDateTextBox')} klo {game.get('GameStartTimeTextBox')}<br>
-            {game.get('HomeTeamTextBox')} - {game.get('GuestTeamTextBox')}<br>
-            {game.get('GameLocationTextBox')}<br>
-            <br>
-            {'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli'}<br>
-            <br>                    
-            Kokoontuminen tuntia ennen ottelun alkua.<br>
-            <br>
-            Joukkue:
-            <br>
-            """,#Tähän kenttään logiikka, jolla määritetään tarvitaanko toimitsijoita ja niin, että huomioi pienpelit
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameNotificationTextBox": "",
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
-        }
+            team_name = game.get('Team Name')            
+            HomeTeamTextBox = self.homeTeamTextBox(response, team_name)
 
-        logger.info("Submitting game data payload")
+            # Build payload
+            payload = {
+                "__EVENTTARGET": "",
+                "__EVENTARGUMENT": "",
+                "__LASTFOCUS": "",
+                "__VIEWSTATE": event_validation_data['__VIEWSTATE'],
+                "__VIEWSTATEGENERATOR": event_validation_data['__VIEWSTATEGENERATOR'],
+                "__EVENTVALIDATION": event_validation_data['__EVENTVALIDATION'],            
+                "UsernameTextBox": self.username,
+                "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSeasons": season,
+                "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSubSites": subsite,
+                #"ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$LeagueDropdownList": game_data.get("LeagueDropdownList", ""),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$EventDropDownList": game_data.get("EventDropDownList", ""),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$HomeTeamTextBox": HomeTeamTextBox,
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GuestTeamTextBox": game_data.get("GuestTeamTextBox", ""),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$AwayCheckbox": game_data.get("AwayCheckbox", ""),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameLocationTextBox": game_data.get("GameLocationTextBox", ""),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDateTextBox": game_data.get("GameDateTextBox", ""),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameStartTimeTextBox": game_data.get("GameStartTimeTextBox", ""),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDurationTextBox": game_data.get("GameDurationTextBox", "120"),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", "0"),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": f"""
+                {game.get('Home Team')} - {game.get('Away Team')}<br>
+                {'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli'}<br>
+                <br>
+                {game.get('Location')}<br>
+                <br>
+                <br>                    
+                Kokoontuminen tuntia ennen ottelun alkua.<br>
+                <br>
+                Joukkue:
+                <br>
+                """,#Tähän kenttään logiikka, jolla määritetään tarvitaanko toimitsijoita ja niin, että huomioi pienpelit,
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": f"""
+                Ottelu {game.get('GameDateTextBox')} klo {game.get('GameStartTimeTextBox')}<br>
+                {game.get('HomeTeamTextBox')} - {game.get('GuestTeamTextBox')}<br>
+                {game.get('GameLocationTextBox')}<br>
+                <br>
+                {'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli'}<br>
+                <br>                    
+                Kokoontuminen tuntia ennen ottelun alkua.<br>
+                <br>
+                Joukkue:
+                <br>
+                """,#Tähän kenttään logiikka, jolla määritetään tarvitaanko toimitsijoita ja niin, että huomioi pienpelit
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameNotificationTextBox": "",
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
+            }
 
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Referer": f"{add_game_url}",
-        }
+            logger.info("Submitting game data payload")
 
-        response = self.session.post(add_game_url, data=payload, headers=headers)
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Referer": f"{add_game_url}",
+            }
+
+            response = self.session.post(add_game_url, data=payload, headers=headers)
+
+
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            error_message = soup.find('textarea', {'id': 'ErrorTextBox'})
+            
+                        
+            if error_message:
+                logger.error("Error message from server: %s", error_message.text)
+                results.append({ 'status': 'error', 'game_id': game.get('Game ID'), 'error': error_message.text })
+            else:
+                logger.info("Game added successfully or no error message received.")
+                results.append({ 'status': 'ok', 'game_id': game.get('Game ID'), 'message': "Game added successfully!" })
+
+        return results
         
-        
-        soup = BeautifulSoup(response.text, 'html.parser')
-        error_message = soup.find('textarea', {'id': 'ErrorTextBox'})
-        if error_message:
-            logger.error("Error message from server: %s", error_message.text)
-            return error_message.text
-        else:
-            logger.info("Game added successfully or no error message received.")
-            return "Game added successfully!"
-    
     def homeTeamTextBox(self, response, team_name):
         try:
             soup = BeautifulSoup(response.text, 'html.parser')
