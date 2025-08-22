@@ -823,9 +823,12 @@ const app = Vue.createApp({
         .then(s => {
             this.hasJopox = !!(s && s.active);
             if (!this.hasJopox) {
-              this.showToast(`
-                Jopox ei ole aktivoitu.
-                Aktivoi Jopox <a href="/dashboard" style="color: lightblue; font-weight: bold;">täällä</a>.`, 'warning', 7000);
+              this.showToast(
+                'Jopox ei ole aktivoitu. ' + 
+                '<br><a href="/dashboard" style="color: lightblue; font-weight: bold;">Aktivoi Jopox täällä</a>.', 
+                'warning', 
+                7000
+              );
             }
         })
         
@@ -927,7 +930,7 @@ template:
 
           <!-- Sisältö: otsikko + viesti -->
           <div class="igm-toast__content">
-            <div class="igm-toast__message">{{ toast.message }}</div>
+            <div class="igm-toast__message" v-html="toast.message"></div>
           </div>
 
           <!-- Sulje oikeaan yläkulmaan -->
