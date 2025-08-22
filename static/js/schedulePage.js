@@ -37,6 +37,7 @@ const app = Vue.createApp({
                 message: ''
               },
             toastTimer: null,
+            isBulkCreating: false,
             icons: {
                 check: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
                 warn:  `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 9v4m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -168,7 +169,10 @@ const app = Vue.createApp({
         },
         
         async bulkCreateJopox() {
+            if (this.isBulkCreating) return;
+            this.isBulkCreating = true;
             try {
+                this.isLoading = true;
                 // Eligible: managed (not followed-only), not in past, red status
                 const eligible = this.filteredGames.filter(g => {
                     const managed = this.managedTeams.some(t => t.team_id === g['Team ID']);
@@ -214,6 +218,7 @@ const app = Vue.createApp({
                 console.error('Bulk create error', e);
                 this.showToast('Bulk-lisäys epäonnistui.', 'error', 4000);
             } finally {
+                this.isBulkCreating = false;
                 this.fetchGamesAndCompare();
             }
         },
@@ -792,6 +797,21 @@ const app = Vue.createApp({
               'is-error':   this.toastVariant.isError,
               'is-info':    this.toastVariant.isInfo,
             };
+          },
+
+          bulkEligibleCount() {
+            if (!Array.isArray(this.filteredGames) || this.filteredGames.length === 0) return 0;
+            const eligible = this.filteredGames.filter(g => {
+              const managed = this.managedTeams.some(t => t.team_id === g['Team ID']);
+              const notPast = !this.isPastDay(g.SortableDate);
+              const isRed = (g.match_status === 'red');
+              return managed && notPast && isRed;
+            });
+            return eligible.length;
+          },
+
+          disableBulkButton() {
+            return !this.hasJopox || this.isBulkCreating || this.bulkEligibleCount === 0;
           }
     },
     
@@ -871,8 +891,8 @@ template:
         <button class toggle-played-button @click="togglePlayedGames">
             {{ showPlayedGames ? "Piilota pelatut" : "Näytä pelatut" }}
         </button>
-        <button class="bulk-create-button" :disabled="!hasJopox" @click="bulkCreateJopox">
-            Lisää kaikki ottelut
+        <button class="bulk-create-button" :disabled="disableBulkButton" @click="bulkCreateJopox">
+            {{ isBulkCreating ? 'Lisätään…' : 'Lisää kaikki Jopoxiin' }}
         </button>
     </div>
 </div>
