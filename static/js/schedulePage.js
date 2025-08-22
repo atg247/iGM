@@ -167,6 +167,57 @@ const app = Vue.createApp({
             this.filterGames(); // Reapply filtering
         },
         
+        async bulkCreateJopox() {
+            try {
+                // Eligible: managed (not followed-only), not in past, red status
+                const eligible = this.filteredGames.filter(g => {
+                    const managed = this.managedTeams.some(t => t.team_id === g['Team ID']);
+                    const notPast = !this.isPastDay(g.SortableDate);
+                    const isRed = (g.match_status === 'red');
+                    return managed && notPast && isRed;
+                });
+
+                if (eligible.length === 0) {
+                    this.showToast('Ei lisättäviä otteluita.', 'info', 2500);
+                    return;
+                }
+
+                const payload = {
+                    items: eligible.map(game => ({
+                        game
+                    }))
+                };
+                console.log('Bulk create payload:', payload);
+
+                const resp = await fetch('/api/create_jopox', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const res = await resp.json().catch(() => ({}));
+                console.log('Bulk create response:', res);
+
+                const itemsArr = Array.isArray(res?.items) ? res.items : [];
+                const okCount = itemsArr.filter(i => i.status === 'ok').length;
+                const failCount = itemsArr.length > 0 ? (itemsArr.length - okCount) : 0;
+
+                if (failCount === 0 && okCount > 0) {
+                    this.showToast(`Lisätty Jopoxiin ${okCount} ottelua.`, 'success', 4000);
+                } else if (failCount > 0) {
+                    this.showToast('Osa lisäyksistä vaati tarkennusta tai epäonnistui.', 'warning', 7000);
+                    console.log('create_jopox response (bulk):', res);
+                } else {
+                    this.showToast('Palvelin ei palauttanut odotettua vastausta.', 'error', 4000);
+                }
+            } catch (e) {
+                console.error('Bulk create error', e);
+                this.showToast('Bulk-lisäys epäonnistui.', 'error', 4000);
+            } finally {
+                this.fetchGamesAndCompare();
+            }
+        },
+        
         filterGames() {
             if (!this.allGames || this.allGames.length === 0) {
                 this.filteredGames = [];
@@ -619,43 +670,48 @@ const app = Vue.createApp({
         },
 
         createJopox(game) {
-            
-            this.selectedGame = game; // Tallenna valittu peli
-            console.log('Valittu peli:', game);
-            const level = game['Level Name'];
-
-            console.log('Tarkastetaan level:', level);
-            fetch(`/api/check_level?level=${level}`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Level data:', data);
-        
-                // Päivitetään payload vasta tässä vaiheessa, kun level data on saatavilla
-                const payload = { 
-                    level: data,       // Tämä on nyt level_id, esim. "1234"
-                    game: game
+            try {
+                this.selectedGame = game;
+                const payload = {
+                    items: [
+                        {
+                            game
+                        }
+                    ]
                 };
-        
-                console.log("Lähetetään uusi Jopox-tapahtuma:", payload);
-        
-                return fetch('/api/create_jopox', {
+
+                fetch('/api/create_jopox', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
+                })
+                .then(r => r.json())
+                .then(res => {
+                    const itemsArr = Array.isArray(res?.items) ? res.items : [];
+                    const okCount = itemsArr.filter(i => i.status === 'ok').length;
+                    const failCount = itemsArr.length > 0 ? (itemsArr.length - okCount) : 0;
+
+                    if (failCount === 0 && okCount > 0) {
+                        this.showToast('Ottelu lisätty Jopoxiin.', 'success', 3000);
+                    } else if (failCount > 0) {
+                        this.showToast('Ottelun luonti vaati tarkennusta tai epäonnistui.', 'warning', 7000);
+                        console.log('create_jopox response (single):', res);
+                    } else {
+                        this.showToast('Palvelin ei palauttanut odotettua vastausta.', 'error', 4000);
+                    }
+
+                    return this.fetchGamesAndCompare();
+                })
+                .catch(err => {
+                    console.error('Jopox-lisäys epäonnistui:', err);
+                    this.showToast('Jopox-lisäys epäonnistui.', 'error', 4000);
+                    this.fetchGamesAndCompare();
                 });
-            })
-            .then(response => response.json())
-            .then(data => {
-                this.showToast('Ottelu lisätty Jopoxiin.', 'success');
-                //game.match_status = "green";  // Päivitä pelin status
-                return this.fetchGamesAndCompare(); // hae tulospalvelu + vertailu uudestaan
-            })
-            .catch(error => {
-                this.showToast('Jopox-päivitys epäonnistui.', 'error');
-            });
+            } catch (e) {
+                console.error('createJopox error:', e);
+                this.showToast('Jopox-lisäys epäonnistui.', 'error', 4000);
+                this.fetchGamesAndCompare();
+            }
         },
 
         // Sulje Päivitä Jopox -modal
@@ -814,6 +870,9 @@ template:
     <div>
         <button class toggle-played-button @click="togglePlayedGames">
             {{ showPlayedGames ? "Piilota pelatut" : "Näytä pelatut" }}
+        </button>
+        <button class="bulk-create-button" :disabled="!hasJopox" @click="bulkCreateJopox">
+            Lisää kaikki ottelut
         </button>
     </div>
 </div>
