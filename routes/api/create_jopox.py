@@ -46,12 +46,10 @@ def create_jopox():
 
     items = scraper.define_league(items)
 
-    logger.debug('Example of items after define_league: %s', items)
 
 
     for item in items:
         game = item.get("game")
-        logger.debug('game: %s', game)
         if not game:
             results.append({ 'status': 'error', 'error': 'missing_game' })
             continue
@@ -79,9 +77,7 @@ def create_jopox():
         })
     
     try:
-        logger.debug('example of games to add: %s', games_to_add)
         results = scraper.add_game(games_to_add)
-        logger.debug('results: %s', results)
 
     except Exception as e:
         logger.exception('Error while creating game')

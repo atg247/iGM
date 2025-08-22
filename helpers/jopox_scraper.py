@@ -588,13 +588,8 @@ class JopoxScraper:
         #muodosta add_game_url yhdistämällä self.base_url ja Games/Game.aspx
         add_game_url = urljoin(self.base_url, "Games/Game.aspx")
 
-        logger.debug(f'games_to_add: {games_to_add}')
-
         results = []
 
-#17:27:51 - create_jopox  - create_jopox  - DEBUG - example of games to add: [{'Away Goals': '', 'Away Team': 'S-Kiekko Sininen', 'Date': '03.12.2025', 'Game ID': '2020202022', 'Home Goals': '', 'Home Team': 'Simulated home team 2', 'Level Name': 'TESTISARJA', 'Location': 'Simulated location', 'Small Area Game': '0', 'SortableDate': 'Thu, 03 Dec 2025 00:00:00 GMT', 'Stat Group Name': 'TESTISARJA', 'Team ID': '1368626575', 'Team Name': 'S-Kiekko Sininen', 'Time': '12:00', 'Type': 'manage', 'match_status': 'red', 'reason': 'En löytänyt ottelua Jopoxista.', 'best_match': None, 'uid': None, 'warning': None, 'away_checkbox': 'on', 'away_team': 'Simulated home team 2', 'game_data': {'LeagueDropdownList': '', 'EventDropDownList': '', 'HomeTeamTextBox': 'S-Kiekko Sininen', 'GuestTeamTextBox': 'Simulated home team 2', 'AwayCheckbox': 'on', 'GameLocationTextBox': 'Simulated location', 'GameDateTextBox': '03.12.2025', 'GameStartTimeTextBox': '12:00', 'GameDurationTextBox': '120', 'GameDeadlineTextBox': '', 'GameMaxParticipatesTextBox': '', 'FeedGameDropdown': '0', 'GameNotificationTextBox': '', 'SaveGameButton': 'Tallenna'}}]
-
-        logger.debug(f'games_to_add: {games_to_add}')
         for item in games_to_add:
             
             if isinstance(item, dict) and "game" in item:
@@ -604,9 +599,6 @@ class JopoxScraper:
                 game = item
                 game_data = item.get("game_data", {})
                 
-            logger.debug(f'game_data: {game_data}')
-            logger.debug(f'game: {game}')
-
             try:
                 response = self.session.get(add_game_url)
             except requests.exceptions.RequestException as e:
@@ -621,7 +613,6 @@ class JopoxScraper:
             event_validation_data = self.get_event_validation(response)
             season = self.get_season_id(response)
             subsite = self.get_subsite_id(response)
-
 
             team_name = game.get('Team Name')            
             HomeTeamTextBox = self.homeTeamTextBox(response, team_name)

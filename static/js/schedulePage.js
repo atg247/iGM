@@ -823,7 +823,9 @@ const app = Vue.createApp({
         .then(s => {
             this.hasJopox = !!(s && s.active);
             if (!this.hasJopox) {
-              this.showToast('Jopox ei ole aktivoitu tälle käyttäjälle. Aktivoi Jopox <a href="/dashboard" style="color: lightblue; font-weight: bold;">täällä</a>.', 'warning', 7000);
+              this.showToast(`
+                Jopox ei ole aktivoitu.
+                Aktivoi Jopox <a href="/dashboard" style="color: lightblue; font-weight: bold;">täällä</a>.`, 'warning', 7000);
             }
         })
         
