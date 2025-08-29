@@ -21,6 +21,8 @@ migrations/alembic.ini
 migrations/script.py.mako
 *.pyc
 *.pyo
+hockey_data_dev.sql
+prod_schema.sql
 
 # Migration scripts should be kept, ignore other files if needed
 !migrations/versions/
