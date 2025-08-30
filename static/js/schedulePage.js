@@ -676,6 +676,7 @@ const app = Vue.createApp({
 
         createJopox(game) {
             try {
+                this.isLoading = true;
                 this.selectedGame = game;
                 const payload = {
                     items: [

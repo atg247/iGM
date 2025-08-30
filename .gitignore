@@ -23,6 +23,8 @@ migrations/script.py.mako
 *.pyo
 hockey_data_dev.sql
 prod_schema.sql
+latest.dump
+tietokantamuutokset*
 
 # Migration scripts should be kept, ignore other files if needed
 !migrations/versions/
