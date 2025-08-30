@@ -96,7 +96,7 @@ class JopoxScraper:
 
     def login(self):
         
-        logger.debug("login() started...")
+        logger.info("login() started...")
         self.clear_session()
         #clear all ccokies from the session
         self.session.cookies.clear()
@@ -187,38 +187,38 @@ class JopoxScraper:
 
         
     def is_session_valid(self):
-        logger.debug("is_session_valid() started...")
+        logger.debug("is_session_valid_start")
         
         
         if "jopox_last_login" not in session:
-            logger.warning("Session does not contain jopox_last_login!")
+            logger.warning("is_session_valid result=false reason=missing_last_login")
             return False
         
         if "base_url" not in session:
-            logger.warning("Session does not contain base_url!")
+            logger.warning("is_session_valid result=false reason=missing_base_url")
             return False
 
 
         last_login_time = datetime.fromisoformat(session["jopox_last_login"])
         session_duration = datetime.now() - last_login_time
-        logger.debug(f"Session duration: {session_duration}")
-
-        return session_duration < timedelta(hours=1)  # Assume session is valid for 1 hour
+        ok = session_duration < timedelta(hours=1)
+        logger.debug("is_session_valid result=%s age=%ss", ok, int(session_duration.total_seconds()))
+        return ok
 
     def ensure_logged_in(self):
         if not self.is_session_valid():
-            logger.info("Session is not valid, logging in again...")
+            logger.info("login_required reason=invalid_session")
             return self.login()
 
-        logger.info("Ensure_logged_in: Session is still valid!")
+        logger.debug("ensure_logged_in_ok")
         return True
     
     def access_admin(self):
-        logger.info("Accessing admin...")
+        logger.info("admin_access_start")
         if not self.is_session_valid():
-            logger.warning("Session is not valid, logging in again...")
+            logger.warning("admin_access_relogin reason=invalid_session")
             if not self.login():
-                logger.error("login() failed!")
+                logger.error("admin_access_failed reason=login_failed")
                 return False
 
         admin_page_url = urljoin(self.base_url, "/FrontPage/Default.aspx")
@@ -226,11 +226,11 @@ class JopoxScraper:
         response = self.session.get(admin_page_url)
 
         if "https://hallinta3.jopox.fi/Admin/Hockeypox2020/Login.aspx" == response.url:
-            logger.error("Admin acceess failed!")
+            logger.error("admin_access_failed reason=redirect_to_login")
             return False
 
         else:
-            logger.info("Admin access successful!")
+            logger.info("admin_access_ok")
             return True
 
     def get_jopox_base_url(self, soup):
@@ -509,9 +509,6 @@ class JopoxScraper:
                 "User-Agent": "Mozilla/5.0",
                 "Referer": self.admin_page_url,
             })
-            logger.debug(f"add_game_url: {add_game_url}")
-            logger.debug(f"Fetching with headers: {headers}")
-            logger.debug("Fetching game form page response status code: %d", response.status_code)
             #logger.debug("Fetching game form page response text: %s", response.text)
 
             if response.status_code != 200:

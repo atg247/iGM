@@ -124,7 +124,6 @@ def compare_games(jopox_games, tulospalvelu_games):
             else:
                 reason += f"Ottelun oikea alkamisaika on klo: {time}, mutta Jopoxissa se on klo {j_time}. "
                 color_score_temp += 1
-            logger.debug('Score after time: %s', score)
 
             # Location Matching
             location_match_score = fuzz.partial_ratio(location, j_location)
@@ -149,7 +148,6 @@ def compare_games(jopox_games, tulospalvelu_games):
                 reason += f"Ottelu pelataan paikassa: {location}, mutta Jopoxiin on merkattu: {j_location}. "
                 color_score_temp += 1
 
-            logger.debug('Score after location: %s', score)
 
             home_team_match_score = fuzz.ratio(j_team_home, home_team)
             if home_team_match_score > 90:
@@ -169,7 +167,6 @@ def compare_games(jopox_games, tulospalvelu_games):
             team_score = home_team_match_score + away_team_match_score 
             if team_score >= 180:
                 score += 10
-            logger.debug('Score after teams: %s', score)
 
             if 'Lisätiedot' in j_game and j_game['Lisätiedot']:
 
@@ -196,7 +193,6 @@ def compare_games(jopox_games, tulospalvelu_games):
                 best_reason = reason
                 color_score = color_score_temp
 
-                logger.debug('Best match updated: %s', best_match)
             
                 if best_match is None or best_score < 105 :
                     warning_reason = (
