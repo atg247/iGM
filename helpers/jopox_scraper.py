@@ -516,27 +516,20 @@ class JopoxScraper:
                 return
 
             leagues = self.get_league_id(response)
-            logger.debug(f"Leagues received from get_league_id: {leagues}")
 
             for item in items:
                 game = item.get("game")
                 level = game.get("Level Name")
-                logger.debug(f"Game: {game}")
-                logger.debug(f"Level: {level}")
 
             #compare level to league_options and return the league_id with best match. Match is based on the league_options text that has most in common with level.
                 best_match = 0
                 best_league_id = ''
                 for league in leagues.get("league_options", []):
                     match = len(os.path.commonprefix([league.get('text'), level]))
-                    logger.debug(f"match: {match}")
                     if match > best_match:
                         best_match = match
                         best_league_id = league.get('value')
-                        logger.debug(f"Match: {match}")
-                
-                logger.debug(f"Best match: {best_match}")
-                
+                               
 
             #if no good enough match is found, start function to create new league
                 if best_match < 5:
@@ -568,7 +561,6 @@ class JopoxScraper:
 
         try:
             response_data = response.json()
-            logger.info("Create league response JSON: %s", response_data)
             if response_data.get("d") == True:
                 logger.info("League created successfully!")
 
