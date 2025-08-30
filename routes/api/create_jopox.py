@@ -90,10 +90,10 @@ def define_away_game(items):
     for item in items:
         game = item.get("game")
         
-        t_home_team = game.get("Home Team", "") #Simulated home team 1
-        t_away_team = game.get("Away Team", "") #S-Kiekko Sininen
-        j_home_team = game.get("Team Name", "") #S-Kiekko Sininen
-        
+        t_home_team = game.get("Home Team", "")
+        t_away_team = game.get("Away Team", "")
+        j_home_team = game.get("Team Name", "")
+
         home_team_score = fuzz.ratio(t_home_team, j_home_team)
         away_team_score = fuzz.ratio(t_away_team, j_home_team)
     

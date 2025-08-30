@@ -145,27 +145,26 @@ def get_all_schedules():
         if added_games:
             app.logger.debug(f"Added games: {added_games}")
         
-        for i in range(4):
-            #Create one simulated game and include it in the DataFrame
-            simulated_game = {
-                
-                "Game ID": f"202020202{i}",
-                "SortableDate": f"Thu, 0{i+1} Dec 2025 00:00:00 GMT",
-                "Date": f"0{i+1}.12.2025",
-                "Team ID": "1368626575",
-                "Team Name": "S-Kiekko Sininen",
-                "Time": "12:00",
-                "Home Team": f"Simulated home team {i}",
-                "Away Team": "S-Kiekko Sininen",
-                "Home Goals": "",
-                "Away Goals": "",
-                "Location": "Simulated location",
-                "Level Name": "TESTISARJA",
-                "Stat Group Name":"TESTISARJA",
-                "Small Area Game": "0",
-                "Type": "manage"
-            }
-            managed_games.append(simulated_game)
+        #for i in range(4):
+        #Create one simulated game and include it in the DataFrame
+        #    simulated_game = {
+        #         "Game ID": f"202020202{i}",
+        #        "SortableDate": f"Thu, 0{i+1} Dec 2025 00:00:00 GMT",
+        #        "Date": f"0{i+1}.12.2025",
+        #        "Team ID": "1368626575",
+        #        "Team Name": "S-Kiekko Sininen",
+        #        "Time": "12:00",
+        #        "Home Team": f"Simulated home team {i}",
+        #        "Away Team": "S-Kiekko Sininen",
+        #        "Home Goals": "",
+        #        "Away Goals": "",
+        #        "Location": "Simulated location",
+        #        "Level Name": "TESTISARJA",
+        #        "Stat Group Name":"TESTISARJA",
+        #        "Small Area Game": "0",
+        #        "Type": "manage"
+        #    }
+        #    managed_games.append(simulated_game)
 
 
 
