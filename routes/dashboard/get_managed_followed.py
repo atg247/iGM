@@ -5,6 +5,7 @@ from models.team import Team
 from models.userteam import UserTeam
 
 from . import dashboard_bp
+from logging_config import logger
 
 @dashboard_bp.route('/dashboard/get_ManagedFollowed', methods=['GET'])
 @login_required
@@ -28,7 +29,7 @@ def get_ManagedFollowed():
 
         jopox_managed_team = current_user.jopox_team_name
 
-        print("managed_teams:", managed_teams, "followed_teams:", followed_teams, "jopox_managed_team:", jopox_managed_team)
+        logger.debug("managed_teams:", managed_teams, "followed_teams:", followed_teams, "jopox_managed_team:", jopox_managed_team)
 
         return jsonify({
             "managed_teams": managed_teams,
@@ -37,5 +38,5 @@ def get_ManagedFollowed():
         }), 200
 
     except Exception as e:
-        print("Error fetching teams:", e)
+        logger.error("Error fetching teams: %s", e)
         return jsonify({"message": f"An error occurred while fetching teams: {str(e)}"}), 500

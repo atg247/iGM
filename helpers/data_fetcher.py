@@ -36,7 +36,6 @@ def hae_kalenteri(calendar_url):
         response.raise_for_status()  # Raise an error for bad responses
         ics_content = response.text
     except requests.exceptions.RequestException as e:
-        print(f"Failed to fetch ICS file: {e}")
         return []
 
     # Step 3: Parse the ICS file
@@ -64,5 +63,4 @@ def hae_kalenteri(calendar_url):
     if descriptions:
         return descriptions
     else:
-        print("No events found in the ICS file.")
         return []

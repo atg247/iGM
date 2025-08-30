@@ -7,13 +7,13 @@ from models.team import Team
 from models.userteam import UserTeam
 
 from . import dashboard_bp
+from logging_config import logger
 
 @dashboard_bp.route('/dashboard/update_teams', methods=['POST'])
 @login_required
 def update_teams():
     try:
         data = request.get_json()
-        print('This is data:', data)
         action = data.get('action')  # Either "manage" or "follow"
         selected_teams = data.get('teams', [])
 
@@ -85,5 +85,5 @@ def update_teams():
 
     except Exception as e:
         db.session.rollback()
-        print("Error during update:", e)
+        logger.error("Error during update: %s", e)
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500

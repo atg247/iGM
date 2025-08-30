@@ -132,7 +132,6 @@ def get_all_schedules():
             
             except Exception as e:
                 app.logger.error(f"Error processing game {game['Game ID']}: {str(e)}")
-        print("Example of managed games: ", managed_games[0])
 
         try:
             db.session.commit()

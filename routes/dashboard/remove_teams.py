@@ -5,6 +5,7 @@ from extensions import db
 from models.userteam import UserTeam
 
 from . import dashboard_bp
+from logging_config import logger
 
 @dashboard_bp.route('/dashboard/remove_teams', methods=['POST'])
 @login_required
@@ -48,5 +49,5 @@ def remove_teams():
         
     except Exception as e:
         db.session.rollback()
-        print("Error during team removal:", e)
+        logger.error("Error during team removal: %s", e)
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500

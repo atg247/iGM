@@ -6,10 +6,12 @@ from helpers.game_fetcher import GameFetcher
 
 from routes.api import api_bp
 
+from logging_config import logger
+
 
 @api_bp.route('/gamefetcher/fetch_games', methods=['POST'])
 def fetch_games():
-    print('game fetcher started')
+    logger.info('game fetcher started')
     dwl = 0
     season = request.form['season']
     stat_group_id = request.form['statgroup']

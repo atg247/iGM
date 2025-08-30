@@ -16,24 +16,19 @@ def save_jopox_credentials():
     login_url = data['jopoxLoginUrl']
     username = data['username']
     password = data['password']
-    print(f"Received Jopox credentials: {username}, {password}, {login_url}")
     
     # Salataan salasana
     encrypted_password = cipher_suite.encrypt(password.encode('utf-8'))
-    print(f"Encrypted password: {encrypted_password}")
     # Tallennetaan käyttäjän tiedot tietokantaan
     user = db.session.get(User, current_user.id)  # Oletetaan, että käyttäjän tiedot haetaan sessiosta
     user.jopox_login_url = login_url
     user.jopox_username = username
     user.jopox_password = encrypted_password
 
-    print(f"password saved: {user.jopox_password}")
-    print(f"username saved: {user.jopox_username}")
-    print(f"login_url saved: {user.jopox_login_url}")
     #kirjaudutaan jopoxiin ja haetaan joukkuetiedot
     scraper = JopoxScraper(user.id, username, password)
     jopox_credentials = scraper.login_for_credentials()
-    logger.info(f"jopox credentials received: {jopox_credentials}")
+    logger.info("jopox credentials received")
 
     # Tallennetaan joukkueen tiedot tietokantaan
     user.jopox_team_name = jopox_credentials['jopox_team_name']
@@ -42,5 +37,4 @@ def save_jopox_credentials():
     
     db.session.commit()
 
-    print(f"Jopox credentials saved successfully for user {user.username}.")
     return jsonify({'message': 'Jopox credentials saved successfully.'}), 200
