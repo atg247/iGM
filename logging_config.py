@@ -44,4 +44,12 @@ if not logger.handlers:
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING if is_prod else logging.INFO)
 
-# Käyttö: from logging_config import logger
+# logging_config.py (lisäys loppuun)
+_root = logging.getLogger()
+if not _root.handlers:
+    # ohjataan kaikki juuritasolta vähintään ERRORit ulos (varmistus)
+    import sys
+    _h = logging.StreamHandler(sys.stderr)
+    _h.setLevel(logging.ERROR)
+    _h.setFormatter(logging.Formatter("%(asctime)s - ROOT - %(levelname)s - %(message)s"))
+    _root.addHandler(_h)
