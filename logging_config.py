@@ -1,38 +1,47 @@
 import logging
 import os
+import sys
 from logging.handlers import RotatingFileHandler
 
+# Yksi nimetty juuriloggari sovellukselle
 logger = logging.getLogger("igm")
 
 if not logger.handlers:
+    # Prod: INFO; Dev: DEBUG (ellei LOG_LEVEL override)
+    is_prod = bool(os.getenv("DYNO")) or os.getenv("APP_ENV", "dev").lower() == "production"
+    log_level = os.getenv("LOG_LEVEL", "INFO" if is_prod else "DEBUG").upper()
 
-    log_level = os.getenv(
-        "LOG_LEVEL",
-        "INFO" if os.getenv("APP_ENV", "dev").lower() == "production" or os.getenv("DYNO") else "DEBUG"
-    ).upper()
     logger.setLevel(log_level)
-    logger.propagate = False
+    logger.propagate = False  # ei duplikaatteja rootin kautta
 
+    # Yhtenäinen formaatti
     formatter = logging.Formatter(
-        "%(asctime)s - %(module)-13.13s - %(funcName)-13.13s - %(levelname)-5s - %(message)s",
-        "%Y-%m-%d %H:%M:%S"
+        "%(asctime)s - %(name)s - %(module)-13.13s - %(funcName)-13.13s - %(levelname)-5s - %(message)s",
+        "%Y-%m-%d %H:%M:%S",
     )
 
-    # Konsoli
-    console_handler = logging.StreamHandler()
+    # Konsoli (Heroku lukee stdout/stderr)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(log_level)   # varmistetaan, että handler ei nosta tasoa
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    # Devissä myös tiedostoon
-    if os.getenv("APP_ENV", "dev").lower() != "production" and not os.getenv("DYNO"):
+    # Devissä myös tiedostoon (Herokussa FS on efemeerinen, joten ei siellä)
+    if not is_prod:
         os.makedirs("logs", exist_ok=True)
         file_handler = RotatingFileHandler(
             "logs/igm.log", maxBytes=2_000_000, backupCount=3, encoding="utf-8"
         )
+        file_handler.setLevel(log_level)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
-is_prod = os.getenv("APP_ENV", "dev").lower() == "production" or os.getenv("DYNO")
+    # Hiljennä kolmansien osapuolten melu (prodissa tiukemmin)
+    logging.getLogger("werkzeug").setLevel(logging.WARNING if is_prod else logging.INFO)
+    logging.getLogger("gunicorn.error").setLevel(logging.INFO)     # virheloki, pidä näkyvissä
+    logging.getLogger("gunicorn.access").setLevel(logging.ERROR)   # access-logi pois näkyvistä
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING if is_prod else logging.INFO)
 
-logging.getLogger("werkzeug").setLevel("WARNING" if is_prod else "INFO")
-logging.getLogger("sqlalchemy.engine").setLevel("WARNING" if is_prod else "INFO")
+# Käyttö: from logging_config import logger
