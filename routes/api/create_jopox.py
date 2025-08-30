@@ -14,7 +14,7 @@ from . import api_bp
 @api_bp.route('/create_jopox', methods=['POST'])
 @login_required
 def create_jopox():
-    logging.debug('starting create_jopox (bulk-compatible)')
+    logger.debug('starting create_jopox (bulk-compatible)')
     data = request.get_json(silent=True) or {}
 
     # Normalize to bulk format: { items: [ { game }, ... ] }
@@ -104,7 +104,7 @@ def define_away_game(items):
             game["away_team"] = t_home_team
 
         else:
-            game["away_checkbox"] = "off"
+            game["away_checkbox"] = ""
             game["away_team"] = t_away_team
 
     return items
