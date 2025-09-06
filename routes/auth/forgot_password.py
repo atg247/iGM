@@ -16,5 +16,5 @@ def forgot_password():
             flash('An email has been sent with instructions to reset your password.', 'info')
         else:
             flash('No account with that email exists.', 'warning')
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     return render_template('forgot_password.html', form=form)
