@@ -42,7 +42,9 @@ def upgrade():
             """
             UPDATE tgames
             SET team_id_int = (
-                SELECT id FROM team WHERE team.team_id = tgames.team_id
+                SELECT id FROM team
+                WHERE team.team_id = tgames.team_id
+                  AND team.stat_group = tgames.stat_group_name
             )
             WHERE team_id_int IS NULL
             """
