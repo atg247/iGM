@@ -13,9 +13,15 @@ class Team(db.Model):
 
     # Relationship to users through UserTeam table
     users = db.relationship('User', secondary='user_team', back_populates='teams', overlaps="user_team_entries,team_user_entries")
-    # Relationship to games
-    games = db.relationship('TGamesdb', back_populates='team', lazy=True)
-
+    
+    games = db.relationship(
+        'TGamesdb',
+        back_populates='team',
+        lazy=True,
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+    
     __table_args__ = (
         db.UniqueConstraint('team_id', 'stat_group', name='uq_team_id_stat_group'),
     )

@@ -6,7 +6,15 @@ class TGamesdb(db.Model):
     __tablename__ = 'tgames'
     id = db.Column(db.Integer, primary_key=True)
     game_id = db.Column(db.String(100), nullable=False)
-    team_id = db.Column(db.String(100), db.ForeignKey('team.team_id'), nullable=False)  # Link to the team
+
+    # UUSI: viittaus Team.id:hen
+    team_id = db.Column(
+        db.Integer,
+        db.ForeignKey('team.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True
+    )
+
     date = db.Column(db.String(50), nullable=False)
     time = db.Column(db.String(50), nullable=False)
     home_team = db.Column(db.String(150), nullable=False)
@@ -21,6 +29,4 @@ class TGamesdb(db.Model):
     type = db.Column(db.String(50), nullable=False)
     sortable_date = db.Column(db.DateTime, nullable=False)
 
-
-
-    team = db.relationship('Team', back_populates='games')  # One team to many games
+    team = db.relationship('Team', back_populates='games')

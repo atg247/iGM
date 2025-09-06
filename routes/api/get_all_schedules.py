@@ -46,7 +46,7 @@ def get_all_schedules():
                 error = fetcher.fetch_games()
 
                 if error:
-                    app.logger.error(f"Error fetching games for {team['team_name']}: {error}")
+                    logger.error(f"Error fetching games for {team['team_name']}: {error}")
                     continue  # Skip this team if there's an error
 
                 # Format the games using display_games helper
@@ -61,12 +61,12 @@ def get_all_schedules():
                     managed_games.extend(games_df.to_dict(orient='records'))
 
             except Exception as e:
-                app.logger.error(f"Error fetching games for {team['team_name']}: {str(e)}")
+                logger.error(f"Error fetching games for {team['team_name']}: {str(e)}")
                 continue  # Skip to the next team if error occurs during fetch
 
         # Sort all games by sortable date and time
         managed_games = sorted(managed_games, key=lambda game: (game['SortableDate'], game['Time']))
-        app.logger.debug(f"Managed games fetched: {len(managed_games)} games")
+        logger.debug(f"Managed games fetched: {len(managed_games)} games")
         
         # Store the games in the database if not already there based on game id
         updated_games = []  # List of updated games
@@ -74,7 +74,7 @@ def get_all_schedules():
 
         for game in managed_games:
             try:
-                #app.logger.debug(f"Checking if game {game['Game ID']} already exists")
+                #logger.debug(f"Checking if game {game['Game ID']} already exists")
                 # Check if the game already exists
                 existing_game = TGamesdb.query.filter_by(game_id=game['Game ID']).first()
 
@@ -103,6 +103,14 @@ def get_all_schedules():
                             'game_id': game['Game ID'],
                             'changes': changes
                         })
+
+                    elif changes == {}:
+                        updated_games.append({
+                            'game_id': game['Game ID'],
+                            'changes': 'No changes'
+                        })
+
+
                 else:
                     # If the game doesn't exist, add it as a new game
                     new_game = TGamesdb(
@@ -131,19 +139,19 @@ def get_all_schedules():
                     db.session.add(new_game)
             
             except Exception as e:
-                app.logger.error(f"Error processing game {game['Game ID']}: {str(e)}")
+                logger.error(f"Error processing game {game['Game ID']}: {str(e)}")
 
         try:
             db.session.commit()
-            app.logger.debug("Commit successful.")
+            logger.debug("Commit successful.")
         except Exception as e:
-            app.logger.error(f"Error committing changes: {str(e)}")
+            logger.error(f"Error committing changes: {str(e)}")
             db.session.rollback()
 
-        if updated_games:
-            app.logger.debug(f"Updated games: {updated_games}")
+        if updated_games and updated_games[0]['changes'] != 'No changes':
+            logger.debug(f"Updated games: {updated_games}")
         if added_games:
-            app.logger.debug(f"Added games: {added_games}")
+            logger.debug(f"Added games: {added_games}")
         
         #for i in range(4):
         #Create one simulated game and include it in the DataFrame
@@ -176,7 +184,7 @@ def get_all_schedules():
 
     except Exception as e:
         db.session.rollback()  # Rollback in case of any error in the outer block
-        app.logger.error(f"Error fetching schedules: {str(e)}")
+        logger.error(f"Error fetching schedules: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
         # Palautetaan muutokset frontendille
