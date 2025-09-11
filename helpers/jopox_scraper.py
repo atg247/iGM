@@ -277,6 +277,13 @@ class JopoxScraper:
         response = requests.post(url, json=login_payload, headers=headers)
 
         logger.debug(f"Kirjautumispyynnön vastaus: {response.status_code}, {response.text}")
+        if response.status_code == 401:
+            logger.error(f"Kirjautumispyynnön vastaus: {response.status_code}, {response.text}")
+            return 401
+
+        elif response.status_code != 200:
+            logger.error(f"Kirjautumispyynnön vastaus: {response.status_code}, {response.text}")
+            return None
 
         token = response.json().get("tokens", {}).get("accessToken")
         

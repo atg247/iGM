@@ -28,6 +28,11 @@ def save_jopox_credentials():
     #kirjaudutaan jopoxiin ja haetaan joukkuetiedot
     scraper = JopoxScraper(user.id, username, password)
     jopox_credentials = scraper.login_for_credentials()
+
+    if jopox_credentials == 401:
+        logger.error("Failed to retrieve jopox credentials")
+        return jsonify({'error': 'Failed to retrieve jopox credentials. Invalid username or password.'}), 401
+
     logger.info("jopox credentials received")
 
     # Tallennetaan joukkueen tiedot tietokantaan
