@@ -23,8 +23,8 @@ def login():
             login_user(user, remember=form.remember.data)  # Pass "remember" flag to login_user()
             flash('You have successfully logged in!', 'success')
 
-            # Log the login event
-            user.login_count += 1
+            # Log the login event (guard against NULL in existing rows)
+            user.login_count = (user.login_count or 0) + 1
             user.last_login = datetime.now()
             db.session.commit()
 
