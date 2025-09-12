@@ -23,6 +23,10 @@ class User(db.Model, UserMixin):
     login_count = db.Column(db.Integer, default=0)
     # last login timestamp
     last_login = db.Column(db.DateTime, nullable=True)
+    # number of created jopox entries
+    created_jopox_entries = db.Column(db.Integer, default=0)
+    # number of edited jopox entries
+    edited_jopox_entries = db.Column(db.Integer, default=0)
 
 
     # Relationship to teams through UserTeam table

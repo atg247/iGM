@@ -4,6 +4,8 @@ from flask import jsonify, request
 from flask_login import login_required, current_user
 from fuzzywuzzy import fuzz
 
+from models import user
+from extensions import db
 from security import cipher_suite
 from helpers.jopox_scraper import JopoxScraper
 from logging_config import logger
@@ -75,9 +77,11 @@ def create_jopox():
             "game": game,
             "game_data": game_data
         })
-    
+
     try:
         results = scraper.add_game(games_to_add)
+        user.created_jopox_entries += sum(1 for r in results if r.get('status') == 'ok')
+        db.session.commit()
 
     except Exception as e:
         logger.exception('Error while creating game')

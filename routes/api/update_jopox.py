@@ -6,6 +6,7 @@ from flask_login import login_required, current_user
 from security import cipher_suite
 from helpers.jopox_scraper import JopoxScraper
 from logging_config import logger
+from extensions import db
 
 from . import api_bp
 
@@ -56,6 +57,14 @@ def update_jopox():
             logger.info(f"STARTING scraper to modify game: {uid}")
             logger.info(f"Scraping with data: {game_data}")
             scraper.modify_game(game_data, uid)
+            
+            if scraper.modify_game:
+                current_user.edited_jopox_entries = (current_user.edited_jopox_entries or 0) + 1
+                db.session.commit()
+
+
+            user = current_user
+            
             return jsonify({"message": "Pelin tiedot muokattu"}), 200
         
         except Exception as e:
