@@ -1,5 +1,6 @@
 from flask import session, render_template, redirect, url_for, flash
 from flask_login import login_user, current_user
+from datetime import datetime
 
 from extensions import bcrypt, db
 from models.user import User
@@ -21,6 +22,12 @@ def login():
         if user and bcrypt.check_password_hash(user.password_hash, form.password.data):
             login_user(user, remember=form.remember.data)  # Pass "remember" flag to login_user()
             flash('You have successfully logged in!', 'success')
+
+            # Log the login event
+            user.login_count += 1
+            user.last_login = datetime.now()
+            db.session.commit()
+
             #check if user has managed or followed teams and redirect to dashboard
             managed_teams = db.session.query(Team).join(UserTeam).filter(
                 UserTeam.user_id == user.id,
