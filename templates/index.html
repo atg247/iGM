@@ -11,6 +11,8 @@
         
     </div>
 
+
+    {% if not current_user.is_authenticated %}
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-7">
@@ -19,6 +21,6 @@
             </div>
         </div>
     </div>
-
+    {% endif %}
 
 {% endblock %}

@@ -19,6 +19,10 @@ class User(db.Model, UserMixin):
     jopox_calendar_url = db.Column(db.String(150), nullable=True)  # URL for Jopox calendar
     jopox_username = db.Column(db.String(50), nullable=True)
     jopox_password = db.Column(db.LargeBinary, nullable=True)  # Salattu salasana
+    # number of logins
+    login_count = db.Column(db.Integer, default=0)
+    # last login timestamp
+    last_login = db.Column(db.DateTime, nullable=True)
 
 
     # Relationship to teams through UserTeam table
