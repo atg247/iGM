@@ -399,6 +399,12 @@ class JopoxScraper:
 
         logger.debug(f'game_data: {game_data}')
 
+        game_groups = game_data.get("game_groups", [])
+        logger.debug(f'game_groups: {game_groups}')
+        game_group_payload = self.ggroup_payload(game_groups)
+        logger.debug(f'game_group_payload: {game_group_payload}')
+
+
         # Build payload
         payload = {
             "__EVENTTARGET": "",
@@ -419,6 +425,7 @@ class JopoxScraper:
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDateTextBox": game_data.get("GameDateTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameStartTimeTextBox": game_data.get("GameStartTimeTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDurationTextBox": game_data.get("GameDurationTextBox", "120"),
+            **game_group_payload,
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": f"<p>{game_data.get('GamePublicInfoTextBox')}</p>",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
@@ -445,6 +452,16 @@ class JopoxScraper:
         else:
             logger.info("Game added successfully or no error message received.")
             return "Game added successfully!"
+        
+    def ggroup_payload(self, game_groups):
+        logger.debug("ggroup_payload() started...")
+        payload = {}
+        for idx, (group_id, list_num) in enumerate(game_groups):
+            key = f"ctl00$MainContentPlaceHolder$GamesBasicForm$GameGroupsCheckboxList${list_num}" 
+            payload[key] = str(group_id)
+        logger.debug(f"Game groups payload: {payload}")
+            
+        return payload
 
     def get_season_id(self, response):
         try:
@@ -893,11 +910,20 @@ class JopoxScraper:
                     label_tag = soup.find('label', {'for': checkbox.get('id')})
                 group_label = label_tag.text.strip() if label_tag else ''
                 is_checked = checkbox.has_attr('checked')
+                checkbox_id = checkbox.get('id', '').strip()
+                list_num = ''
+                if checkbox_id:
+                    parts = checkbox_id.split('_')
+                    if len(parts) >= 2:
+                        list_num = f"{parts[-2]}_{parts[-1]}"
+                    else:
+                        list_num = checkbox_id
                 logger.debug(f"Found game group - ID: {group_id}, Label: {group_label}, Checked: {is_checked}")
                 game_group_list.append({
                     'id': group_id,
                     'label': group_label,
-                    'checked': is_checked
+                    'checked': is_checked,
+                    'list_num': list_num or checkbox_id
                 })
 
             logger.debug(f"game_groups: {game_group_list}")

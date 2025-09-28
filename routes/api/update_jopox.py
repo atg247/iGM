@@ -23,6 +23,8 @@ def update_jopox():
     away = form.get('AwayCheckbox', None)
     logger.debug('AWAYBOX: %s', away)
 
+    game_groups = define_game_groups(form)
+
     username = current_user.jopox_username
     #decrypt password from database
     encrypted_password = current_user.jopox_password
@@ -45,15 +47,21 @@ def update_jopox():
                 "GameDateTextBox": form.get("game_date", ""),
                 "GameStartTimeTextBox": form.get("game_start_time", ""),
                 "GameDurationTextBox": form.get("game_duration", "120"),
+                "GameGroupCheckBoxList": form.get("", []),
                 "GameDeadlineTextBox": "",
                 "GameMaxParticipatesTextBox": "",
                 "GamePublicInfoTextBox": f"""{form.get("game_public_info")}""",
                 "FeedGameDropdown": "0",
                 "GameInfoTextBox": f"""{form.get("game_public_info")}""",
                 "GameNotificationTextBox": "",
-                "SaveGameButton": "Tallenna"
+                "SaveGameButton": "Tallenna",
+                "game_groups": game_groups
                 }
             
+            game_data["GameGroups"] = form.get("selected_game_group_ids", []) or []
+
+            logger.debug(f"GameGroups: {game_data['GameGroups']}")
+
             logger.info(f"STARTING scraper to modify game: {uid}")
             logger.info(f"Scraping with data: {game_data}")
             scraper.modify_game(game_data, uid)
@@ -69,3 +77,23 @@ def update_jopox():
         
         except Exception as e:
             return jsonify({"error": str(e)}), 500
+        
+def define_game_groups(form):
+    game_groups_selected = form.get("selected_game_group_ids", [])
+
+    
+    #selected groups are in format ['1234', '5678'], then we check if id is in game_groups
+    # for each selected group, we find list_num from game_groups
+    game_group_modification = []
+    for selected in game_groups_selected:
+        for group in form.get("game_groups", []):
+            if group.get("id") == selected:
+                game_group_modification.append((selected, group.get("list_num")))
+                break
+    logger.debug(f"Defined game groups to be modified: {game_group_modification}")
+    return game_group_modification
+
+
+
+
+        

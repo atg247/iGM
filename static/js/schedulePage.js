@@ -541,9 +541,6 @@ const app = Vue.createApp({
                 this.form.selected_game_group_ids = gameGroups
                     .filter(group => group && group.checked)
                     .map(group => group.id);
-                this.form.selected_game_group_list_nums = gameGroups
-                    .filter(group => group && group.checked && group.list_num)
-                    .map(group => group.list_num);
 
                 console.log('Fetched Jopox data:', data);
                 this.showUpdateJopoxModal = true; // Näytä Päivitä Jopox -modal
@@ -1159,4 +1156,3 @@ template:
 
 // Mount the Vue app
 app.mount('#schedule-app');
-
