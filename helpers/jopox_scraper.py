@@ -876,7 +876,31 @@ class JopoxScraper:
             game_date = game_date_tag.get('value').strip() if game_date_tag else ''
             
 
-            logger.debug(f"game_date: {game_date}")
+            game_group_list = []
+            group_checkboxes = []
+
+            game_groups_container = soup.find(lambda tag: tag.name in ('table', 'div', 'span') and tag.has_attr('id') and 'GameGroupsCheckboxList' in tag['id'])
+            if game_groups_container:
+                logger.debug("Game groups container found in DOM")
+                group_checkboxes = game_groups_container.find_all('input', {'type': 'checkbox'})
+            else:
+                logger.debug("Game groups container NOT found in DOM")
+
+            for checkbox in group_checkboxes:
+                group_id = checkbox.get('value', '').strip()
+                label_tag = checkbox.find_next_sibling('label')
+                if not label_tag:
+                    label_tag = soup.find('label', {'for': checkbox.get('id')})
+                group_label = label_tag.text.strip() if label_tag else ''
+                is_checked = checkbox.has_attr('checked')
+                logger.debug(f"Found game group - ID: {group_id}, Label: {group_label}, Checked: {is_checked}")
+                game_group_list.append({
+                    'id': group_id,
+                    'label': group_label,
+                    'checked': is_checked
+                })
+
+            logger.debug(f"game_groups: {game_group_list}")
 
             game_start_time_tag = soup.find('input', {'id': 'GameStartTimeTextBox'})
             game_start_time = game_start_time_tag.get('value').strip() if game_start_time_tag else ''
@@ -902,6 +926,7 @@ class JopoxScraper:
                 "game_date": game_date,
                 "game_start_time": game_start_time,
                 "game_duration": game_duration,
+                "game_groups": game_group_list,
                 "game_public_info": game_public_info
             }
         
