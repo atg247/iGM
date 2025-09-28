@@ -27,7 +27,9 @@ const app = Vue.createApp({
                 game_date: '',
                 game_start_time: '',
                 game_duration: '',
-                game_public_info: ''
+                game_public_info: '',
+                game_groups: [],
+                selected_game_group_ids: []
             },
             updatedFields: {}, // Will hold the fields that have been updated
             hasJopox: false,
@@ -534,6 +536,14 @@ const app = Vue.createApp({
                 this.form.game_start_time = data.game_start_time || '';
                 this.form.game_duration = data.game_duration || '';
                 this.form.game_public_info = data.game_public_info || '';
+                const gameGroups = data.game_groups || data.game_group_list || [];
+                this.form.game_groups = gameGroups;
+                this.form.selected_game_group_ids = gameGroups
+                    .filter(group => group && group.checked)
+                    .map(group => group.id);
+                this.form.selected_game_group_list_nums = gameGroups
+                    .filter(group => group && group.checked && group.list_num)
+                    .map(group => group.list_num);
 
                 console.log('Fetched Jopox data:', data);
                 this.showUpdateJopoxModal = true; // Näytä Päivitä Jopox -modal
@@ -645,11 +655,17 @@ const app = Vue.createApp({
                 this.form.game_public_info = contentDiv.innerHTML.trim(); // Trim helpottaa tyhjien rivien käsittelyä
             }
 
+            const selectedGroupIds = new Set(Array.isArray(this.form.selected_game_group_ids) ? this.form.selected_game_group_ids : []);
+            const gameGroupsPayload = Array.isArray(this.form.game_groups)
+                ? this.form.game_groups.map(group => ({ ...group, checked: selectedGroupIds.has(group?.id) }))
+                : [];
+            this.form.game_groups = gameGroupsPayload;
+
             const formWithStringCheckbox = {
                 ...this.form,
-                AwayCheckbox: this.form.AwayCheckbox ? 'on' : ''
+                AwayCheckbox: this.form.AwayCheckbox ? 'on' : '',
+                game_groups: gameGroupsPayload
             };
-
             const payload = { 
                 game: this.selectedGame, // Tulospalvelun tiedot
                 best_match: this.selectedGame.best_match, // Jopoxin tiedot
@@ -1102,6 +1118,20 @@ template:
                 <input type="text" id="duration" v-model="form.game_duration" placeholder="Kesto (min)">
             </div>
 
+            <!-- Osallistujat -->
+            <div>
+                <label for="participants">Osallistujat:</label>
+                <div v-for="group in form.game_groups" :key="group.id">
+                    <input
+                        type="checkbox"
+                        :id="'gamegroup_' + group.id"
+                        v-model="form.selected_game_group_ids"
+                        :value="group.id"
+                    >
+                    <label :for="'gamegroup_' + group.id">{{ group.label }}</label>
+                </div>
+            </div>
+
             <!-- Ennakkoinfo -->
             <label for="public_info">Ennakkoinfo:</label>
             <div 
@@ -1129,3 +1159,4 @@ template:
 
 // Mount the Vue app
 app.mount('#schedule-app');
+
