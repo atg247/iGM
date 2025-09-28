@@ -80,8 +80,10 @@ def create_jopox():
 
     try:
         results = scraper.add_game(games_to_add)
-        user.created_jopox_entries += sum(1 for r in results if r.get('status') == 'ok')
-        db.session.commit()
+        created_count = sum(1 for r in results if r.get('status') == 'ok')
+        if created_count:
+            current_user.created_jopox_entries = (current_user.created_jopox_entries or 0) + created_count
+            db.session.commit()
 
     except Exception as e:
         logger.exception('Error while creating game')

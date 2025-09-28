@@ -425,7 +425,6 @@ class JopoxScraper:
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDateTextBox": game_data.get("GameDateTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameStartTimeTextBox": game_data.get("GameStartTimeTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDurationTextBox": game_data.get("GameDurationTextBox", "120"),
-            **game_group_payload,
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": f"<p>{game_data.get('GamePublicInfoTextBox')}</p>",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
@@ -433,6 +432,9 @@ class JopoxScraper:
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameNotificationTextBox": "",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
         }
+
+        if game_group_payload:
+            payload.update(game_group_payload)
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
