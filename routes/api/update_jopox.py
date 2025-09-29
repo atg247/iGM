@@ -55,7 +55,9 @@ def update_jopox():
                 "GameInfoTextBox": f"""{form.get("game_public_info")}""",
                 "GameNotificationTextBox": "",
                 "SaveGameButton": "Tallenna",
-                "game_groups": game_groups
+                "game_groups": game_groups,
+                "GameDeadLineTextBox": form.get("deadline_date", ""),
+                "GameDeadLineTimeTextBox": form.get("deadline_time", ""),
                 }
             
             game_data["GameGroups"] = form.get("selected_game_group_ids", []) or []

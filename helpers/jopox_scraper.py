@@ -10,6 +10,7 @@ from flask_login import current_user
 from flask import session
 from urllib.parse import urljoin
 
+
 from models.user import db, User
 from logging_config import logger
     
@@ -435,6 +436,13 @@ class JopoxScraper:
 
         if game_group_payload:
             payload.update(game_group_payload)
+
+        if game_data.get("GameDeadLineTextBox"):
+            payload["ctl00$MainContentPlaceHolder$GamesBasicForm$GameDeadlineTextBox"] = game_data.get("GameDeadLineTextBox", "")
+        if game_data.get("GameDeadLineTimeTextBox"):
+            payload["ctl00$MainContentPlaceHolder$GamesBasicForm$GameDeadlineTimeTextBox"] = game_data.get("GameDeadLineTimeTextBox", "")
+
+        
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -928,6 +936,15 @@ class JopoxScraper:
                     'list_num': list_num or checkbox_id
                 })
 
+            deadline_date_tag = soup.find('input', {'id': 'GameDeadlineTextBox'})
+            deadline_date = deadline_date_tag.get('value', '').strip() if deadline_date_tag else ''
+
+            deadline_time_tag = soup.find('input', {'id': 'GameDeadlineTimeTextBox'})
+            deadline_time = deadline_time_tag.get('value', '').strip() if deadline_time_tag else ''
+
+            logger.debug(f"deadline_date: {deadline_date}, deadline_time: {deadline_time}")
+
+
             logger.debug(f"game_groups: {game_group_list}")
 
             game_start_time_tag = soup.find('input', {'id': 'GameStartTimeTextBox'})
@@ -955,7 +972,9 @@ class JopoxScraper:
                 "game_start_time": game_start_time,
                 "game_duration": game_duration,
                 "game_groups": game_group_list,
-                "game_public_info": game_public_info
+                "game_public_info": game_public_info,
+                "GameDeadLineTextBox": deadline_date,
+                "GameDeadLineTimeTextBox": deadline_time,
             }
         
         except Exception as e:

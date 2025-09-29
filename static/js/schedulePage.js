@@ -29,7 +29,9 @@ const app = Vue.createApp({
                 game_duration: '',
                 game_public_info: '',
                 game_groups: [],
-                selected_game_group_ids: []
+                selected_game_group_ids: [],
+                deadline_date: '',
+                deadline_time: ''
             },
             updatedFields: {}, // Will hold the fields that have been updated
             hasJopox: false,
@@ -541,6 +543,8 @@ const app = Vue.createApp({
                 this.form.selected_game_group_ids = gameGroups
                     .filter(group => group && group.checked)
                     .map(group => group.id);
+                this.form.deadline_date = data.GameDeadLineTextBox || '';
+                this.form.deadline_time = data.GameDeadLineTimeTextBox || '';
 
                 console.log('Fetched Jopox data:', data);
                 this.showUpdateJopoxModal = true; // Näytä Päivitä Jopox -modal
@@ -565,75 +569,88 @@ const app = Vue.createApp({
         },
     
         compareUpdates(game, data) {
-            const tp = game;          // Tulospalvelu (uusi totuus)
-            const jx = data || {};    // Jopox (nykyiset arvot lomakkeelta/API:sta)
+            console.log('compareUpdates called with:', game, data);
+            const tp = game || {};
+            const jx = data || {};
             this.updatedFields = {};
-          
-            // Pieni normalisoija nimivertailuihin
-            const clean = s => (s ?? '')
-              .toString()
-              .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // poista aksentit
-              .replace(/\s+/g, ' ')
-              .trim()
-              .toLowerCase();
-          
-            const managedTeam = clean(tp['Team Name']);           // oma joukkue
-            const tpHome      = clean(tp['Home Team']);
-            const tpAway      = clean(tp['Away Team']);
-          
-            // Onko oma joukkue vieras TP:n mukaan?
-            const shouldAway = (tpAway === managedTeam);          // true = vieraspeli, false = kotipeli
-          
             const changes = [];
-          
-            // Apu: kirjaa muutos, päivitä form ja updatedFields
+
+            // helpers
+            const clean = s => (s ?? '').toString()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/\s+/g, ' ').trim().toLowerCase();
+
             const mark = (key, label, oldVal, newVal) => {
-              if ((oldVal ?? '') !== (newVal ?? '')) {
+                const oldV = oldVal ?? '';
+                const newV = newVal ?? '';
+                if (oldV !== newV) {
                 this.updatedFields[key] = true;
-                changes.push(`${label}: '${oldVal ?? '—'}' → '${newVal ?? '—'}'`);
-              }
-              this.form[key] = newVal;
+                changes.push(`${label}: '${oldV || '—'}' → '${newV || '—'}'`);
+                }
+                this.form[key] = newV;
             };
-          
-            // 1) Vierasottelu-ruksi (korjataan jos väärä)
+
+            const suggestAlias = (sideFullName, baseTeamName) => {
+                const fTok = clean(sideFullName).split(' ').filter(Boolean);
+                const bTok = clean(baseTeamName).split(' ').filter(Boolean);
+                let i = 0;
+                while (i < fTok.length && i < bTok.length && fTok[i] === bTok[i]) i++;
+                const origParts = (sideFullName ?? '').toString().trim().split(/\s+/);
+                const s = origParts.slice(i).join(' ').trim();
+                return s || (sideFullName ?? '').toString().trim();
+            };
+
+            // 1) Away/home
+            const managedTeam = clean(tp['Team Name']);
+            const tpAway = clean(tp['Away Team']);
+            const shouldAway = managedTeam && tpAway === managedTeam;
             const oldAway = !!jx.AwayCheckbox;
+            this.form.AwayCheckbox = shouldAway;
             if (oldAway !== shouldAway) {
-              this.updatedFields.AwayCheckbox = true;
-              this.form.AwayCheckbox = shouldAway;
-              changes.push(`Vierasottelu: ${oldAway ? '✓' : '—'} → ${shouldAway ? '✓' : '—'}`);
-            } else {
-              this.form.AwayCheckbox = oldAway;
+                this.updatedFields.AwayCheckbox = true;
+                changes.push(`Vierasottelu: ${oldAway ? '✓' : '—'} → ${shouldAway ? '✓' : '—'}`);
             }
-          
-            // 2) Aika / pvm / paikka TP:n mukaan
-            mark('game_start_time', 'Aloitusaika', jx.game_start_time, tp.Time);
-            mark('game_date',       'Pvm',         jx.game_date,       tp.Date);
-            mark('game_location',   'Paikka',      jx.game_location,   tp.Location);
-          
-            // 3) Vastustaja: jos vieraspeli → vastustaja on TP Home Team, muutoin TP Away Team
-            const opponentFromTP = shouldAway ? tp['Home Team'] : tp['Away Team'];
+            const isAway = this.form.AwayCheckbox;
+
+            // 2) Time / date / location
+            mark('game_start_time', 'Aloitusaika', jx.game_start_time, tp.Time ?? '');
+            mark('game_date',       'Pvm',         jx.game_date,       tp.Date ?? '');
+            mark('game_location',   'Paikka',      jx.game_location,   tp.Location ?? '');
+
+            // 3) Opponent
+            const opponentFromTP = isAway ? (tp['Home Team'] ?? '') : (tp['Away Team'] ?? '');
             mark('guest_team', 'Vastustaja', jx.guest_team, opponentFromTP);
-          
-            // 4) Oma lisänimi (HomeTeamTextbox) – pitää löytyä oman joukkueen nimestä oikealla puolella
-            const ownNameOnThisSide = shouldAway ? tp['Away Team'] : tp['Home Team'];
+
+            console.log('--- compareUpdates debug ---');
+            console.log('opponentFromTP:', opponentFromTP, 'jx.guest_team:', jx.guest_team);
+            console.log('cleaned:', clean(opponentFromTP), clean(jx.guest_team));
+            console.log('hometeam:', tp['Home Team'], 'awayteam:', tp['Away Team'], 'isAway:', isAway);
+
+            // 4) HomeTeamTextbox: alias pitää löytyä kokonaisena sanana, min 3 merkkiä
+            const sideName = isAway ? (tp['Away Team'] ?? '') : (tp['Home Team'] ?? '');
             const alias = (jx.HomeTeamTextbox ?? '').toString().trim();
-            if (alias && !clean(ownNameOnThisSide).includes(clean(alias))) {
-              this.updatedFields.HomeTeamTextbox = true;
-              // Emme korvaa arvoa automaattisesti, vain varoitamme:
-              changes.push(`Joukkueen lisänimi: '${alias}' ei löydy nimestä '${ownNameOnThisSide}'`);
+
+            const aliasNorm = clean(alias);
+            const sideWords = clean(sideName).split(' ').filter(Boolean);
+            const aliasOk = alias && aliasNorm.length >= 3 && sideWords.includes(aliasNorm);
+
+            if (alias && !aliasOk) {
+                this.updatedFields.HomeTeamTextbox = true;
+                changes.push(`Joukkueen lisänimi taitaa olla väärin`);
+                this.form.HomeTeamTextbox = alias; // käyttäjä korjaa itse
             } else {
-              this.form.HomeTeamTextbox = jx.HomeTeamTextbox || '';
+                this.form.HomeTeamTextbox = alias;
             }
-          
-            // 5) Näytä tiivis yhteenveto
+
+            // 5) Summary
             if (changes.length) {
-              // jos alias varoitus mukana → 'warning', muuten 'info'
-              const tone = this.updatedFields.HomeTeamTextbox ? 'warning' : 'info';
-              this.showToast('Ehdotetut muutokset:\n• ' + changes.join('\n• '), tone, 7000);
+                const tone = this.updatedFields.HomeTeamTextbox ? 'warning' : 'info';
+                this.showToast('Ehdotetut muutokset:\n• ' + changes.join('\n• '), tone, 7000);
             } else {
-              this.showToast('Tiedot ovat ajan tasalla.', 'info', 2500);
+                this.showToast('Tiedot ovat ajan tasalla.', 'info', 2500);
             }
-          },
+            },
+
           
 
           // Kun käyttäjä muokkaa sisältöä, päivitetään Vue data
@@ -661,9 +678,15 @@ const app = Vue.createApp({
             const formWithStringCheckbox = {
                 ...this.form,
                 AwayCheckbox: this.form.AwayCheckbox ? 'on' : '',
-                game_groups: gameGroupsPayload
+                game_groups: gameGroupsPayload,
+                
+                
             };
-            const payload = { 
+
+            
+
+
+            const payload = {
                 game: this.selectedGame, // Tulospalvelun tiedot
                 best_match: this.selectedGame.best_match, // Jopoxin tiedot
                 updatedFields: this.updatedFields, // Päivitetyt kentät
@@ -1113,6 +1136,16 @@ template:
             <div>
                 <label for="duration">Kesto:</label>
                 <input type="text" id="duration" v-model="form.game_duration" placeholder="Kesto (min)">
+            </div>
+
+            <!-- Ilmoittautumisdeadline -->
+            <div>
+                <label for="deadline_date">Ilmoittautumisdeadline Pvm:</label>
+                <input type="text" id="deadline_date" v-model="form.deadline_date" placeholder="Pvm">
+            </div>
+            <div>
+                <label for="deadline_time">Ilmoittautumisdeadline Klo:</label>
+                <input type="text" id="deadline_time" v-model="form.deadline_time" placeholder="Klo">
             </div>
 
             <!-- Osallistujat -->
