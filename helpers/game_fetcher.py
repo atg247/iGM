@@ -50,7 +50,10 @@ class GameFetcher:
                     'Team ID': self.team_id,
                     'Game ID': game.get('GameID', 'N/A'),
                     'Date': game.get('GameDate', 'N/A'),
-                    'Time': game.get('GameTime', 'N/A'),
+                    # Tulospalvelu returns "" when the start time isn't set yet, and
+                    # "HH:MM:SS" when it is; normalize both to a plain "HH:MM".
+                    # "07:00" is the established sentinel for "not scheduled yet".
+                    'Time': (game.get('GameTime') or '07:00')[:5],
                     'Home Team': game.get('HomeTeamAbbrv', 'N/A'),
                     'Away Team': game.get('AwayTeamAbbrv', 'N/A'),
                     'Home Goals': game.get('HomeGoals', 'N/A'),

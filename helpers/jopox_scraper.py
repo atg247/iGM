@@ -598,12 +598,29 @@ class JopoxScraper:
             if response_data.get("d") == True:
                 logger.info("League created successfully!")
 
-                return self.define_league(level)
+                # The create call doesn't return the new league's ID, so re-fetch
+                # the game form (which now lists it) and match it by name.
+                add_game_url = urljoin(self.base_url, "Games/Game.aspx")
+                form_response = self.session.get(add_game_url)
+                leagues = self.get_league_id(form_response)
+
+                best_match = 0
+                best_league_id = ''
+                for league in leagues.get("league_options", []):
+                    match = len(os.path.commonprefix([league.get('text'), level]))
+                    if match > best_match:
+                        best_match = match
+                        best_league_id = league.get('value')
+
+                if not best_league_id:
+                    logger.error("Could not find newly created league '%s' in league options", level)
+
+                return best_league_id
             else:
                 logger.error("Failed to create league, server responded: %s", response_data)
                 return None
         except Exception as e:
-            logger.exception("Error decoding create_league response JSON: %s", e)
+            logger.exception("Error creating league: %s", e)
             return None
         
     def add_game(self, games_to_add):
@@ -637,7 +654,9 @@ class JopoxScraper:
             season = self.get_season_id(response)
             subsite = self.get_subsite_id(response)
 
-            team_name = game.get('Team Name')            
+
+
+            team_name = game.get('Team Name')
             HomeTeamTextBox = self.homeTeamTextBox(response, team_name)
 
             # Build payload
@@ -692,6 +711,7 @@ class JopoxScraper:
             }
 
             logger.info("Submitting game data payload")
+            logger.debug("Game payload: %s", {k: v for k, v in payload.items() if not k.startswith('__')})
 
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -701,16 +721,37 @@ class JopoxScraper:
 
             response = self.session.post(add_game_url, data=payload, headers=headers)
 
+            logger.debug(
+                "Submit response - status: %s, final url: %s, redirected: %s",
+                response.status_code, response.url, response.url != add_game_url
+            )
 
-            
             soup = BeautifulSoup(response.text, 'html.parser')
             error_message = soup.find('textarea', {'id': 'ErrorTextBox'})
-            
-                        
+
+            # Fall back to other common ASP.NET error/validation indicators when
+            # ErrorTextBox is empty, since the server can reject a save without
+            # populating that specific control.
+            validation_summary = soup.find(id=lambda x: x and 'ValidationSummary' in x)
+            other_errors = soup.find_all(class_=re.compile(r'error|validator', re.IGNORECASE))
+
             if error_message:
                 logger.error("Error message from server: %s", error_message.text)
                 results.append({ 'status': 'error', 'game_id': game.get('Game ID'), 'error': error_message.text })
+            elif validation_summary and validation_summary.text.strip():
+                logger.error("Validation summary from server: %s", validation_summary.text.strip())
+                results.append({ 'status': 'error', 'game_id': game.get('Game ID'), 'error': validation_summary.text.strip() })
             else:
+                visible_other_errors = [e.text.strip() for e in other_errors if e.text.strip()]
+                if visible_other_errors:
+                    logger.warning("No ErrorTextBox, but found other error/validator text on page: %s", visible_other_errors)
+                if response.url == add_game_url:
+                    logger.warning(
+                        "Server did not redirect after submit (stayed on %s) - "
+                        "this can mean the save was rejected without a visible error message. "
+                        "Response snippet: %s",
+                        add_game_url, response.text[:1500]
+                    )
                 logger.info("Game added successfully or no error message received.")
                 results.append({ 'status': 'ok', 'game_id': game.get('Game ID'), 'message': "Game added successfully!" })
 

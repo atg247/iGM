@@ -49,13 +49,14 @@ def compare_games(jopox_games, tulospalvelu_games):
         if t_game_datetime < datetime.now() - timedelta(days=1):
             continue
 
-        time = t_game['Time']
+        # Defensive: Tulospalvelu's raw time is "HH:MM:SS"; strptime below expects "HH:MM".
+        time = (t_game['Time'] or '')[:5]
         location = t_game['Location'].lower()
         small_area_game = t_game['Small Area Game'] == '1'
         home_team = t_game['Home Team'].lower() 
         away_team = t_game['Away Team'].lower()
 
-        if time == "00:00":
+        if time in ("07:00", "00:00"):
             time = "Not scheduled"
 
         best_match = None
@@ -111,10 +112,6 @@ def compare_games(jopox_games, tulospalvelu_games):
                 reason += "Ottelun alkamisaika ei ole määritetty Tulospalvelussa. Jopox-aika vastaa oletusta (07:00). "
                 color_score_temp += 1
 
-            elif time == "07:00" and j_time == "07:00":
-                score += 30
-                reason += "Ottelun alkamisaika Tulospalvelussa on 07:00. Jopox-aika vastaa oletusta (07:00). "
-                color_score_temp += 1                
             elif t_game_time and t_game_time.time() == j_game_time.time():  # Exact match
                 score += 50
             elif t_game_time and (t_game_time - timedelta(hours=1)).time() == j_game_time.time():  # Arrival time
