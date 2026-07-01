@@ -36,8 +36,16 @@ $(document).ready(function () {
         }
     });
 
-    // Trigger change to pre-populate levels when the page loads
-    $('#season').trigger('change');
+    // Fetch available seasons, populate the dropdown, then trigger change to pre-populate levels
+    $.get('api/gamefetcher/get_seasons', function (data) {
+        let seasonOptions = '';
+        data.forEach(function (season) {
+            const selected = season.current ? ' selected' : '';
+            seasonOptions += `<option value="${season.SeasonNumber}"${selected}>${season.SeasonName}</option>`;
+        });
+        $('#season').html(seasonOptions);
+        $('#season').trigger('change');
+    });
 
     // Fetch stat groups based on level selection
     $('#levels').change(function () {

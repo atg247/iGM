@@ -1,9 +1,15 @@
 from flask import jsonify
 
-from helpers.data_fetcher import get_levels, get_stat_groups, get_teams
+from helpers.data_fetcher import get_seasons, get_levels, get_stat_groups, get_teams
 
 from routes.api import api_bp
 
+
+# Route to fetch the list of available seasons.
+@api_bp.route('/gamefetcher/get_seasons')
+def get_seasons_endpoint():
+    seasons = get_seasons()
+    return jsonify(seasons)
 
 # Route to fetch levels for a given season.
 @api_bp.route('/gamefetcher/get_levels/<season>')

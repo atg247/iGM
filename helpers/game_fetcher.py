@@ -13,19 +13,20 @@ class GameFetcher:
         self.games = []
 
     def fetch_games(self):
-        url = "https://tulospalvelu.leijonat.fi/helpers/getGames.php"
+        url = "https://tulospalvelu.leijonat.fi/helpers/getgames"
         payload = {
             'dwl': self.dwl,
             'season': self.season,
-            'stgid': self.stat_group_id,
+            'subSerieId': self.stat_group_id,
             'teamid': self.team_id,
             'districtid': self.distr_id,
             'gamedays': self.GameDates,
-            'dog': self.dog            
+            'dog': self.dog,
+            'levelid': -1
         }
 
         try:
-            response = requests.post(url, data=payload)
+            response = requests.get(url, params=payload)
             response.raise_for_status()
             self.games = response.json()  # Assuming the response is a list of games directly
 
@@ -56,7 +57,7 @@ class GameFetcher:
                     'Away Goals': game.get('AwayGoals', 'N/A'),
                     'Location': game.get('RinkName', 'N/A'),
                     'Level Name': game.get('LevelName', 'N/A'),
-                    'Stat Group Name': game.get('StatGroupName', 'N/A'),
+                    'Stat Group Name': game.get('SubSerieName', 'N/A'),
                     'Small Area Game': game.get('SmallAreaGame', 'N/A')
                 }
                 games_info.append(game_info)

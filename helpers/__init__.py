@@ -5,6 +5,7 @@ from .game_fetcher import GameFetcher
 from .game_comparison import compare_games
 from .game_comparison import parse_sortable_date
 from .data_fetcher import (
+    get_seasons,
     get_levels,
     get_stat_groups,
     get_teams,

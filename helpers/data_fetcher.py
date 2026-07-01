@@ -2,30 +2,39 @@ import requests
 from ics import Calendar
 import logging
 
+def get_seasons():
+    url = "https://tulospalvelu.leijonat.fi/helpers/getseasons"
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
+
 def get_levels(season):
-    url = "https://tulospalvelu.leijonat.fi/helpers/getLevels.php"
+    url = "https://tulospalvelu.leijonat.fi/helpers/getlevels"
     payload = {'season': season}
-    response = requests.post(url, data=payload)
+    response = requests.get(url, params=payload)
     response.raise_for_status()
     return response.json()
 
 def get_stat_groups(season, level_id, district_id=0):
-    url = "https://tulospalvelu.leijonat.fi/serie/helpers/getStatGroups.php"
+    url = "https://tulospalvelu.leijonat.fi/serie/helpers/getsubseries"
     payload = {
         'season': season,
         'levelid': level_id,
         'districtid': district_id
     }
-    response = requests.post(url, data=payload)
+    response = requests.get(url, params=payload)
     response.raise_for_status()
-    return response.json()
+    return [
+        {'StatGroupID': item['subSerieId'], 'StatGroupName': item['subSerieName']}
+        for item in response.json()
+    ]
 
 def get_teams(season, stat_group_id):
-    url = "https://tulospalvelu.leijonat.fi/serie/helpers/getStatGroup.php"
-    payload = {'season': season, 'stgid': stat_group_id}
-    response = requests.post(url, data=payload)
+    url = "https://tulospalvelu.leijonat.fi/serie/helpers/getsubserie"
+    payload = {'season': season, 'subSerieId': stat_group_id, 'teamid': ''}
+    response = requests.get(url, params=payload)
     response.raise_for_status()
-    return response.json()
+    return {'Teams': response.json().get('teams', [])}
 
 def hae_kalenteri(calendar_url):
     descriptions = []
