@@ -29,4 +29,7 @@ class TGamesdb(db.Model):
     type = db.Column(db.String(50), nullable=False)
     sortable_date = db.Column(db.DateTime, nullable=False)
 
+    # Pysyvä linkki Jopoxin tapahtuman uid:hen. NULL = ei linkitetty.
+    jopox_uid = db.Column(db.String(50), nullable=True, index=True)
+
     team = db.relationship('Team', back_populates='games')

@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from flask_login import current_user
 from flask import session
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse, parse_qs
 
 
 from models.user import db, User
@@ -630,6 +630,21 @@ class JopoxScraper:
 
         results = []
 
+        # Uid:t ennen luontia, jotta juuri luotu ottelu tunnistetaan diffillä eikä arvata
+        # kenttätäsmäytyksellä.
+        known_uids = set()
+        # Muuttumaton tilannekuva palautetaan kutsujalle: koska Jopox ei koskaan palauta käyttöön
+        # kerran poistettua uid:tä, kutsuja voi tämän avulla erottaa kovapoistetun jopox_uid:n yhä
+        # voimassa olevasta. None = alkuscrape epäonnistui, tilannekuvaan ei voi luottaa.
+        known_uids_before_batch = None
+        if games_to_add:
+            try:
+                known_uids = {g['uid'] for g in self.scrape_jopox_games()}
+                known_uids_before_batch = frozenset(known_uids)
+            except Exception as e:
+                logger.error("add_game(): initial scrape for known uids failed: %s", e)
+                known_uids = set()
+
         for item in games_to_add:
             
             if isinstance(item, dict) and "game" in item:
@@ -643,11 +658,11 @@ class JopoxScraper:
                 response = self.session.get(add_game_url)
             except requests.exceptions.RequestException as e:
                 logger.error(f"Error fetching add_game_url: {e}")
-                return
+                return results, known_uids_before_batch
 
             if response.status_code != 200:
                 logger.error("Failed to load form page!")
-                return
+                return results, known_uids_before_batch
 
         # Parse HTML and extract necessary values
             event_validation_data = self.get_event_validation(response)
@@ -753,10 +768,91 @@ class JopoxScraper:
                         add_game_url, response.text[:1500]
                     )
                 logger.info("Game added successfully or no error message received.")
-                results.append({ 'status': 'ok', 'game_id': game.get('Game ID'), 'message': "Game added successfully!" })
 
-        return results
-        
+                new_uid = self._resolve_new_jopox_uid(response.url, known_uids, game_data)
+                results.append({ 'status': 'ok', 'game_id': game.get('Game ID'), 'message': "Game added successfully!", 'jopox_uid': new_uid })
+
+        return results, known_uids_before_batch
+
+    def _extract_gid_from_url(self, url):
+        """Poimii uid:n luonnin redirect-URL:n gid=-parametrista - ensisijainen lähde, koska
+        se ei vaadi ylimääräistä pyyntöä. Palauttaa None jos parametria ei löydy, jolloin
+        kutsuja käyttää varmistavaa fallbackia sen sijaan että arvaisi.
+        """
+        try:
+            params = parse_qs(urlparse(url).query)
+            for key, values in params.items():
+                if key.lower() == 'gid' and values:
+                    return values[0]
+            return None
+        except Exception as e:
+            logger.warning("add_game(): failed to parse gid from url %s: %s", url, e)
+            return None
+
+    def _resolve_new_jopox_uid(self, response_url, known_uids, game_data):
+        """Tunnistaa juuri luodun Jopox-ottelun uid:n: ensisijaisesti redirect-URL:n gid=-parametrista,
+        ja jos se puuttuu tai on jo ennestään tunnettu (jäsennysvirhe), fallbackina
+        scrape_jopox_games()-pohjainen ennen/jälkeen-diff joka ei koskaan arvaa. Päivittää
+        known_uids:n paikan päällä seuraavaa erän ottelua varten. Palauttaa None jos uid:tä ei
+        voida tunnistaa yksiselitteisesti - kutsujan pitää jättää jopox_uid tällöin tyhjäksi.
+        """
+        uid_from_url = self._extract_gid_from_url(response_url)
+        if uid_from_url:
+            if uid_from_url in known_uids:
+                logger.warning(
+                    "add_game(): gid %s from redirect url was already a known uid before this "
+                    "creation (unexpected) - falling back to rescrape",
+                    uid_from_url
+                )
+            else:
+                logger.info("add_game(): resolved jopox_uid %s from redirect url", uid_from_url)
+                known_uids.add(uid_from_url)
+                return uid_from_url
+
+        try:
+            rescan = self.scrape_jopox_games()
+        except Exception as e:
+            logger.error("add_game(): rescrape for uid resolution failed: %s", e)
+            return None
+
+        new_rows = [r for r in rescan if r['uid'] not in known_uids]
+        known_uids.clear()
+        known_uids.update(r['uid'] for r in rescan)
+
+        if not new_rows:
+            logger.warning("add_game(): no new Jopox row found after creation; jopox_uid will remain unset")
+            return None
+
+        if len(new_rows) == 1:
+            logger.info("add_game(): resolved jopox_uid %s via rescrape diff", new_rows[0]['uid'])
+            return new_rows[0]['uid']
+
+        # Useampi uusi rivi (esim. joku muu on luonut samaan aikaan jotain muuta) -
+        # rajataan tarkalla (ei fuzzy) kenttätäsmäytyksellä juuri lähetettyihin arvoihin.
+        expected_location = (game_data.get('GameLocationTextBox') or '').strip().lower()
+        expected_sortable = None
+        try:
+            raw = f"{game_data.get('GameDateTextBox')} {game_data.get('GameStartTimeTextBox')}"
+            expected_sortable = datetime.strptime(raw, '%d.%m.%Y %H:%M').strftime('%Y-%m-%d %H:%M')
+        except (ValueError, TypeError) as e:
+            logger.warning("add_game(): could not compute expected sortable_date for disambiguation: %s", e)
+
+        candidates = new_rows
+        if expected_sortable:
+            candidates = [r for r in candidates if r['sortable_date'] == expected_sortable]
+        if expected_location:
+            candidates = [r for r in candidates if r['paikka'].strip().lower() == expected_location]
+
+        if len(candidates) == 1:
+            return candidates[0]['uid']
+
+        logger.warning(
+            "add_game(): could not uniquely identify the new Jopox row (%d new rows, %d after field filtering); "
+            "jopox_uid will remain unset",
+            len(new_rows), len(candidates)
+        )
+        return None
+
     def homeTeamTextBox(self, response, team_name):
         try:
             soup = BeautifulSoup(response.text, 'html.parser')
