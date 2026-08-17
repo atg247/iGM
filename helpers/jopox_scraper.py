@@ -405,6 +405,10 @@ class JopoxScraper:
         game_group_payload = self.ggroup_payload(game_groups)
         logger.debug(f'game_group_payload: {game_group_payload}')
 
+        game_info_message = game_data.get("GameInfoTextBox") or ""
+        if game_info_message:
+            game_info_message = f"<p>{game_info_message}</p>"
+
 
         # Build payload
         payload = {
@@ -429,9 +433,9 @@ class JopoxScraper:
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": f"<p>{game_data.get('GamePublicInfoTextBox')}</p>",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
-            # Huom. oma avaimensa, ei GamePublicInfoTextBox: kutsuja päättää menevätkö kentät
-            # samalla sisällöllä. Tyhjä oletus, jottei kenttään päädy "None".
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": f"<p>{game_data.get('GameInfoTextBox', '')}</p>",
+            # Viestikenttä: tyhjä pysyy tyhjänä (ei "<p></p>"), koska sisältö lähtee
+            # osallistujille notifikaationa. Ks. helpers/game_templates.GAME_INFO_MESSAGE.
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": game_info_message,
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameNotificationTextBox": "",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
         }

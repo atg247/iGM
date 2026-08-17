@@ -43,23 +43,12 @@ DEFAULT_PUBLIC_INFO = """
                 <br>
                 """
 
-# Oletusteksti GameInfoTextBox-kentälle. Eri sisältö kuin ennakkoinfossa: mukana päivä ja
-# kellonaika. Kenttä on toistaiseksi oma templaattinsa, koska ei ole varmistettu missä se
-# Jopoxin käyttöliittymässä näkyy - jos se osoittautuu turhaksi, sen voi jättää tyhjäksi
-# ilman että ennakkoinfoon tarvitsee koskea.
-# TODO: logiikka sille tarvitaanko toimitsijoita, huomioiden pienpelit.
-DEFAULT_GAME_INFO = """
-                Ottelu {date} klo {time}<br>
-                {home_team} - {away_team}<br>
-                {location}<br>
-                <br>
-                {pienpeli}<br>
-                <br>
-                Kokoontuminen tuntia ennen ottelun alkua.<br>
-                <br>
-                Joukkue:
-                <br>
-                """
+# GameInfoTextBox jätetään tarkoituksella tyhjäksi. Jopoxin lomakkeella sen otsikko on
+# "Viesti (näkyy tapahtuman osallistujille Jopox pukukopissa ilmoituksena sekä Jopox+
+# sovelluksessa notifikaationa)" - eli kyseessä ei ole infokenttä vaan joukkueelle lähtevä
+# ilmoitus. Ottelun luonti ei saa notifioida ketään, ja massaluonti lähettäisi kymmeniä
+# ilmoituksia peräkkäin. Älä täytä tätä kenttää ilman että se on nimenomaisesti haluttu.
+GAME_INFO_MESSAGE = ''
 
 
 def build_placeholders(game, game_data=None):
@@ -103,21 +92,18 @@ def render_template(template, values):
         return template
 
 
-def render_game_texts(game, game_data=None, public_info_template=None, game_info_template=None):
-    """Palauttaa (ennakkoinfo, game_info) valmiiksi renderöitynä.
+def render_public_info(game, game_data=None, template=None):
+    """Renderöi ottelun ennakkoinfon (GamePublicInfoTextBox).
 
-    Templaatit ovat valinnaisia, jotta kutsuja voi myöhemmin syöttää käyttäjän omat versiot;
-    ilman niitä käytetään oletuksia.
+    Templaatti on valinnainen, jotta kutsuja voi myöhemmin syöttää käyttäjän oman version;
+    ilman sitä käytetään oletusta.
+
+    Huom: viestikentälle (GameInfoTextBox) ei ole vastaavaa funktiota tarkoituksella - ks.
+    GAME_INFO_MESSAGE.
     """
     values = build_placeholders(game, game_data)
 
-    return (
-        render_template(
-            public_info_template if public_info_template is not None else DEFAULT_PUBLIC_INFO,
-            values,
-        ),
-        render_template(
-            game_info_template if game_info_template is not None else DEFAULT_GAME_INFO,
-            values,
-        ),
+    return render_template(
+        template if template is not None else DEFAULT_PUBLIC_INFO,
+        values,
     )

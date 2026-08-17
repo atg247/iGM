@@ -8,7 +8,7 @@ from models import user
 from models.tgames import TGamesdb
 from extensions import db
 from security import cipher_suite
-from helpers.game_templates import render_game_texts
+from helpers.game_templates import GAME_INFO_MESSAGE, render_public_info
 from helpers.jopox_scraper import JopoxScraper
 from logging_config import logger
 
@@ -75,12 +75,13 @@ def create_jopox():
             "SaveGameButton": "Tallenna"
         }
 
-        # Vapaat tekstit renderöidään täällä, ei scraperissa. Templaattiargumentit jäävät
-        # toistaiseksi pois, jolloin käytetään oletuksia - käyttäjän omat templaatit
+        # Ennakkoinfo renderöidään täällä, ei scraperissa. Templaattiargumentti jää
+        # toistaiseksi pois, jolloin käytetään oletusta - käyttäjän oma templaatti
         # kytketään tähän kun asetukset on toteutettu.
-        public_info, game_info = render_game_texts(game, game_data)
-        game_data["GamePublicInfoTextBox"] = public_info
-        game_data["GameInfoTextBox"] = game_info
+        game_data["GamePublicInfoTextBox"] = render_public_info(game, game_data)
+        # Viestikenttä tyhjäksi: se lähtee osallistujille notifikaationa, eikä ottelun
+        # luonnin kuulu ilmoittaa kenellekään.
+        game_data["GameInfoTextBox"] = GAME_INFO_MESSAGE
 
         games_to_add.append({
             "game": game,

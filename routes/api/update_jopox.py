@@ -4,6 +4,7 @@ from flask import jsonify, request
 from flask_login import login_required, current_user
 
 from security import cipher_suite
+from helpers.game_templates import GAME_INFO_MESSAGE
 from helpers.jopox_scraper import JopoxScraper
 from logging_config import logger
 from extensions import db
@@ -52,7 +53,9 @@ def update_jopox():
                 "GameMaxParticipatesTextBox": "",
                 "GamePublicInfoTextBox": f"""{form.get("game_public_info")}""",
                 "FeedGameDropdown": "0",
-                "GameInfoTextBox": f"""{form.get("game_public_info")}""",
+                # Tyhjä tarkoituksella: tämä kenttä lähtee osallistujille notifikaationa, eikä
+                # ottelun tietojen korjaaminen saa ilmoittaa joukkueelle. Ks. GAME_INFO_MESSAGE.
+                "GameInfoTextBox": GAME_INFO_MESSAGE,
                 "GameNotificationTextBox": "",
                 "SaveGameButton": "Tallenna",
                 "game_groups": game_groups,
