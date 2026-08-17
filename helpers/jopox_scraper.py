@@ -16,8 +16,10 @@ from models.user import User, db
 class JopoxScraper:
     def __init__(self, user_id, username, password):
         self.user = db.session.get(User, user_id)
-        self.login_url = "https://myapi.jopox.fi/api/v1/myjopoxaccount/login" #self.user.jopox_login_url
-        self.admin_login_url = self.login_url.replace('/login', '/adminlogin')
+        self.login_url = (
+            "https://myapi.jopox.fi/api/v1/myjopoxaccount/login"  # self.user.jopox_login_url
+        )
+        self.admin_login_url = self.login_url.replace("/login", "/adminlogin")
         self.admin_page_url = None
         self.auth_header = None
         self.base_url = None
@@ -38,10 +40,14 @@ class JopoxScraper:
         session["user_id"] = current_user.id
         session["jopox_cookies"] = json.dumps(self.session.cookies.get_dict())
         session["jopox_validation"] = json.dumps(self.event_validation_data)
-        session["jopox_last_login"] = self.last_login_time.isoformat() if self.last_login_time else None
+        session["jopox_last_login"] = (
+            self.last_login_time.isoformat() if self.last_login_time else None
+        )
         session["tokens"] = json.dumps(self.token) if self.token else None
         session["refresh_token"] = json.dumps(self.refresh_token) if self.refresh_token else None
-        session["jopox_lockerroom_response"] = json.dumps(self.lockerroom_response.json()) if self.lockerroom_response else None
+        session["jopox_lockerroom_response"] = (
+            json.dumps(self.lockerroom_response.json()) if self.lockerroom_response else None
+        )
         session["admin_page_url"] = self.admin_page_url if self.admin_page_url else None
         session["auth_header"] = json.dumps(self.auth_header) if self.auth_header else None
         session["base_url"] = self.base_url if self.base_url else None
@@ -69,16 +75,15 @@ class JopoxScraper:
         if "base_url" in session:
             self.base_url = session["base_url"]
 
-
     def get_event_validation(self, response):
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
         viewstate = soup.find("input", {"name": "__VIEWSTATE"})["value"]
         eventvalidation = soup.find("input", {"name": "__EVENTVALIDATION"})["value"]
         viewstategenerator = soup.find("input", {"name": "__VIEWSTATEGENERATOR"})["value"]
         return {
-        '__VIEWSTATE': viewstate,
-        '__EVENTVALIDATION': eventvalidation,
-        '__VIEWSTATEGENERATOR': viewstategenerator
+            "__VIEWSTATE": viewstate,
+            "__EVENTVALIDATION": eventvalidation,
+            "__VIEWSTATEGENERATOR": viewstategenerator,
         }
 
     def clear_session(self):
@@ -93,29 +98,24 @@ class JopoxScraper:
         session.pop("auth_header", None)
         session.pop("base_url", None)
 
-
     def login(self):
 
         logger.info("login() started...")
         self.clear_session()
-        #clear all ccokies from the session
+        # clear all ccokies from the session
         self.session.cookies.clear()
-
 
         url = self.login_url
 
-        login_payload = {
-            "username": self.username,
-            "password": self.password
-            }
+        login_payload = {"username": self.username, "password": self.password}
 
         headers = {
             "accept": "application/json",
             "content-type": "application/json",
             "origin": "https://login.jopox.fi",
             "referer": "https://login.jopox.fi/",
-            "user-agent": "Mozilla/5.0"
-            }
+            "user-agent": "Mozilla/5.0",
+        }
 
         response = requests.post(url, json=login_payload, headers=headers)
 
@@ -129,7 +129,7 @@ class JopoxScraper:
                 "Authorization": f"Bearer {self.token}",
                 "origin": "https://login.jopox.fi",
                 "referer": "https://login.jopox.fi/",
-                "user-agent": "Mozilla/5.0"
+                "user-agent": "Mozilla/5.0",
             }
 
         person_url = "https://myapi.jopox.fi/api/v1/myjopoxaccount/GetMyJopoxPersonDetails"
@@ -144,12 +144,15 @@ class JopoxScraper:
         self.lockerroom_response = requests.get(lockerroom_url, headers=self.auth_header)
 
         if self.lockerroom_response.status_code == 200:
-            #get metadataId from lockerroom_response
-            lockerroom_metadata_id = self.lockerroom_response.json().get("lockerRooms")[0].get("metadataId")
-
+            # get metadataId from lockerroom_response
+            lockerroom_metadata_id = (
+                self.lockerroom_response.json().get("lockerRooms")[0].get("metadataId")
+            )
 
         else:
-            logger.error("Pukuhuonetietojen haku epäonnistui:", self.lockerroom_response.status_code)
+            logger.error(
+                "Pukuhuonetietojen haku epäonnistui:", self.lockerroom_response.status_code
+            )
 
         admin_onetimer = f"https://myapi.jopox.fi/api/v1/adminlogin/{lockerroom_metadata_id}/onetimer?source=selfservice"
         admin_response = self.session.get(admin_onetimer, headers=self.auth_header)
@@ -165,7 +168,9 @@ class JopoxScraper:
 
         soup = BeautifulSoup(admin_page_response.text, "html.parser")
         if "https://hallinta3.jopox.fi/Admin/Hockeypox2020/Login.aspx" == admin_page_response.url:
-            logger.debug("❌ Admin-sivun tietojen haku epäonnistui:", admin_page_response.status_code)
+            logger.debug(
+                "❌ Admin-sivun tietojen haku epäonnistui:", admin_page_response.status_code
+            )
             return False
 
         elif "Default.aspx" in admin_page_response.url:
@@ -180,15 +185,8 @@ class JopoxScraper:
         logger.warning(f"⚠️ Login päättyi odottamattomaan URL:iin: {admin_page_response.url}")
         return True
 
-
-
-
-
-
-
     def is_session_valid(self):
         logger.debug("is_session_valid_start")
-
 
         if "jopox_last_login" not in session:
             logger.warning("is_session_valid result=false reason=missing_last_login")
@@ -198,11 +196,12 @@ class JopoxScraper:
             logger.warning("is_session_valid result=false reason=missing_base_url")
             return False
 
-
         last_login_time = datetime.fromisoformat(session["jopox_last_login"])
         session_duration = datetime.now() - last_login_time
         ok = session_duration < timedelta(hours=1)
-        logger.debug("is_session_valid result=%s age=%ss", ok, int(session_duration.total_seconds()))
+        logger.debug(
+            "is_session_valid result=%s age=%ss", ok, int(session_duration.total_seconds())
+        )
         return ok
 
     def ensure_logged_in(self):
@@ -242,7 +241,7 @@ class JopoxScraper:
         logger.debug("Fetching admin login page for base URL extraction...")
 
         try:
-            script_tag = soup.find('script', string=lambda text: text and 'siteRoot' in text)
+            script_tag = soup.find("script", string=lambda text: text and "siteRoot" in text)
             site_root = script_tag.string.split('siteRoot: "')[1].split('"')[0]
 
         except Exception as e:
@@ -260,18 +259,15 @@ class JopoxScraper:
 
         url = "https://myapi.jopox.fi/api/v1/myjopoxaccount/login"
 
-        login_payload = {
-            "password": self.password,
-            "username": self.username
-            }
+        login_payload = {"password": self.password, "username": self.username}
 
         headers = {
             "accept": "application/json",
             "content-type": "application/json",
             "origin": "https://login.jopox.fi",
             "referer": "https://login.jopox.fi/",
-            "user-agent": "Mozilla/5.0"
-            }
+            "user-agent": "Mozilla/5.0",
+        }
 
         response = requests.post(url, json=login_payload, headers=headers)
 
@@ -286,17 +282,15 @@ class JopoxScraper:
 
         token = response.json().get("tokens", {}).get("accessToken")
 
-
         auth_header = {
-                "Authorization": f"Bearer {token}",
-                "origin": "https://login.jopox.fi",
-                "referer": "https://login.jopox.fi/",
-                "user-agent": "Mozilla/5.0"
-            }
+            "Authorization": f"Bearer {token}",
+            "origin": "https://login.jopox.fi",
+            "referer": "https://login.jopox.fi/",
+            "user-agent": "Mozilla/5.0",
+        }
 
         person_url = "https://myapi.jopox.fi/api/v1/myjopoxaccount/GetMyJopoxPersonDetails"
         requests.get(person_url, headers=auth_header)
-
 
         lockerroom_url = "https://myapi.jopox.fi/api/v1/lockerrooms"
         lockerroom_response = requests.get(lockerroom_url, headers=auth_header)
@@ -312,22 +306,22 @@ class JopoxScraper:
         subsiteId = lockerroom_response.json().get("lockerRooms")[0].get("subsiteId")
         metadataId = lockerroom_response.json().get("lockerRooms")[0].get("metadataId")
 
-        credentials.append({
-            "subsiteId": subsiteId,
-            "siteName": siteName,
-            "siteShortName": siteShortName,
-            "subsiteName": subsiteName,
-            "subsiteShortName": subsiteShortName,
-            "logoUrl": logoUrl,
-            "metadataId": metadataId,
-            })
+        credentials.append(
+            {
+                "subsiteId": subsiteId,
+                "siteName": siteName,
+                "siteShortName": siteShortName,
+                "subsiteName": subsiteName,
+                "subsiteShortName": subsiteShortName,
+                "logoUrl": logoUrl,
+                "metadataId": metadataId,
+            }
+        )
 
         jopox_team_id = subsiteId
         jopox_team_name = f"{siteName} - {subsiteName}"
 
-
         logger.debug(f"credentials: {credentials}")
-
 
         try:
             lockerroom = f"https://myapi.jopox.fi/api/v1/adminlogin/{metadataId}/onetimerlockerroom"
@@ -340,21 +334,20 @@ class JopoxScraper:
 
         if lockerroom_url:
             try:
-
                 logger.debug(f"Starting to fetch lockerroom URL: {lockerroom_url}")
                 lockerroom_url_response = self.session.get(lockerroom_url)
                 logger.debug(f"Lockerroom URL response: {lockerroom_url_response.status_code}")
 
                 response = self.session.get(lockerroom_url_response.url)
-                soup = BeautifulSoup(response.text, 'html.parser')
+                soup = BeautifulSoup(response.text, "html.parser")
 
-                base_url = lockerroom_url_response.url.split('/home')[0]
+                base_url = lockerroom_url_response.url.split("/home")[0]
                 logger.debug(f"Base URL: {base_url}")
                 calendarpage_url = f"{base_url}/calendar/club/{subsiteId}?web=1"
                 logger.debug(f"Calendar page URL: {calendarpage_url}")
                 response = self.session.get(calendarpage_url)
-                soup = BeautifulSoup(response.text, 'html.parser')
-                icalUrlContainer = soup.find('div', {'id': 'icalUrlContainer'})
+                soup = BeautifulSoup(response.text, "html.parser")
+                icalUrlContainer = soup.find("div", {"id": "icalUrlContainer"})
                 calendar_url = icalUrlContainer.text.strip()
                 logger.info(f"calendar_url: {calendar_url}")
 
@@ -362,91 +355,113 @@ class JopoxScraper:
                 logger.error(f"Error fetching lockerroom URL: {e}")
 
             return {
-                'jopox_team_id': jopox_team_id,
-                'jopox_team_name': jopox_team_name,
-                'calendar_url': calendar_url
+                "jopox_team_id": jopox_team_id,
+                "jopox_team_name": jopox_team_name,
+                "calendar_url": calendar_url,
             }
 
         else:
             logger.error("saving jopox credentials failed!")
             return False
 
-
-
     def modify_game(self, game_data, uid):
-        #muodosta mod_game_url yhdistämällä self.base_url ja Games/Game.aspx?gId=uid
+        # muodosta mod_game_url yhdistämällä self.base_url ja Games/Game.aspx?gId=uid
         mod_game_url = urljoin(self.base_url, f"Games/Game.aspx?gId={uid}")
 
-
         # Load the form page
-        response = self.session.get(mod_game_url, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            "Referer": mod_game_url,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        })
+        response = self.session.get(
+            mod_game_url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                "Referer": mod_game_url,
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            },
+        )
 
         if response.status_code != 200:
             logger.error("Failed to load form page!")
             return
 
-        logger.info('modify_game(): fetching event validation data...')
+        logger.info("modify_game(): fetching event validation data...")
 
         # Parse HTML and extract necessary values
         event_validation_data = self.get_event_validation(response)
         season = self.get_season_id(response)
         subsite = self.get_subsite_id(response)
 
-        logger.debug(f'game_data: {game_data}')
+        logger.debug(f"game_data: {game_data}")
 
         game_groups = game_data.get("game_groups", [])
-        logger.debug(f'game_groups: {game_groups}')
+        logger.debug(f"game_groups: {game_groups}")
         game_group_payload = self.ggroup_payload(game_groups)
-        logger.debug(f'game_group_payload: {game_group_payload}')
+        logger.debug(f"game_group_payload: {game_group_payload}")
 
         game_info_message = game_data.get("GameInfoTextBox") or ""
         if game_info_message:
             game_info_message = f"<p>{game_info_message}</p>"
-
 
         # Build payload
         payload = {
             "__EVENTTARGET": "",
             "__EVENTARGUMENT": "",
             "__LASTFOCUS": "",
-            "__VIEWSTATE": event_validation_data['__VIEWSTATE'],
-            "__VIEWSTATEGENERATOR": event_validation_data['__VIEWSTATEGENERATOR'],
-            "__EVENTVALIDATION": event_validation_data['__EVENTVALIDATION'],            "UsernameTextBox": self.username,
+            "__VIEWSTATE": event_validation_data["__VIEWSTATE"],
+            "__VIEWSTATEGENERATOR": event_validation_data["__VIEWSTATEGENERATOR"],
+            "__EVENTVALIDATION": event_validation_data["__EVENTVALIDATION"],
+            "UsernameTextBox": self.username,
             "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSeasons": season,
             "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSubSites": subsite,
-            #"ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$LeagueDropdownList": game_data.get("LeagueDropdownList", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$EventDropDownList": game_data.get("EventDropDownList", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$HomeTeamTextBox": game_data.get("HomeTeamTextBox", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GuestTeamTextBox": game_data.get("GuestTeamTextBox", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$AwayCheckbox": game_data.get("AwayCheckbox", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameLocationTextBox": game_data.get("GameLocationTextBox", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDateTextBox": game_data.get("GameDateTextBox", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameStartTimeTextBox": game_data.get("GameStartTimeTextBox", ""),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDurationTextBox": game_data.get("GameDurationTextBox", "120"),
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", ""),
+            # "ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$LeagueDropdownList": game_data.get(
+                "LeagueDropdownList", ""
+            ),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$EventDropDownList": game_data.get(
+                "EventDropDownList", ""
+            ),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$HomeTeamTextBox": game_data.get(
+                "HomeTeamTextBox", ""
+            ),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$GuestTeamTextBox": game_data.get(
+                "GuestTeamTextBox", ""
+            ),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$AwayCheckbox": game_data.get(
+                "AwayCheckbox", ""
+            ),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameLocationTextBox": game_data.get(
+                "GameLocationTextBox", ""
+            ),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDateTextBox": game_data.get(
+                "GameDateTextBox", ""
+            ),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameStartTimeTextBox": game_data.get(
+                "GameStartTimeTextBox", ""
+            ),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDurationTextBox": game_data.get(
+                "GameDurationTextBox", "120"
+            ),
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get(
+                "GameMaxParticipatesTextBox", ""
+            ),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": f"<p>{game_data.get('GamePublicInfoTextBox')}</p>",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
             # Viestikenttä: tyhjä pysyy tyhjänä (ei "<p></p>"), koska sisältö lähtee
             # osallistujille notifikaationa. Ks. helpers/game_templates.GAME_INFO_MESSAGE.
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": game_info_message,
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameNotificationTextBox": "",
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna",
         }
 
         if game_group_payload:
             payload.update(game_group_payload)
 
         if game_data.get("GameDeadLineTextBox"):
-            payload["ctl00$MainContentPlaceHolder$GamesBasicForm$GameDeadlineTextBox"] = game_data.get("GameDeadLineTextBox", "")
+            payload["ctl00$MainContentPlaceHolder$GamesBasicForm$GameDeadlineTextBox"] = (
+                game_data.get("GameDeadLineTextBox", "")
+            )
         if game_data.get("GameDeadLineTimeTextBox"):
-            payload["ctl00$MainContentPlaceHolder$GamesBasicForm$GameDeadlineTimeTextBox"] = game_data.get("GameDeadLineTimeTextBox", "")
-
-
+            payload["ctl00$MainContentPlaceHolder$GamesBasicForm$GameDeadlineTimeTextBox"] = (
+                game_data.get("GameDeadLineTimeTextBox", "")
+            )
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -456,9 +471,9 @@ class JopoxScraper:
 
         response = self.session.post(mod_game_url, data=payload, headers=headers)
 
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
 
-        error_message = soup.find('textarea', {'id': 'ErrorTextBox'})
+        error_message = soup.find("textarea", {"id": "ErrorTextBox"})
 
         if error_message:
             logger.error("Error message from server: %s", error_message.text)
@@ -479,9 +494,12 @@ class JopoxScraper:
 
     def get_season_id(self, response):
         try:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            season_dropdown = soup.find('select', {'id': 'MenuContentPlaceHolder_MainMenu_SiteSelector1_DropDownListSeasons'})
-            season_id = season_dropdown.find('option', selected=True)['value']
+            soup = BeautifulSoup(response.text, "html.parser")
+            season_dropdown = soup.find(
+                "select",
+                {"id": "MenuContentPlaceHolder_MainMenu_SiteSelector1_DropDownListSeasons"},
+            )
+            season_id = season_dropdown.find("option", selected=True)["value"]
             logger.debug(f"Season ID: {season_id}")
             return season_id
         except Exception as e:
@@ -489,29 +507,32 @@ class JopoxScraper:
 
     def get_subsite_id(self, response):
         try:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            subsite_dropdown = soup.find('select', {'id': 'MenuContentPlaceHolder_MainMenu_SiteSelector1_DropDownListSubSites'})
-            subsite_id = subsite_dropdown.find('option', selected=True)['value']
+            soup = BeautifulSoup(response.text, "html.parser")
+            subsite_dropdown = soup.find(
+                "select",
+                {"id": "MenuContentPlaceHolder_MainMenu_SiteSelector1_DropDownListSubSites"},
+            )
+            subsite_id = subsite_dropdown.find("option", selected=True)["value"]
             logger.debug(f"Subsite ID: {subsite_id}")
             return subsite_id
         except Exception as e:
             logger.error(f"Error getting subsite ID: {e}")
 
     def get_league_id(self, response):
-        #find all leagues from the dropdown list
+        # find all leagues from the dropdown list
         logger.debug("Getting league ID's")
-        #logger.debug(f"response: {response.text}")
+        # logger.debug(f"response: {response.text}")
         try:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            league_dropdown = soup.find('select', {'id': 'LeagueDropdownList'})
+            soup = BeautifulSoup(response.text, "html.parser")
+            league_dropdown = soup.find("select", {"id": "LeagueDropdownList"})
             league_selected = {}
             league_options = []
             if league_dropdown:
-                for option in league_dropdown.find_all('option'):
-                    value = option.get('value', '').strip()
+                for option in league_dropdown.find_all("option"):
+                    value = option.get("value", "").strip()
                     text = option.text.strip()
                     option_data = {"value": value, "text": text}
-                    if option.has_attr('selected'):
+                    if option.has_attr("selected"):
                         league_selected = option_data
                     else:
                         league_options.append(option_data)
@@ -521,11 +542,7 @@ class JopoxScraper:
             logger.debug(f"League selected: {league_selected}")
             logger.debug(f"League options: {league_options}")
 
-            return {
-                "league_selected": league_selected,
-                "league_options": league_options
-            }
-
+            return {"league_selected": league_selected, "league_options": league_options}
 
         except Exception as e:
             logger.error(f"Error getting league ID's: {e}")
@@ -536,11 +553,14 @@ class JopoxScraper:
             add_game_url = urljoin(self.base_url, "Games/Game.aspx")
 
             # Load the form page
-            response = self.session.get(add_game_url, headers={
-                "User-Agent": "Mozilla/5.0",
-                "Referer": self.admin_page_url,
-            })
-            #logger.debug("Fetching game form page response text: %s", response.text)
+            response = self.session.get(
+                add_game_url,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Referer": self.admin_page_url,
+                },
+            )
+            # logger.debug("Fetching game form page response text: %s", response.text)
 
             if response.status_code != 200:
                 logger.error("Failed to load form page!")
@@ -552,17 +572,16 @@ class JopoxScraper:
                 game = item.get("game")
                 level = game.get("Level Name")
 
-            #compare level to league_options and return the league_id with best match. Match is based on the league_options text that has most in common with level.
+                # compare level to league_options and return the league_id with best match. Match is based on the league_options text that has most in common with level.
                 best_match = 0
-                best_league_id = ''
+                best_league_id = ""
                 for league in leagues.get("league_options", []):
-                    match = len(os.path.commonprefix([league.get('text'), level]))
+                    match = len(os.path.commonprefix([league.get("text"), level]))
                     if match > best_match:
                         best_match = match
-                        best_league_id = league.get('value')
+                        best_league_id = league.get("value")
 
-
-            #if no good enough match is found, start function to create new league
+                # if no good enough match is found, start function to create new league
                 if best_match < 5:
                     logger.debug("No good enough match found, starting to create new league")
                     created_league = self.create_league(level)
@@ -572,20 +591,17 @@ class JopoxScraper:
                     game["LeagueDropdownList"] = best_league_id
             return items
 
-
     def create_league(self, level):
         add_league_url = urljoin(self.base_url, "Ajax/Leagues.aspx/SaveLeague")
 
         # create new league by posting to add_league_url
-        payload = {
-            "league": {"id": None, "type": 1, "name": level, "description": ""}
-        }
+        payload = {"league": {"id": None, "type": 1, "name": level, "description": ""}}
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
             "Referer": urljoin(self.base_url, "Games/Games.aspx"),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
         response = self.session.post(add_league_url, json=payload, headers=headers)
@@ -602,15 +618,17 @@ class JopoxScraper:
                 leagues = self.get_league_id(form_response)
 
                 best_match = 0
-                best_league_id = ''
+                best_league_id = ""
                 for league in leagues.get("league_options", []):
-                    match = len(os.path.commonprefix([league.get('text'), level]))
+                    match = len(os.path.commonprefix([league.get("text"), level]))
                     if match > best_match:
                         best_match = match
-                        best_league_id = league.get('value')
+                        best_league_id = league.get("value")
 
                 if not best_league_id:
-                    logger.error("Could not find newly created league '%s' in league options", level)
+                    logger.error(
+                        "Could not find newly created league '%s' in league options", level
+                    )
 
                 return best_league_id
             else:
@@ -622,7 +640,7 @@ class JopoxScraper:
 
     def add_game(self, games_to_add):
         logger.debug("add_game() started...")
-        #muodosta add_game_url yhdistämällä self.base_url ja Games/Game.aspx
+        # muodosta add_game_url yhdistämällä self.base_url ja Games/Game.aspx
         add_game_url = urljoin(self.base_url, "Games/Game.aspx")
 
         results = []
@@ -636,14 +654,13 @@ class JopoxScraper:
         known_uids_before_batch = None
         if games_to_add:
             try:
-                known_uids = {g['uid'] for g in self.scrape_jopox_games()}
+                known_uids = {g["uid"] for g in self.scrape_jopox_games()}
                 known_uids_before_batch = frozenset(known_uids)
             except Exception as e:
                 logger.error("add_game(): initial scrape for known uids failed: %s", e)
                 known_uids = set()
 
         for item in games_to_add:
-
             if isinstance(item, dict) and "game" in item:
                 game = item["game"]
                 game_data = item.get("game_data", {})
@@ -661,14 +678,12 @@ class JopoxScraper:
                 logger.error("Failed to load form page!")
                 return results, known_uids_before_batch
 
-        # Parse HTML and extract necessary values
+            # Parse HTML and extract necessary values
             event_validation_data = self.get_event_validation(response)
             season = self.get_season_id(response)
             subsite = self.get_subsite_id(response)
 
-
-
-            team_name = game.get('Team Name')
+            team_name = game.get("Team Name")
             HomeTeamTextBox = self.homeTeamTextBox(response, team_name)
 
             # Tekstit tulevat valmiina kutsujalta (routes/api/create_jopox.py), joka renderöi ne
@@ -681,32 +696,52 @@ class JopoxScraper:
                 "__EVENTTARGET": "",
                 "__EVENTARGUMENT": "",
                 "__LASTFOCUS": "",
-                "__VIEWSTATE": event_validation_data['__VIEWSTATE'],
-                "__VIEWSTATEGENERATOR": event_validation_data['__VIEWSTATEGENERATOR'],
-                "__EVENTVALIDATION": event_validation_data['__EVENTVALIDATION'],
+                "__VIEWSTATE": event_validation_data["__VIEWSTATE"],
+                "__VIEWSTATEGENERATOR": event_validation_data["__VIEWSTATEGENERATOR"],
+                "__EVENTVALIDATION": event_validation_data["__EVENTVALIDATION"],
                 "UsernameTextBox": self.username,
                 "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSeasons": season,
                 "ctl00$MenuContentPlaceHolder$MainMenu$SiteSelector1$DropDownListSubSites": subsite,
-                #"ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$LeagueDropdownList": game_data.get("LeagueDropdownList", ""),
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$EventDropDownList": game_data.get("EventDropDownList", ""),
+                # "ctl00$MainContentPlaceHolder$GameTabs$TabsDropDownList": "javascript:void(0)", #TÄMÄ RIVI AIHEUTTI VIRHEEN
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$LeagueDropdownList": game_data.get(
+                    "LeagueDropdownList", ""
+                ),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$EventDropDownList": game_data.get(
+                    "EventDropDownList", ""
+                ),
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$HomeTeamTextBox": HomeTeamTextBox,
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$GuestTeamTextBox": game_data.get("GuestTeamTextBox", ""),
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$AwayCheckbox": game_data.get("AwayCheckbox", ""),
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameLocationTextBox": game_data.get("GameLocationTextBox", ""),
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDateTextBox": game_data.get("GameDateTextBox", ""),
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameStartTimeTextBox": game_data.get("GameStartTimeTextBox", ""),
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDurationTextBox": game_data.get("GameDurationTextBox", "120"),
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", "0"),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GuestTeamTextBox": game_data.get(
+                    "GuestTeamTextBox", ""
+                ),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$AwayCheckbox": game_data.get(
+                    "AwayCheckbox", ""
+                ),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameLocationTextBox": game_data.get(
+                    "GameLocationTextBox", ""
+                ),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDateTextBox": game_data.get(
+                    "GameDateTextBox", ""
+                ),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameStartTimeTextBox": game_data.get(
+                    "GameStartTimeTextBox", ""
+                ),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDurationTextBox": game_data.get(
+                    "GameDurationTextBox", "120"
+                ),
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get(
+                    "GameMaxParticipatesTextBox", "0"
+                ),
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": public_info,
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": game_info,
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$GameNotificationTextBox": "",
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna",
             }
 
             logger.info("Submitting game data payload")
-            logger.debug("Game payload: %s", {k: v for k, v in payload.items() if not k.startswith('__')})
+            logger.debug(
+                "Game payload: %s", {k: v for k, v in payload.items() if not k.startswith("__")}
+            )
 
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -718,39 +753,60 @@ class JopoxScraper:
 
             logger.debug(
                 "Submit response - status: %s, final url: %s, redirected: %s",
-                response.status_code, response.url, response.url != add_game_url
+                response.status_code,
+                response.url,
+                response.url != add_game_url,
             )
 
-            soup = BeautifulSoup(response.text, 'html.parser')
-            error_message = soup.find('textarea', {'id': 'ErrorTextBox'})
+            soup = BeautifulSoup(response.text, "html.parser")
+            error_message = soup.find("textarea", {"id": "ErrorTextBox"})
 
             # Fall back to other common ASP.NET error/validation indicators when
             # ErrorTextBox is empty, since the server can reject a save without
             # populating that specific control.
-            validation_summary = soup.find(id=lambda x: x and 'ValidationSummary' in x)
-            other_errors = soup.find_all(class_=re.compile(r'error|validator', re.IGNORECASE))
+            validation_summary = soup.find(id=lambda x: x and "ValidationSummary" in x)
+            other_errors = soup.find_all(class_=re.compile(r"error|validator", re.IGNORECASE))
 
             if error_message:
                 logger.error("Error message from server: %s", error_message.text)
-                results.append({ 'status': 'error', 'game_id': game.get('Game ID'), 'error': error_message.text })
+                results.append(
+                    {"status": "error", "game_id": game.get("Game ID"), "error": error_message.text}
+                )
             elif validation_summary and validation_summary.text.strip():
                 logger.error("Validation summary from server: %s", validation_summary.text.strip())
-                results.append({ 'status': 'error', 'game_id': game.get('Game ID'), 'error': validation_summary.text.strip() })
+                results.append(
+                    {
+                        "status": "error",
+                        "game_id": game.get("Game ID"),
+                        "error": validation_summary.text.strip(),
+                    }
+                )
             else:
                 visible_other_errors = [e.text.strip() for e in other_errors if e.text.strip()]
                 if visible_other_errors:
-                    logger.warning("No ErrorTextBox, but found other error/validator text on page: %s", visible_other_errors)
+                    logger.warning(
+                        "No ErrorTextBox, but found other error/validator text on page: %s",
+                        visible_other_errors,
+                    )
                 if response.url == add_game_url:
                     logger.warning(
                         "Server did not redirect after submit (stayed on %s) - "
                         "this can mean the save was rejected without a visible error message. "
                         "Response snippet: %s",
-                        add_game_url, response.text[:1500]
+                        add_game_url,
+                        response.text[:1500],
                     )
                 logger.info("Game added successfully or no error message received.")
 
                 new_uid = self._resolve_new_jopox_uid(response.url, known_uids, game_data)
-                results.append({ 'status': 'ok', 'game_id': game.get('Game ID'), 'message': "Game added successfully!", 'jopox_uid': new_uid })
+                results.append(
+                    {
+                        "status": "ok",
+                        "game_id": game.get("Game ID"),
+                        "message": "Game added successfully!",
+                        "jopox_uid": new_uid,
+                    }
+                )
 
         return results, known_uids_before_batch
 
@@ -762,7 +818,7 @@ class JopoxScraper:
         try:
             params = parse_qs(urlparse(url).query)
             for key, values in params.items():
-                if key.lower() == 'gid' and values:
+                if key.lower() == "gid" and values:
                     return values[0]
             return None
         except Exception as e:
@@ -782,7 +838,7 @@ class JopoxScraper:
                 logger.warning(
                     "add_game(): gid %s from redirect url was already a known uid before this "
                     "creation (unexpected) - falling back to rescrape",
-                    uid_from_url
+                    uid_from_url,
                 )
             else:
                 logger.info("add_game(): resolved jopox_uid %s from redirect url", uid_from_url)
@@ -795,66 +851,71 @@ class JopoxScraper:
             logger.error("add_game(): rescrape for uid resolution failed: %s", e)
             return None
 
-        new_rows = [r for r in rescan if r['uid'] not in known_uids]
+        new_rows = [r for r in rescan if r["uid"] not in known_uids]
         known_uids.clear()
-        known_uids.update(r['uid'] for r in rescan)
+        known_uids.update(r["uid"] for r in rescan)
 
         if not new_rows:
-            logger.warning("add_game(): no new Jopox row found after creation; jopox_uid will remain unset")
+            logger.warning(
+                "add_game(): no new Jopox row found after creation; jopox_uid will remain unset"
+            )
             return None
 
         if len(new_rows) == 1:
-            logger.info("add_game(): resolved jopox_uid %s via rescrape diff", new_rows[0]['uid'])
-            return new_rows[0]['uid']
+            logger.info("add_game(): resolved jopox_uid %s via rescrape diff", new_rows[0]["uid"])
+            return new_rows[0]["uid"]
 
         # Useampi uusi rivi (esim. joku muu on luonut samaan aikaan jotain muuta) -
         # rajataan tarkalla (ei fuzzy) kenttätäsmäytyksellä juuri lähetettyihin arvoihin.
-        expected_location = (game_data.get('GameLocationTextBox') or '').strip().lower()
+        expected_location = (game_data.get("GameLocationTextBox") or "").strip().lower()
         expected_sortable = None
         try:
             raw = f"{game_data.get('GameDateTextBox')} {game_data.get('GameStartTimeTextBox')}"
-            expected_sortable = datetime.strptime(raw, '%d.%m.%Y %H:%M').strftime('%Y-%m-%d %H:%M')
+            expected_sortable = datetime.strptime(raw, "%d.%m.%Y %H:%M").strftime("%Y-%m-%d %H:%M")
         except (ValueError, TypeError) as e:
-            logger.warning("add_game(): could not compute expected sortable_date for disambiguation: %s", e)
+            logger.warning(
+                "add_game(): could not compute expected sortable_date for disambiguation: %s", e
+            )
 
         candidates = new_rows
         if expected_sortable:
-            candidates = [r for r in candidates if r['sortable_date'] == expected_sortable]
+            candidates = [r for r in candidates if r["sortable_date"] == expected_sortable]
         if expected_location:
-            candidates = [r for r in candidates if r['paikka'].strip().lower() == expected_location]
+            candidates = [r for r in candidates if r["paikka"].strip().lower() == expected_location]
 
         if len(candidates) == 1:
-            return candidates[0]['uid']
+            return candidates[0]["uid"]
 
         logger.warning(
             "add_game(): could not uniquely identify the new Jopox row (%d new rows, %d after field filtering); "
             "jopox_uid will remain unset",
-            len(new_rows), len(candidates)
+            len(new_rows),
+            len(candidates),
         )
         return None
 
     def homeTeamTextBox(self, response, team_name):
         try:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            SiteNameLabel_tag = soup.find('span', {'id': 'MainContentPlaceHolder_GamesBasicForm_SitenameLabel'})
-            SiteNameLabel = SiteNameLabel_tag.text.strip() if SiteNameLabel_tag else ''
+            soup = BeautifulSoup(response.text, "html.parser")
+            SiteNameLabel_tag = soup.find(
+                "span", {"id": "MainContentPlaceHolder_GamesBasicForm_SitenameLabel"}
+            )
+            SiteNameLabel = SiteNameLabel_tag.text.strip() if SiteNameLabel_tag else ""
             logger.info("SiteNameLabel: %s", SiteNameLabel)
 
-            #remove anything in brackets from SiteNameLabel
-            SiteNameLabel = re.sub(r'\([^)]*\)', '', SiteNameLabel)
+            # remove anything in brackets from SiteNameLabel
+            SiteNameLabel = re.sub(r"\([^)]*\)", "", SiteNameLabel)
             logger.info("SiteNameLabel: %s", SiteNameLabel)
 
-            #check which are the common parts of SiteNameLabel and team_name
+            # check which are the common parts of SiteNameLabel and team_name
             common_part = os.path.commonprefix([SiteNameLabel, team_name])
             logger.info("Common part: %s", common_part)
-            #remove common part from team_name
-            HomeTeamTextBox = team_name.replace(common_part, '')
+            # remove common part from team_name
+            HomeTeamTextBox = team_name.replace(common_part, "")
             logger.info("HomeTeamTextBox: %s", HomeTeamTextBox)
             return HomeTeamTextBox
         except Exception as e:
             logger.error("Error parsing home_team: %s", e)
-
-
 
     def scrape_jopox_games(self):
         logger.debug("scrape_jopox_games() started...")
@@ -868,78 +929,95 @@ class JopoxScraper:
         jopox_games = []  # Kerätään peli-info listaan
 
         # Haetaan pelit ensimmäiseltä sivulta
-        rows = soup.find_all('tr', id=lambda x: x and x.startswith('MainContentPlaceHolder_GamesList1_GamesListView_GameRow_'))
+        rows = soup.find_all(
+            "tr",
+            id=lambda x: (
+                x and x.startswith("MainContentPlaceHolder_GamesList1_GamesListView_GameRow_")
+            ),
+        )
         for row in rows:
             game_data = {}
             # Pvm (päivämäärä ja aika)
-            pvm_td = row.find_all('td')[1]
+            pvm_td = row.find_all("td")[1]
             pvm_full = pvm_td.text.strip()
-            game_data['pvm'] = pvm_full.split(' ')[0]  # Päivämäärä
-            game_data['aika'] = pvm_full.split(' ')[1]  # Kellonaika
+            game_data["pvm"] = pvm_full.split(" ")[0]  # Päivämäärä
+            game_data["aika"] = pvm_full.split(" ")[1]  # Kellonaika
 
             # Yhdistetään päivämäärä ja kellonaika sortable_date-kenttään (muoto YYYY-MM-DD HH:MM)
             sortable_date_str = f"{game_data['pvm']} {game_data['aika']}"
-            game_data['sortable_date'] = datetime.strptime(sortable_date_str, '%d.%m.%Y %H:%M').strftime('%Y-%m-%d %H:%M')
+            game_data["sortable_date"] = datetime.strptime(
+                sortable_date_str, "%d.%m.%Y %H:%M"
+            ).strftime("%Y-%m-%d %H:%M")
 
             # Paikka
-            paikka_td = row.find_all('td')[2]
-            game_data['paikka'] = paikka_td.text.strip()
+            paikka_td = row.find_all("td")[2]
+            game_data["paikka"] = paikka_td.text.strip()
 
             # Joukkueet
-            joukkueet_td = row.find_all('td')[3]
-            game_data['joukkueet'] = joukkueet_td.find('a').text.strip()
-            game_data['uid'] = joukkueet_td.find('a')['href'].split('=')[1]
-
+            joukkueet_td = row.find_all("td")[3]
+            game_data["joukkueet"] = joukkueet_td.find("a").text.strip()
+            game_data["uid"] = joukkueet_td.find("a")["href"].split("=")[1]
 
             jopox_games.append(game_data)
 
         # Käydään läpi kaikki jäljellä olevat sivut
         for page in range(2, last_page + 1):
-            page_url = f"https://hallinta3.jopox.fi//Admin/HockeyPox2020/Games/Games.aspx?Page={page}"
+            page_url = (
+                f"https://hallinta3.jopox.fi//Admin/HockeyPox2020/Games/Games.aspx?Page={page}"
+            )
             soup = self.fetch_page(page_url)
 
-            rows = soup.find_all('tr', id=lambda x: x and x.startswith('MainContentPlaceHolder_GamesList1_GamesListView_GameRow_'))
+            rows = soup.find_all(
+                "tr",
+                id=lambda x: (
+                    x and x.startswith("MainContentPlaceHolder_GamesList1_GamesListView_GameRow_")
+                ),
+            )
             for row in rows:
                 game_data = {}
                 # Pvm (päivämäärä ja aika)
-                pvm_td = row.find_all('td')[1]
+                pvm_td = row.find_all("td")[1]
                 pvm_full = pvm_td.text.strip()
-                game_data['pvm'] = pvm_full.split(' ')[0]  # Päivämäärä
-                game_data['aika'] = pvm_full.split(' ')[1]  # Kellonaika
+                game_data["pvm"] = pvm_full.split(" ")[0]  # Päivämäärä
+                game_data["aika"] = pvm_full.split(" ")[1]  # Kellonaika
 
                 # Yhdistetään päivämäärä ja kellonaika sortable_date-kenttään (muoto YYYY-MM-DD HH:MM)
                 sortable_date_str = f"{game_data['pvm']} {game_data['aika']}"
-                game_data['sortable_date'] = datetime.strptime(sortable_date_str, '%d.%m.%Y %H:%M').strftime('%Y-%m-%d %H:%M')
+                game_data["sortable_date"] = datetime.strptime(
+                    sortable_date_str, "%d.%m.%Y %H:%M"
+                ).strftime("%Y-%m-%d %H:%M")
 
                 # Paikka
-                paikka_td = row.find_all('td')[2]
-                game_data['paikka'] = paikka_td.text.strip()
+                paikka_td = row.find_all("td")[2]
+                game_data["paikka"] = paikka_td.text.strip()
 
                 # Joukkueet
-                joukkueet_td = row.find_all('td')[3]
-                game_data['joukkueet'] = joukkueet_td.find('a').text.strip()
-                game_data['uid'] = joukkueet_td.find('a')['href'].split('=')[1]
+                joukkueet_td = row.find_all("td")[3]
+                game_data["joukkueet"] = joukkueet_td.find("a").text.strip()
+                game_data["uid"] = joukkueet_td.find("a")["href"].split("=")[1]
 
                 jopox_games.append(game_data)
 
         logger.debug(f"Found {len(jopox_games)} games with Jopox scraper")
 
-
         return jopox_games  # Palautetaan kerätyt pelitiedot
 
     def fetch_page(self, url):
         # Lähetetään GET-pyyntö
-        response = self.session.get(url, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            "Referer": url,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-        })
-        return BeautifulSoup(response.text, 'html.parser')
+        response = self.session.get(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                "Referer": url,
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            },
+        )
+        return BeautifulSoup(response.text, "html.parser")
 
     def get_last_page_number(self, soup):
         # Etsitään viimeinen sivu
         try:
-            last_page = int(soup.find_all('a', class_='page')[-1].text)
+            last_page = int(soup.find_all("a", class_="page")[-1].text)
         except IndexError:
             last_page = 1  # Jos sivuja ei ole, oletetaan että vain yksi sivu
         return last_page
@@ -948,11 +1026,10 @@ class JopoxScraper:
         logger.debug("j_game_details() started...")
         logger.debug(f"j_game_id: {j_game_id}")
         try:
-            #muodosta j_game_url yhdistämällä self.base_url ja Games/Game.aspx?gId=j_game_id
+            # muodosta j_game_url yhdistämällä self.base_url ja Games/Game.aspx?gId=j_game_id
             j_game_url = urljoin(self.base_url, f"Games/Game.aspx?gId={j_game_id}")
 
             response = self.session.get(j_game_url)
-
 
             if "ErrorPage.aspx" in response.url:
                 logger.error("Error while fetching game details!")
@@ -962,17 +1039,17 @@ class JopoxScraper:
             league_selected = leagues.get("league_selected")
             league_options = leagues.get("league_options")
 
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = BeautifulSoup(response.text, "html.parser")
 
-            event_dropdown = soup.find('select', {'id': 'EventDropDownList'})
+            event_dropdown = soup.find("select", {"id": "EventDropDownList"})
             event_selected = {}
             event_options = []
             if event_dropdown:
-                for option in event_dropdown.find_all('option'):
-                    value = option.get('value', '').strip()
+                for option in event_dropdown.find_all("option"):
+                    value = option.get("value", "").strip()
                     text = option.text.strip()
                     option_data = {"value": value, "text": text}
-                    if option.has_attr('selected'):
+                    if option.has_attr("selected"):
                         event_selected = option_data
                     else:
                         # Skip empty value
@@ -984,96 +1061,106 @@ class JopoxScraper:
 
             logger.debug(f"Event selected: {event_selected}")
 
-
-            SiteNameLabel_tag = soup.find('span', {'id': 'MainContentPlaceHolder_GamesBasicForm_SitenameLabel'})
-            SiteNameLabel = SiteNameLabel_tag.text.strip() if SiteNameLabel_tag else ''
+            SiteNameLabel_tag = soup.find(
+                "span", {"id": "MainContentPlaceHolder_GamesBasicForm_SitenameLabel"}
+            )
+            SiteNameLabel = SiteNameLabel_tag.text.strip() if SiteNameLabel_tag else ""
 
             logger.debug(f"SiteNameLabel: {SiteNameLabel}")
 
             try:
-                HomeTeamTextbox_tag = soup.find('input', {'id': 'HomeTeamTextBox'})
-                HomeTeamTextbox = HomeTeamTextbox_tag.get('value').strip() if HomeTeamTextbox_tag else ''
+                HomeTeamTextbox_tag = soup.find("input", {"id": "HomeTeamTextBox"})
+                HomeTeamTextbox = (
+                    HomeTeamTextbox_tag.get("value").strip() if HomeTeamTextbox_tag else ""
+                )
             except Exception as e:
                 logger.error(f"Error parsing HomeTeamTextbox: {e}")
-                HomeTeamTextbox = ''
+                HomeTeamTextbox = ""
 
             logger.debug(f"HomeTeamTextbox: {HomeTeamTextbox}")
 
-            AwayCheckbox_tag = soup.find('input', {'id': 'AwayCheckbox'})
-            AwayCheckbox = AwayCheckbox_tag.get('checked') if AwayCheckbox_tag else False
+            AwayCheckbox_tag = soup.find("input", {"id": "AwayCheckbox"})
+            AwayCheckbox = AwayCheckbox_tag.get("checked") if AwayCheckbox_tag else False
             AwayCheckbox = True if AwayCheckbox else False
 
             logger.debug(f"AwayCheckbox: {AwayCheckbox}")
 
-            guest_team_tag = soup.find('input', {'id': 'GuestTeamTextBox'})
-            guest_team = guest_team_tag.get('value').strip() if guest_team_tag else ''
+            guest_team_tag = soup.find("input", {"id": "GuestTeamTextBox"})
+            guest_team = guest_team_tag.get("value").strip() if guest_team_tag else ""
             # add detailed logging
             logger.debug(f"guest_team: {guest_team}")
 
+            game_location_tag = soup.find("input", {"id": "GameLocationTextBox"})
+            game_location = game_location_tag.get("value").strip() if game_location_tag else ""
 
-
-            game_location_tag = soup.find('input', {'id': 'GameLocationTextBox'})
-            game_location = game_location_tag.get('value').strip() if game_location_tag else ''
-
-
-            game_date_tag = soup.find('input', {'id': 'GameDateTextBox'})
-            game_date = game_date_tag.get('value').strip() if game_date_tag else ''
-
+            game_date_tag = soup.find("input", {"id": "GameDateTextBox"})
+            game_date = game_date_tag.get("value").strip() if game_date_tag else ""
 
             game_group_list = []
             group_checkboxes = []
 
-            game_groups_container = soup.find(lambda tag: tag.name in ('table', 'div', 'span') and tag.has_attr('id') and 'GameGroupsCheckboxList' in tag['id'])
+            game_groups_container = soup.find(
+                lambda tag: (
+                    tag.name in ("table", "div", "span")
+                    and tag.has_attr("id")
+                    and "GameGroupsCheckboxList" in tag["id"]
+                )
+            )
             if game_groups_container:
                 logger.debug("Game groups container found in DOM")
-                group_checkboxes = game_groups_container.find_all('input', {'type': 'checkbox'})
+                group_checkboxes = game_groups_container.find_all("input", {"type": "checkbox"})
             else:
                 logger.debug("Game groups container NOT found in DOM")
 
             for checkbox in group_checkboxes:
-                group_id = checkbox.get('value', '').strip()
-                label_tag = checkbox.find_next_sibling('label')
+                group_id = checkbox.get("value", "").strip()
+                label_tag = checkbox.find_next_sibling("label")
                 if not label_tag:
-                    label_tag = soup.find('label', {'for': checkbox.get('id')})
-                group_label = label_tag.text.strip() if label_tag else ''
-                is_checked = checkbox.has_attr('checked')
-                checkbox_id = checkbox.get('id', '').strip()
-                list_num = ''
+                    label_tag = soup.find("label", {"for": checkbox.get("id")})
+                group_label = label_tag.text.strip() if label_tag else ""
+                is_checked = checkbox.has_attr("checked")
+                checkbox_id = checkbox.get("id", "").strip()
+                list_num = ""
                 if checkbox_id:
-                    parts = checkbox_id.split('_')
+                    parts = checkbox_id.split("_")
                     if len(parts) >= 2:
                         list_num = f"{parts[-2]}_{parts[-1]}"
                     else:
                         list_num = checkbox_id
-                logger.debug(f"Found game group - ID: {group_id}, Label: {group_label}, Checked: {is_checked}")
-                game_group_list.append({
-                    'id': group_id,
-                    'label': group_label,
-                    'checked': is_checked,
-                    'list_num': list_num or checkbox_id
-                })
+                logger.debug(
+                    f"Found game group - ID: {group_id}, Label: {group_label}, Checked: {is_checked}"
+                )
+                game_group_list.append(
+                    {
+                        "id": group_id,
+                        "label": group_label,
+                        "checked": is_checked,
+                        "list_num": list_num or checkbox_id,
+                    }
+                )
 
-            deadline_date_tag = soup.find('input', {'id': 'GameDeadlineTextBox'})
-            deadline_date = deadline_date_tag.get('value', '').strip() if deadline_date_tag else ''
+            deadline_date_tag = soup.find("input", {"id": "GameDeadlineTextBox"})
+            deadline_date = deadline_date_tag.get("value", "").strip() if deadline_date_tag else ""
 
-            deadline_time_tag = soup.find('input', {'id': 'GameDeadlineTimeTextBox'})
-            deadline_time = deadline_time_tag.get('value', '').strip() if deadline_time_tag else ''
+            deadline_time_tag = soup.find("input", {"id": "GameDeadlineTimeTextBox"})
+            deadline_time = deadline_time_tag.get("value", "").strip() if deadline_time_tag else ""
 
             logger.debug(f"deadline_date: {deadline_date}, deadline_time: {deadline_time}")
 
-
             logger.debug(f"game_groups: {game_group_list}")
 
-            game_start_time_tag = soup.find('input', {'id': 'GameStartTimeTextBox'})
-            game_start_time = game_start_time_tag.get('value').strip() if game_start_time_tag else ''
+            game_start_time_tag = soup.find("input", {"id": "GameStartTimeTextBox"})
+            game_start_time = (
+                game_start_time_tag.get("value").strip() if game_start_time_tag else ""
+            )
 
-            game_duration_tag = soup.find('input', {'id': 'GameDurationTextBox'})
-            game_duration = game_duration_tag.get('value').strip() if game_duration_tag else ''
+            game_duration_tag = soup.find("input", {"id": "GameDurationTextBox"})
+            game_duration = game_duration_tag.get("value").strip() if game_duration_tag else ""
 
             logger.debug(f"game_duration: {game_duration}")
 
-            game_public_info_tag = soup.find('textarea', {'id': 'GamePublicInfoTextBox'})
-            game_public_info = game_public_info_tag.text.strip() if game_public_info_tag else ''
+            game_public_info_tag = soup.find("textarea", {"id": "GamePublicInfoTextBox"})
+            game_public_info = game_public_info_tag.text.strip() if game_public_info_tag else ""
             # Return the parsed data
             return {
                 "league_selected": league_selected,

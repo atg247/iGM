@@ -7,17 +7,17 @@ from models.user import User
 from . import auth_bp
 
 
-@auth_bp.route("/reset_password/<token>", methods=['GET', 'POST'])
+@auth_bp.route("/reset_password/<token>", methods=["GET", "POST"])
 def reset_token(token):
     user = User.verify_reset_token(token)
     if user is None:
-        flash('That is an invalid or expired token', 'warning')
-        return redirect(url_for('auth.forgot_password'))
+        flash("That is an invalid or expired token", "warning")
+        return redirect(url_for("auth.forgot_password"))
 
     form = ResetPasswordForm()
     if form.validate_on_submit():
         user.set_password(form.password.data)
         db.session.commit()
-        flash('Your password has been updated! You can now log in.', 'success')
-        return redirect(url_for('auth.login'))
-    return render_template('reset_password.html', form=form)
+        flash("Your password has been updated! You can now log in.", "success")
+        return redirect(url_for("auth.login"))
+    return render_template("reset_password.html", form=form)

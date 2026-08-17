@@ -2,7 +2,7 @@
 
 from flask import Blueprint
 
-api_bp = Blueprint('api', __name__, url_prefix='/api')
+api_bp = Blueprint("api", __name__, url_prefix="/api")
 
 from werkzeug.exceptions import HTTPException
 
@@ -20,7 +20,6 @@ from .update_jopox import *
 
 
 @api_bp.errorhandler(Exception)
-
 def handle_any_error(e):
     # Jos Flask/werkzeugin oma HTTP‑poikkeus, käytä sen statuskoodia
     if isinstance(e, HTTPException):

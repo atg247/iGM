@@ -51,9 +51,9 @@ tested by swapping a fake session into `JopoxScraper` and inspecting the form pa
 would have been posted — Jopox has no API and no test environment, so this is the only way to
 check what gets written before it lands in a real club calendar.
 
-Ruff runs with a deliberately narrow rule set (`E`, `F`, `I`, `W`) that is kept at zero.
-`ruff format` has **not** been applied to the codebase yet, so it is disabled in
-`.pre-commit-config.yaml`; enabling it needs a one-off reformat commit first.
+Ruff runs with a deliberately narrow rule set (`E`, `F`, `I`, `W`) that is kept at zero, and
+`ruff format` owns the formatting. Both run as pre-commit hooks, so do not hand-format code
+to taste - the formatter will just change it back.
 
 The `package.json`/`vue` dependencies are present but there is no active Vue build in use; frontend behavior lives in plain `static/js/*.js` and Jinja templates.
 

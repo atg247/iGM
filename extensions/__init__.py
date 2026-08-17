@@ -1,4 +1,4 @@
-#/extensions/__init__.py
+# /extensions/__init__.py
 
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager

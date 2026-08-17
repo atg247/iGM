@@ -1,7 +1,7 @@
 # routes/dashboard/__init__.py
 from flask import Blueprint
 
-dashboard_bp = Blueprint('dashboard', __name__)
+dashboard_bp = Blueprint("dashboard", __name__)
 
 from .clear_jopox_credentials import *
 from .get_managed_followed import *

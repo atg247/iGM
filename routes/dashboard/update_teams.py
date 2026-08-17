@@ -10,13 +10,13 @@ from models.userteam import UserTeam
 from . import dashboard_bp
 
 
-@dashboard_bp.route('/dashboard/update_teams', methods=['POST'])
+@dashboard_bp.route("/dashboard/update_teams", methods=["POST"])
 @login_required
 def update_teams():
     try:
         data = request.get_json()
-        action = data.get('action')  # Either "manage" or "follow"
-        selected_teams = data.get('teams', [])
+        action = data.get("action")  # Either "manage" or "follow"
+        selected_teams = data.get("teams", [])
 
         # Check for missing fields
         if not selected_teams:
@@ -25,13 +25,13 @@ def update_teams():
 
         # Process each selected team
         for team_data in selected_teams:
-            team_id = team_data.get('TeamID')
-            team_abbrv = team_data.get('TeamAbbrv')
-            team_association = team_data.get('team_association')
-            stat_group = team_data.get('stat_group')
-            season = team_data.get('season')
-            level_id = team_data.get('level_id')
-            statgroup = team_data.get('statgroup')
+            team_id = team_data.get("TeamID")
+            team_abbrv = team_data.get("TeamAbbrv")
+            team_association = team_data.get("team_association")
+            stat_group = team_data.get("stat_group")
+            season = team_data.get("season")
+            level_id = team_data.get("level_id")
+            statgroup = team_data.get("statgroup")
 
             # Check if the team exists in the Team table for this team_id + stat_group
             team = Team.query.filter_by(team_id=team_id, stat_group=stat_group).first()
@@ -45,7 +45,7 @@ def update_teams():
                     team_association=team_association,
                     season=season,
                     level_id=level_id,
-                    statgroup=statgroup
+                    statgroup=statgroup,
                 )
                 db.session.add(team)
                 db.session.commit()  # Commit to generate `team.id`
@@ -55,16 +55,14 @@ def update_teams():
                 and_(
                     UserTeam.user_id == current_user.id,
                     UserTeam.team_id == team.id,
-                    UserTeam.relationship_type == action
+                    UserTeam.relationship_type == action,
                 )
             ).first()
 
             # Create a new relationship if none exists
             if not existing_relationship:
                 new_relationship = UserTeam(
-                    user_id=current_user.id,
-                    team_id=team.id,
-                    relationship_type=action
+                    user_id=current_user.id, team_id=team.id, relationship_type=action
                 )
                 db.session.add(new_relationship)
 
@@ -73,16 +71,15 @@ def update_teams():
         # Fetch the updated lists of managed and followed teams
         managed_teams = [
             {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
-            for team in current_user.teams if any(entry.relationship_type == 'manage' for entry in team.team_user_entries)
+            for team in current_user.teams
+            if any(entry.relationship_type == "manage" for entry in team.team_user_entries)
         ]
         followed_teams = [
             {"team_name": team.team_name, "stat_group": team.stat_group, "team_id": team.id}
-            for team in current_user.teams if any(entry.relationship_type == 'follow' for entry in team.team_user_entries)
+            for team in current_user.teams
+            if any(entry.relationship_type == "follow" for entry in team.team_user_entries)
         ]
-        return jsonify({
-            "managed_teams": managed_teams,
-            "followed_teams": followed_teams
-        }), 200
+        return jsonify({"managed_teams": managed_teams, "followed_teams": followed_teams}), 200
 
     except Exception as e:
         db.session.rollback()

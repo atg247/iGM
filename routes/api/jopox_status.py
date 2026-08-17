@@ -16,7 +16,4 @@ def jopox_status():
 
     active = bool(user.jopox_username and user.jopox_password)
 
-    return jsonify({
-    "status": "ok",
-    "active": active
-    }), 200
+    return jsonify({"status": "ok", "active": active}), 200

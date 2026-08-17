@@ -8,7 +8,7 @@ from models.userteam import UserTeam
 from . import api_bp
 
 
-@api_bp.route('/teams')
+@api_bp.route("/teams")
 def get_user_teams():
     """
     Fetch managed and followed teams for the current user.
@@ -22,10 +22,11 @@ def get_user_teams():
                 "season": team.season,
                 "level_id": team.level_id,
                 "statgroup": team.statgroup,
-                "type": "manage"
+                "type": "manage",
             }
             for team in Team.query.join(UserTeam)
-            .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'manage').all()
+            .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == "manage")
+            .all()
         ]
 
         followed_teams = [
@@ -36,16 +37,14 @@ def get_user_teams():
                 "season": team.season,
                 "level_id": team.level_id,
                 "statgroup": team.statgroup,
-                "type": "follow"
+                "type": "follow",
             }
             for team in Team.query.join(UserTeam)
-            .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == 'follow').all()
+            .filter(UserTeam.user_id == current_user.id, UserTeam.relationship_type == "follow")
+            .all()
         ]
 
-        return jsonify({
-            "managed_teams": managed_teams,
-            "followed_teams": followed_teams
-        }), 200
+        return jsonify({"managed_teams": managed_teams, "followed_teams": followed_teams}), 200
 
     except Exception as e:
         app.logger.error(f"Error fetching teams: {str(e)}")

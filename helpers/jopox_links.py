@@ -15,17 +15,17 @@ from logging_config import logger
 from models.tgames import TGamesdb
 
 # Linkki asetettiin (rivi oli linkitön tai vanha linkki oli varmistetusti vanhentunut).
-LINKED = 'linked'
+LINKED = "linked"
 # Rivillä oli jo tämä sama uid.
-UNCHANGED = 'unchanged'
+UNCHANGED = "unchanged"
 # Rivillä oli eri uid, joka on tai voi olla yhä voimassa - ei korvattu.
-KEPT_EXISTING = 'kept_existing'
+KEPT_EXISTING = "kept_existing"
 # Uid on jo linkitetty saman joukkueen toiseen otteluun.
-CONFLICT = 'conflict'
+CONFLICT = "conflict"
 # Ottelua ei löytynyt kannasta, tai argumentit puuttuivat.
-NOT_FOUND = 'not_found'
+NOT_FOUND = "not_found"
 
-LinkResult = namedtuple('LinkResult', 'status row')
+LinkResult = namedtuple("LinkResult", "status row")
 
 
 def set_link(game_id, jopox_uid, known_uids_before=None):
@@ -60,13 +60,14 @@ def set_link(game_id, jopox_uid, known_uids_before=None):
             logger.info(
                 "set_link: game_id %s on jo linkitetty uid:hen %s (voimassa tai varmistamaton) "
                 "- ei korvata uudella uid:llä %s",
-                game_id, row.jopox_uid, jopox_uid
+                game_id,
+                row.jopox_uid,
+                jopox_uid,
             )
             return LinkResult(KEPT_EXISTING, row)
 
         logger.info(
-            "set_link: vanhentunut uid %s -> %s ottelulle %s",
-            row.jopox_uid, jopox_uid, game_id
+            "set_link: vanhentunut uid %s -> %s ottelulle %s", row.jopox_uid, jopox_uid, game_id
         )
 
     conflict = TGamesdb.query.filter(
@@ -77,7 +78,9 @@ def set_link(game_id, jopox_uid, known_uids_before=None):
     if conflict:
         logger.warning(
             "set_link: uid %s on jo linkitetty ottelulle %s - ei linkitetä ottelulle %s",
-            jopox_uid, conflict.game_id, game_id
+            jopox_uid,
+            conflict.game_id,
+            game_id,
         )
         return LinkResult(CONFLICT, row)
 

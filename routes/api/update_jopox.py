@@ -1,4 +1,3 @@
-
 from flask import jsonify, request
 from flask_login import current_user, login_required
 
@@ -12,25 +11,25 @@ from security import cipher_suite
 from . import api_bp
 
 
-@api_bp.route('/update_jopox', methods=['POST'])
+@api_bp.route("/update_jopox", methods=["POST"])
 @login_required
 def update_jopox():
-    logger.debug('starting update_jopox')
+    logger.debug("starting update_jopox")
     data = request.json
-    game = data.get('game')
-    best_match = data.get('best_match')
-    form = data.get('form')
-    uid = best_match.get('uid')
-    logger.debug('NEW FORM: %s', form)
-    away = form.get('AwayCheckbox', None)
-    logger.debug('AWAYBOX: %s', away)
+    game = data.get("game")
+    best_match = data.get("best_match")
+    form = data.get("form")
+    uid = best_match.get("uid")
+    logger.debug("NEW FORM: %s", form)
+    away = form.get("AwayCheckbox", None)
+    logger.debug("AWAYBOX: %s", away)
 
     game_groups = define_game_groups(form)
 
     username = current_user.jopox_username
-    #decrypt password from database
+    # decrypt password from database
     encrypted_password = current_user.jopox_password
-    decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
+    decrypted_password = cipher_suite.decrypt(encrypted_password).decode("utf-8")
     password = decrypted_password
 
     scraper = JopoxScraper(current_user.id, username, password)
@@ -42,9 +41,13 @@ def update_jopox():
                 "SubSiteId": "8787",
                 "LeagueDropdownList": form.get("league_selected", {}).get("value", ""),
                 "EventDropDownList": form.get("event_selected", {}).get("value", ""),
-                "HomeTeamTextBox": form.get("HomeTeamTextbox", ""),#muokattu S-kiekko Punainen muotoon Punainen - pitää keksiä joku logiikka
+                "HomeTeamTextBox": form.get(
+                    "HomeTeamTextbox", ""
+                ),  # muokattu S-kiekko Punainen muotoon Punainen - pitää keksiä joku logiikka
                 "GuestTeamTextBox": form.get("guest_team", ""),
-                "AwayCheckbox": form["AwayCheckbox"], #Tämä pitää setviä kuntoon jos tyhjä niin kotijoukkue on kotijoukkue ja jos "on" niin vierasjoukkue on kotijoukkue.
+                "AwayCheckbox": form[
+                    "AwayCheckbox"
+                ],  # Tämä pitää setviä kuntoon jos tyhjä niin kotijoukkue on kotijoukkue ja jos "on" niin vierasjoukkue on kotijoukkue.
                 "GameLocationTextBox": form.get("game_location", ""),
                 "GameDateTextBox": form.get("game_date", ""),
                 "GameStartTimeTextBox": form.get("game_start_time", ""),
@@ -62,7 +65,7 @@ def update_jopox():
                 "game_groups": game_groups,
                 "GameDeadLineTextBox": form.get("deadline_date", ""),
                 "GameDeadLineTimeTextBox": form.get("deadline_time", ""),
-                }
+            }
 
             game_data["GameGroups"] = form.get("selected_game_group_ids", []) or []
 
@@ -76,8 +79,8 @@ def update_jopox():
             # fuzzy-täsmäytyksestä eikä käyttäjän valinnasta, ja epävarma osuma voi osoittaa
             # eri päivän samaan otteluun - väärä linkki lukitsisi virheen pysyväksi.
             # known_uids_before jätetään pois: ilman tilannekuvaa vanhaa linkkiä ei korvata.
-            if data.get('pairing_confident'):
-                set_link(game.get('Game ID') if game else None, uid)
+            if data.get("pairing_confident"):
+                set_link(game.get("Game ID") if game else None, uid)
             else:
                 logger.info(
                     "update_jopox: paria ei tallenneta linkiksi (epävarma täsmäys), uid %s", uid
@@ -87,17 +90,16 @@ def update_jopox():
                 current_user.edited_jopox_entries = (current_user.edited_jopox_entries or 0) + 1
             db.session.commit()
 
-
             return jsonify({"message": "Pelin tiedot muokattu"}), 200
 
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
+
 def define_game_groups(form):
     game_groups_selected = form.get("selected_game_group_ids", [])
 
-
-    #selected groups are in format ['1234', '5678'], then we check if id is in game_groups
+    # selected groups are in format ['1234', '5678'], then we check if id is in game_groups
     # for each selected group, we find list_num from game_groups
     game_group_modification = []
     for selected in game_groups_selected:

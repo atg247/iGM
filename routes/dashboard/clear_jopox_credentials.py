@@ -8,7 +8,7 @@ from models.user import User
 from . import dashboard_bp
 
 
-@dashboard_bp.route('/dashboard/clear_jopox_credentials', methods=['GET'])
+@dashboard_bp.route("/dashboard/clear_jopox_credentials", methods=["GET"])
 @login_required
 def clear_jopox_credentials():
 
@@ -22,4 +22,4 @@ def clear_jopox_credentials():
     user.jopox_calendar_url = None
 
     db.session.commit()
-    return jsonify({'message': 'Jopox credentials cleared successfully'})
+    return jsonify({"message": "Jopox credentials cleared successfully"})

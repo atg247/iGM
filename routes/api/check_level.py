@@ -8,15 +8,15 @@ from security import cipher_suite
 from . import api_bp
 
 
-@api_bp.route('/check_level', methods=['GET'])
+@api_bp.route("/check_level", methods=["GET"])
 def check_level():
 
-    logger.debug('starting check_level')
-    level = request.args.get('level')  # Extract the uid from query parameters
+    logger.debug("starting check_level")
+    level = request.args.get("level")  # Extract the uid from query parameters
     username = current_user.jopox_username
-    #decrypt password from database
+    # decrypt password from database
     encrypted_password = current_user.jopox_password
-    decrypted_password = cipher_suite.decrypt(encrypted_password).decode('utf-8')
+    decrypted_password = cipher_suite.decrypt(encrypted_password).decode("utf-8")
     password = decrypted_password
 
     scraper = JopoxScraper(current_user.id, username, password)

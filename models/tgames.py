@@ -1,19 +1,16 @@
-#create a table for users game schedule from Tulospalvelu.fi
+# create a table for users game schedule from Tulospalvelu.fi
 
 from extensions import db
 
 
 class TGamesdb(db.Model):
-    __tablename__ = 'tgames'
+    __tablename__ = "tgames"
     id = db.Column(db.Integer, primary_key=True)
     game_id = db.Column(db.String(100), nullable=False)
 
     # UUSI: viittaus Team.id:hen
     team_id = db.Column(
-        db.Integer,
-        db.ForeignKey('team.id', ondelete='CASCADE'),
-        nullable=False,
-        index=True
+        db.Integer, db.ForeignKey("team.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     date = db.Column(db.String(50), nullable=False)
@@ -33,4 +30,4 @@ class TGamesdb(db.Model):
     # Pysyvä linkki Jopoxin tapahtuman uid:hen. NULL = ei linkitetty.
     jopox_uid = db.Column(db.String(50), nullable=True, index=True)
 
-    team = db.relationship('Team', back_populates='games')
+    team = db.relationship("Team", back_populates="games")

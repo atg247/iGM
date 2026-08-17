@@ -22,11 +22,11 @@ from routes.route import routes_bp
 def create_app():
 
     basedir = os.path.abspath(os.path.dirname(__file__))
-    instance_path = os.path.join(basedir, 'instance')  # 👈 tämä
+    instance_path = os.path.join(basedir, "instance")  # 👈 tämä
 
     app = Flask(__name__, instance_path=instance_path)  # 👈 ja käytä tässä
 
-    app.config.from_object('config.Config')
+    app.config.from_object("config.Config")
 
     db.init_app(app)
     bcrypt.init_app(app)
@@ -41,20 +41,18 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
 
-
     @login_manager.user_loader
     def load_user(user_id):
         return db.session.get(User, int(user_id))
 
-
-    logger.info('App created successfully')
-
+    logger.info("App created successfully")
 
     return app
 
+
 # Start the Flask app
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = create_app()
-    port = int(os.environ.get('PORT', 5000))
-    debug_mode = os.environ.get('DEBUG', 'False') == 'True'
-    app.run(host='0.0.0.0', port=port, debug=debug_mode)
+    port = int(os.environ.get("PORT", 5000))
+    debug_mode = os.environ.get("DEBUG", "False") == "True"
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)

@@ -28,26 +28,30 @@ class User(db.Model, UserMixin):
     # number of edited jopox entries
     edited_jopox_entries = db.Column(db.Integer, default=0)
 
-
     # Relationship to teams through UserTeam table
-    teams = db.relationship('Team', secondary='user_team', back_populates='users', overlaps="user_team_entries,team_user_entries")
+    teams = db.relationship(
+        "Team",
+        secondary="user_team",
+        back_populates="users",
+        overlaps="user_team_entries,team_user_entries",
+    )
 
     # Password Management Methods
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password).decode('utf-8')
+        self.password_hash = generate_password_hash(password).decode("utf-8")
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
     def get_reset_token(self, expires_sec=1800):
-        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
-        return s.dumps({'user_id': self.id}, salt='password-reset-salt')
+        s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+        return s.dumps({"user_id": self.id}, salt="password-reset-salt")
 
     @staticmethod
     def verify_reset_token(token, expires_sec=1800):
-        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        s = URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
         try:
-            user_id = s.loads(token, salt='password-reset-salt', max_age=expires_sec)['user_id']
+            user_id = s.loads(token, salt="password-reset-salt", max_age=expires_sec)["user_id"]
         except Exception as e:
             print("Token verification error:", e)  # Optional: Log the specific error
             return None

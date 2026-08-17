@@ -6,16 +6,16 @@ from logging_config import logger
 from routes.api import api_bp
 
 
-@api_bp.route('/gamefetcher/fetch_games', methods=['POST'])
+@api_bp.route("/gamefetcher/fetch_games", methods=["POST"])
 def fetch_games():
-    logger.info('game fetcher started')
+    logger.info("game fetcher started")
     dwl = 0
-    season = request.form['season']
-    stat_group_id = request.form['statgroup']
+    season = request.form["season"]
+    stat_group_id = request.form["statgroup"]
     distr_id = 0
     GameDates = 3
-    dog = '2024-10-12'
-    selected_teams = request.form.getlist('teams')
+    dog = "2024-10-12"
+    selected_teams = request.form.getlist("teams")
 
     managed_games_df = pd.DataFrame()
     if not selected_teams:
@@ -37,7 +37,7 @@ def fetch_games():
 
     # Convert the games DataFrame to a JSON format
     try:
-        managed_games_data = managed_games_df.to_dict(orient='records')
+        managed_games_data = managed_games_df.to_dict(orient="records")
         return jsonify(managed_games_data)
     except Exception as e:
         return jsonify({"error": f"Error processing games data: {str(e)}"})

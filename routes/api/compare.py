@@ -21,8 +21,9 @@ def load_jopox_links(tulospalvelu_games):
     # mutta dict-avaimet jäisivät eri tyyppisiksi kuin haettaessa. Normalisoidaan molemmat
     # päät merkkijonoksi - Postgresissa vertailu ei olisi edes onnistunut.
     game_ids = [
-        str(g.get('Game ID')) for g in tulospalvelu_games
-        if isinstance(g, dict) and g.get('Game ID')
+        str(g.get("Game ID"))
+        for g in tulospalvelu_games
+        if isinstance(g, dict) and g.get("Game ID")
     ]
     if not game_ids:
         return {}
@@ -37,13 +38,15 @@ def load_jopox_links(tulospalvelu_games):
         app.logger.exception("compare: failed to load jopox_uid links")
         return {}
 
+
 def json_error(message, status=500):
     return jsonify({"status": "error", "message": message}), status
 
-@api_bp.route('/compare', methods=['POST'])
+
+@api_bp.route("/compare", methods=["POST"])
 @login_required
 def compare_games_endpoint():
-    logger.debug('starting compare_games_endpoint')
+    logger.debug("starting compare_games_endpoint")
 
     # 1) Perusvarmistus: JSON-runkoinen pyyntö
     if not request.is_json:
@@ -58,17 +61,13 @@ def compare_games_endpoint():
         return json_error("JSONin lukeminen epäonnistui", 400)
 
     # 3) Hae kentät turvallisesti ja varmista tyypit (lista).
-    tulospalvelu_games = data.get('tulospalvelu_games', [])
-    jopox_games = data.get('jopox_games', [])
+    tulospalvelu_games = data.get("tulospalvelu_games", [])
+    jopox_games = data.get("jopox_games", [])
 
     # 4) Suorita vertailu vain jos Jopox-dataa löytyi
     if not jopox_games:
         logger.info("compare: skipped – no jopox_games provided")
-        return jsonify({
-            "status": "ok",
-            "data": {},
-            "skipped": "no_jopox_games"
-        }), 200
+        return jsonify({"status": "ok", "data": {}, "skipped": "no_jopox_games"}), 200
 
     # 5) Varsinainen vertailu – virheet kiinni ja lokiin stacktrace
     jopox_links = load_jopox_links(tulospalvelu_games)
@@ -76,9 +75,11 @@ def compare_games_endpoint():
         comparison_results = compare_games(jopox_games, tulospalvelu_games, jopox_links) or {}
     except Exception:
         app.logger.exception("compare: compare_games raised")
-        return json_error("Vertailu epäonnistui", 502)  # Bad Gateway (ulkoisen/logic layer -tyylinen virhe)
+        return json_error(
+            "Vertailu epäonnistui", 502
+        )  # Bad Gateway (ulkoisen/logic layer -tyylinen virhe)
 
-    logger.info('comparison completed')
+    logger.info("comparison completed")
 
     # 6) Onnistunut vastaus yhtenäisellä muodolla
     return jsonify(comparison_results), 200

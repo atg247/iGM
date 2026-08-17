@@ -15,10 +15,11 @@ from . import api_bp
 def json_error(message, status=500):
     return jsonify({"status": "error", "message": message}), status
 
-@api_bp.route('/jopox_games')
+
+@api_bp.route("/jopox_games")
 @login_required
 def get_jopox_games():
-    logger.debug('starting api/jopox_games')
+    logger.debug("starting api/jopox_games")
     user = db.session.get(User, current_user.id)
 
     # 1) Perustarkistukset
@@ -27,7 +28,7 @@ def get_jopox_games():
     if not user.jopox_password:
         return json_error("Jopox‑salasana puuttuu", 400)
 
-    decrypted_password = cipher_suite.decrypt(user.jopox_password).decode('utf-8')
+    decrypted_password = cipher_suite.decrypt(user.jopox_password).decode("utf-8")
 
     # 3) Kalenterikuvausten haku – epäonnistuessa jatka tyhjällä
     descriptions = []
@@ -39,15 +40,15 @@ def get_jopox_games():
             logger.warning("Calendar fetch failed, continuing without descriptions", exc_info=True)
             descriptions = []
 
-    logger.debug(f'Found {len(descriptions)} descriptions for games')
-    logger.debug(f'UIDs: {[d.get("Uid") for d in descriptions if isinstance(d, dict)]}')
+    logger.debug(f"Found {len(descriptions)} descriptions for games")
+    logger.debug(f"UIDs: {[d.get('Uid') for d in descriptions if isinstance(d, dict)]}")
 
     # 4) Jopox‑login
     scraper = JopoxScraper(user.id, user.jopox_username, decrypted_password)
-    logger.debug('starting scraper with jopox_games, calling ensure_logged_in and access_admin')
+    logger.debug("starting scraper with jopox_games, calling ensure_logged_in and access_admin")
     try:
         if not scraper.login():
-            logger.warning('Admin access denied')
+            logger.warning("Admin access denied")
             return json_error("Jopox‑kirjautuminen epäonnistui", 403)
     except Exception:
         app.logger.exception("Login raised unexpectedly")
@@ -57,11 +58,15 @@ def get_jopox_games():
     try:
         jopox_games = scraper.scrape_jopox_games()
         # indeksointi turvallisesti .get:illä ettei KeyError kaada
-        desc_by_uid = { (d or {}).get('Uid'): d for d in descriptions if isinstance(d, dict) and (d or {}).get('Uid') }
+        desc_by_uid = {
+            (d or {}).get("Uid"): d
+            for d in descriptions
+            if isinstance(d, dict) and (d or {}).get("Uid")
+        }
         for g in jopox_games:
-            uid = (g or {}).get('uid')
+            uid = (g or {}).get("uid")
             if uid and uid in desc_by_uid:
-                g['Lisätiedot'] = desc_by_uid[uid].get('Lisätiedot')
+                g["Lisätiedot"] = desc_by_uid[uid].get("Lisätiedot")
 
         return jsonify(jopox_games)
 

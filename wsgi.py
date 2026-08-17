@@ -12,6 +12,7 @@ logger.info("WSGI bootstrap starting...")
 
 try:
     from app import create_app
+
     app = create_app()
     logger.info("Flask app created.")
 except Exception:

@@ -22,7 +22,7 @@ if not logger.handlers:
 
     # Konsoli (Heroku lukee stdout/stderr)
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(log_level)   # varmistetaan, että handler ei nosta tasoa
+    console_handler.setLevel(log_level)  # varmistetaan, että handler ei nosta tasoa
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
@@ -38,8 +38,8 @@ if not logger.handlers:
 
     # Hiljennä kolmansien osapuolten melu (prodissa tiukemmin)
     logging.getLogger("werkzeug").setLevel(logging.WARNING if is_prod else logging.INFO)
-    logging.getLogger("gunicorn.error").setLevel(logging.INFO)     # virheloki, pidä näkyvissä
-    logging.getLogger("gunicorn.access").setLevel(logging.ERROR)   # access-logi pois näkyvistä
+    logging.getLogger("gunicorn.error").setLevel(logging.INFO)  # virheloki, pidä näkyvissä
+    logging.getLogger("gunicorn.access").setLevel(logging.ERROR)  # access-logi pois näkyvistä
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING if is_prod else logging.INFO)
@@ -49,6 +49,7 @@ _root = logging.getLogger()
 if not _root.handlers:
     # ohjataan kaikki juuritasolta vähintään ERRORit ulos (varmistus)
     import sys
+
     _h = logging.StreamHandler(sys.stderr)
     _h.setLevel(logging.ERROR)
     _h.setFormatter(logging.Formatter("%(asctime)s - ROOT - %(levelname)s - %(message)s"))

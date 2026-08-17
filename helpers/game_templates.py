@@ -16,14 +16,14 @@ from logging_config import logger
 # Käytettävissä olevat placeholderit. Tämä lista on myös se, joka näytetään käyttäjälle
 # asetusnäkymässä, joten pidä se ajan tasalla build_placeholders():n kanssa.
 PLACEHOLDERS = (
-    'home_team',
-    'away_team',
-    'location',
-    'date',
-    'time',
-    'pienpeli',
-    'team_name',
-    'level',
+    "home_team",
+    "away_team",
+    "location",
+    "date",
+    "time",
+    "pienpeli",
+    "team_name",
+    "level",
 )
 
 # Oletusteksti näkyvälle ennakkoinfolle (GamePublicInfoTextBox). Sisennykset ja tyhjät rivit
@@ -54,7 +54,7 @@ DEFAULT_PUBLIC_INFO = """
 #
 # Lähetetään silti tyhjänä mukana, koska selainkin postittaa piilotetun kentän ja poisjättö
 # voisi kaataa ASP.NET-postbackin. Älä täytä tätä: näkyvä teksti kuuluu ennakkoinfoon.
-GAME_INFO_MESSAGE = ''
+GAME_INFO_MESSAGE = ""
 
 
 def build_placeholders(game, game_data=None):
@@ -67,14 +67,14 @@ def build_placeholders(game, game_data=None):
     game_data = game_data or {}
 
     return {
-        'home_team': game.get('Home Team', ''),
-        'away_team': game.get('Away Team', ''),
-        'location': game.get('Location', ''),
-        'date': game_data.get('GameDateTextBox', '') or game.get('Date', ''),
-        'time': game_data.get('GameStartTimeTextBox', '') or game.get('Time', ''),
-        'pienpeli': 'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli',
-        'team_name': game.get('Team Name', ''),
-        'level': game.get('Level Name', ''),
+        "home_team": game.get("Home Team", ""),
+        "away_team": game.get("Away Team", ""),
+        "location": game.get("Location", ""),
+        "date": game_data.get("GameDateTextBox", "") or game.get("Date", ""),
+        "time": game_data.get("GameStartTimeTextBox", "") or game.get("Time", ""),
+        "pienpeli": "Pienpeli" if game.get("Small Area Game") == "1" else "Ison kentän peli",
+        "team_name": game.get("Team Name", ""),
+        "level": game.get("Level Name", ""),
     }
 
 
@@ -87,14 +87,12 @@ def render_template(template, values):
     sellaisenaan ja asia lokitetaan.
     """
     if not template:
-        return ''
+        return ""
 
     try:
         return template.format_map(defaultdict(str, values))
     except (ValueError, IndexError) as e:
-        logger.error(
-            "render_template(): virheellinen templaatti (%s) - lähetetään sellaisenaan", e
-        )
+        logger.error("render_template(): virheellinen templaatti (%s) - lähetetään sellaisenaan", e)
         return template
 
 
