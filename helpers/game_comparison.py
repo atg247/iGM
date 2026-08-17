@@ -189,15 +189,67 @@ def compare_games(jopox_games, tulospalvelu_games, jopox_links=None):
     logger.info("Total Jopox games: %d", len(jopox_games))
     logger.info("Known jopox_uid links: %d", len(jopox_links or {}))
 
-    linked_hits = 0
-
+    # Esikäsittely: päivämäärän jäsennys ja kelpoisuus kerran per ottelu, jotta linkit
+    # voidaan varata ennen fuzzy-kierrosta ilman että logiikka on kahdessa paikassa.
+    entries = []
     for t_game in managed_games:
-
-        # Parse date from Tulospalvelu game
         try:
             t_game_datetime = parse_sortable_date(t_game['SortableDate'])
         except ValueError:
             logger.error("Invalid SortableDate format for game: %s", t_game)
+            entries.append({'t_game': t_game, 'state': 'invalid_date'})
+            continue
+
+        # Skip games that have already been played before yesterday
+        if t_game_datetime < datetime.now() - timedelta(days=1):
+            entries.append({'t_game': t_game, 'state': 'past'})
+            continue
+
+        # Defensive: Tulospalvelu's raw time is "HH:MM:SS"; strptime below expects "HH:MM".
+        time = (t_game['Time'] or '')[:5]
+        if time in ("07:00", "00:00"):
+            time = "Not scheduled"
+
+        entries.append({
+            't_game': t_game,
+            'state': 'ok',
+            't_fields': {
+                'date': t_game_datetime.strftime('%Y-%m-%d'),
+                'time': time,
+                'location': t_game['Location'].lower(),
+                'small_area_game': t_game['Small Area Game'] == '1',
+                'home_team': t_game['Home Team'].lower(),
+                'away_team': t_game['Away Team'].lower(),
+            },
+        })
+
+    # Ensimmäinen kierros: varataan linkitetyt parit pois yhteisestä joukosta. Tämä on tehtävä
+    # ennen fuzzyä, koska muuten aiempi linkittämätön ottelu voi napata juuri sen Jopox-rivin,
+    # joka kuuluu myöhemmälle linkitetylle ottelulle - ja linkin koko idea on, ettei paria
+    # tarvitse enää kilpailuttaa.
+    linked_hits = 0
+    for entry in entries:
+        if entry['state'] != 'ok':
+            continue
+
+        linked_match = find_linked_game(jopox_games, jopox_links, entry['t_game'])
+        scored_link = score_candidate(entry['t_fields'], linked_match) if linked_match else None
+        if scored_link is None:
+            continue
+
+        entry['claim'] = (linked_match, scored_link)
+        jopox_games.remove(linked_match)
+        linked_hits += 1
+        logger.debug(
+            "Game ID %s täsmätty linkillä jopox_uid %s (color_score=%d)",
+            entry['t_game'].get('Game ID'), linked_match.get('uid'), scored_link[2]
+        )
+
+    # Toinen kierros: tulokset alkuperäisessä järjestyksessä.
+    for entry in entries:
+        t_game = entry['t_game']
+
+        if entry['state'] == 'invalid_date':
             results.append({
                 'game': t_game,
                 'match_status': 'red',
@@ -206,31 +258,10 @@ def compare_games(jopox_games, tulospalvelu_games, jopox_links=None):
             })
             continue
 
-        # Extract t_Game details
-        date = t_game_datetime.strftime('%Y-%m-%d')
-
-        # Skip games that have already been played before yesterday
-        if t_game_datetime < datetime.now() - timedelta(days=1):
+        if entry['state'] == 'past':
             continue
 
-        # Defensive: Tulospalvelu's raw time is "HH:MM:SS"; strptime below expects "HH:MM".
-        time = (t_game['Time'] or '')[:5]
-        location = t_game['Location'].lower()
-        small_area_game = t_game['Small Area Game'] == '1'
-        home_team = t_game['Home Team'].lower()
-        away_team = t_game['Away Team'].lower()
-
-        if time in ("07:00", "00:00"):
-            time = "Not scheduled"
-
-        t_fields = {
-            'date': date,
-            'time': time,
-            'location': location,
-            'small_area_game': small_area_game,
-            'home_team': home_team,
-            'away_team': away_team,
-        }
+        t_fields = entry['t_fields']
 
         best_match = None
         best_matches = []
@@ -240,23 +271,15 @@ def compare_games(jopox_games, tulospalvelu_games, jopox_links=None):
         warning_reason = ""
         match_status = 'red'
 
-        # Linkitetty pari tunnistetaan suoraan uid:llä. Sisältö pisteytetään silti, jotta
-        # päivämäärä-, aika- ja paikkapoikkeamat raportoidaan kuten ennenkin - vain parin
-        # arvaaminen jää pois.
-        linked_match = find_linked_game(jopox_games, jopox_links, t_game)
-        scored_link = score_candidate(t_fields, linked_match) if linked_match else None
+        # Linkitetty pari on jo varattu ensimmäisellä kierroksella. Sisältö on pisteytetty
+        # normaalisti, jotta päivämäärä-, aika- ja paikkapoikkeamat raportoidaan kuten ennen -
+        # vain parin arvaaminen jää pois.
+        claim = entry.get('claim')
 
-        if scored_link is not None:
-            best_score, best_reason, color_score = scored_link
-            best_match = linked_match
+        if claim is not None:
+            best_match, (best_score, best_reason, color_score) = claim
             warning_reason = None  # Pari on varma, joten epävarmuusvaroitusta ei tarvita.
-            linked_hits += 1
-            logger.debug(
-                "Game ID %s täsmätty linkillä jopox_uid %s (color_score=%d)",
-                t_game.get('Game ID'), linked_match.get('uid'), color_score
-            )
 
-            jopox_games.remove(best_match)
             if color_score == 0:
                 match_status = 'green'
                 best_reason = "Ottelu löytyy Jopoxista. Ei huomioita."
