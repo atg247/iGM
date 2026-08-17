@@ -1,12 +1,9 @@
 import pandas as pd
-
-from flask import request, jsonify
+from flask import jsonify, request
 
 from helpers.game_fetcher import GameFetcher
-
-from routes.api import api_bp
-
 from logging_config import logger
+from routes.api import api_bp
 
 
 @api_bp.route('/gamefetcher/fetch_games', methods=['POST'])
@@ -15,7 +12,7 @@ def fetch_games():
     dwl = 0
     season = request.form['season']
     stat_group_id = request.form['statgroup']
-    distr_id = 0  
+    distr_id = 0
     GameDates = 3
     dog = '2024-10-12'
     selected_teams = request.form.getlist('teams')

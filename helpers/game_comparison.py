@@ -1,9 +1,10 @@
 import re
-
-from fuzzywuzzy import fuzz
 from datetime import datetime, timedelta
 
+from fuzzywuzzy import fuzz
+
 from logging_config import logger
+
 
 def parse_sortable_date(date_string):
     """Parse SortableDate string into a date object."""

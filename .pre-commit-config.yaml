@@ -1,0 +1,37 @@
+# Asennus kertaalleen per työasema:
+#   pip install -r requirements-dev.txt
+#   pre-commit install
+#
+# Tämän jälkeen tarkistukset ajetaan automaattisesti ennen jokaista committia.
+# Kaikki ajetaan myös CI:ssä, joten hookin ohittaminen (--no-verify) ei piilota mitään.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.3
+    hooks:
+      - id: ruff
+        args: [--fix]
+      # ruff-format on tarkoituksella pois päältä: koko repo on vielä formatoimatta
+      # (52 tiedostoa, ~2400 riviä), ja jos se otetaan käyttöön ennen kertaformatointia,
+      # ensimmäinen vanhaan tiedostoon koskeva commit sekoittaa muotoilun ja asiamuutoksen.
+      # Kertaformatointi omana committinaan, sitten tämä rivi käyttöön.
+      # - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Alembicin generoimia migraatioita ei siistitä: ne vastaavat sitä mitä on jo ajettu.
+      - id: trailing-whitespace
+        exclude: ^migrations/
+      - id: end-of-file-fixer
+        exclude: ^migrations/
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      # Estää salaisuuksien ja ison datan päätymisen repoon vahingossa.
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+
+# Testit ajetaan CI:ssä, ei hookina: system-hook käyttäisi shellin PATHia, jolloin commit
+# estyisi aina kun virtuaaliympäristö ei satu olemaan aktivoituna (esim. editorin git-käyttöliittymä).
+# Aja paikallisesti itse: pytest

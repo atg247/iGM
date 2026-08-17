@@ -1,12 +1,13 @@
-from flask import jsonify, current_app as app
-from flask_login import login_required, current_user
+from flask import current_app as app
+from flask import jsonify
+from flask_login import current_user, login_required
 
 from extensions import db
+from helpers.data_fetcher import hae_kalenteri
+from helpers.jopox_scraper import JopoxScraper
+from logging_config import logger
 from models.user import User
 from security import cipher_suite
-from logging_config import logger
-from helpers.jopox_scraper import JopoxScraper
-from helpers.data_fetcher import hae_kalenteri
 
 from . import api_bp
 

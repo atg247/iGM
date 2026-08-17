@@ -1,16 +1,17 @@
 from flask import jsonify
-from flask_login import login_required, current_user
+from flask_login import current_user, login_required
 
+from logging_config import logger
 from models.team import Team
 from models.userteam import UserTeam
 
 from . import dashboard_bp
-from logging_config import logger
+
 
 @dashboard_bp.route('/dashboard/get_ManagedFollowed', methods=['GET'])
 @login_required
 def get_ManagedFollowed():
-    
+
    # Retrieves the latest managed and followed teams for the current user.
     try:
         # Fetch the managed teams

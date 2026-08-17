@@ -1,13 +1,14 @@
 from flask import jsonify, request
-from flask_login import login_required, current_user
+from flask_login import current_user, login_required
 
-from models.user import User
 from extensions import db
-from security import cipher_suite
 from helpers.jopox_scraper import JopoxScraper
 from logging_config import logger
+from models.user import User
+from security import cipher_suite
 
 from . import dashboard_bp
+
 
 @dashboard_bp.route('/dashboard/save_jopox_credentials', methods=['POST'])
 @login_required
@@ -16,7 +17,7 @@ def save_jopox_credentials():
     login_url = data['jopoxLoginUrl']
     username = data['username']
     password = data['password']
-    
+
     # Salataan salasana
     encrypted_password = cipher_suite.encrypt(password.encode('utf-8'))
     # Tallennetaan käyttäjän tiedot tietokantaan
@@ -39,7 +40,7 @@ def save_jopox_credentials():
     user.jopox_team_name = jopox_credentials['jopox_team_name']
     user.jopox_team_id = jopox_credentials['jopox_team_id']
     user.jopox_calendar_url = jopox_credentials['calendar_url']
-    
+
     db.session.commit()
 
     return jsonify({'message': 'Jopox credentials saved successfully.'}), 200

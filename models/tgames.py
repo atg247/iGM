@@ -2,6 +2,7 @@
 
 from extensions import db
 
+
 class TGamesdb(db.Model):
     __tablename__ = 'tgames'
     id = db.Column(db.Integer, primary_key=True)

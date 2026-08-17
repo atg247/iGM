@@ -3,14 +3,15 @@ import logging
 from flask import jsonify, request
 from flask_login import current_user
 
-from security import cipher_suite
 from helpers.jopox_scraper import JopoxScraper
+from security import cipher_suite
 
 from . import api_bp
 
+
 @api_bp.route('/jopox_form_information')
 def jopox_form_information():
-    
+
     logging.debug('starting jopox_form_information')
     j_game_id = request.args.get('uid')  # Extract the uid from query parameters
     username = current_user.jopox_username

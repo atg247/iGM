@@ -1,5 +1,5 @@
 from flask import current_app
-from flask_bcrypt import generate_password_hash, check_password_hash
+from flask_bcrypt import check_password_hash, generate_password_hash
 from flask_login import UserMixin
 from itsdangerous import URLSafeTimedSerializer
 
@@ -38,7 +38,7 @@ class User(db.Model, UserMixin):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-    
+
     def get_reset_token(self, expires_sec=1800):
         s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         return s.dumps({'user_id': self.id}, salt='password-reset-salt')
@@ -52,8 +52,3 @@ class User(db.Model, UserMixin):
             print("Token verification error:", e)  # Optional: Log the specific error
             return None
         return User.query.get(user_id)
-
-
-
-     
-

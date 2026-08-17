@@ -1,11 +1,11 @@
 from flask import jsonify
-from flask_login import login_required, current_user
+from flask_login import current_user, login_required
 
 from extensions import db
+from logging_config import logger
 from models.user import User
 
 from . import dashboard_bp
-from logging_config import logger
 
 
 @dashboard_bp.route('/dashboard/clear_jopox_credentials', methods=['GET'])

@@ -1,5 +1,6 @@
-import requests
 import pandas as pd
+import requests
+
 
 class GameFetcher:
     def __init__(self, dwl, season, stat_group_id, team_id, distr_id, GameDates, dog):
@@ -37,14 +38,14 @@ class GameFetcher:
     def display_games(self):
         if not self.games:
             return pd.DataFrame()  # Return an empty DataFrame if no games are found
-    
+
         games_info = []
-        
+
         for level_data in self.games:
             matches = level_data.get('Games', [])
             if not matches:
                 continue
-                
+
             for game in matches:
                 game_info = {
                     'Team ID': self.team_id,
@@ -67,5 +68,5 @@ class GameFetcher:
 
         games_df = pd.DataFrame(games_info)
         games_df['Date'] = pd.to_datetime(games_df['Date'], format='%d.%m.%Y', errors='coerce', dayfirst=True)
-        
+
         return games_df

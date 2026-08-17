@@ -1,7 +1,6 @@
 from flask import jsonify
 
-from helpers.data_fetcher import get_seasons, get_levels, get_stat_groups, get_teams
-
+from helpers.data_fetcher import get_levels, get_seasons, get_stat_groups, get_teams
 from routes.api import api_bp
 
 

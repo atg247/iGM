@@ -12,7 +12,7 @@ const app = Vue.createApp({
             showReasonPopup: false, // Controls popup visibility
             popupReason: "", // Stores the reason to display in the popup
             selectedGame: null, // To store the game details for the modal
-            showPlayedGames: false, // Controls whether played games are shown 
+            showPlayedGames: false, // Controls whether played games are shown
             showUpdateJopoxModal: false, // Päivitä Jopox -modalin näkyvyys
             form: {
                 league_selected: '',
@@ -56,7 +56,7 @@ const app = Vue.createApp({
     methods: {
         fetchGamesAndCompare() {
             this.isLoading = true;
-          
+
             Promise.all([
                 fetch('/api/schedules').then(response => response.json()),
                 this.hasJopox
@@ -81,7 +81,7 @@ const app = Vue.createApp({
                     }
                     this.allGames = uniqueGames;
                     this.managedGames = uniqueGames.filter(game => game.Type === 'manage');
-            
+
                 } else {
                     console.error('Unexpected Tulospalvelu response:', tulospalveluData);
                 }
@@ -112,7 +112,7 @@ const app = Vue.createApp({
                             uid: match?.best_match?.uid || null, // Include unique UID for later use
                             warning: match?.warning || null, // Include warning if available
                         };
-                        
+
                     });
                     this.allGames = this.allGames.map(game => {
                         const managedGame = this.managedGames.find(
@@ -131,7 +131,7 @@ const app = Vue.createApp({
             } else {
             this.filterGames();
             return;
-              
+
             }
             })
             .catch(error => {
@@ -156,7 +156,7 @@ const app = Vue.createApp({
                     console.error('Error fetching teams:', error);
                 });
         },
-        
+
 
         toggleTeam(team_id) {
             if (this.selectedTeams.includes(team_id)) {
@@ -171,7 +171,7 @@ const app = Vue.createApp({
             this.showPlayedGames = !this.showPlayedGames;
             this.filterGames(); // Reapply filtering
         },
-        
+
         async bulkCreateJopox() {
             if (this.isBulkCreating) return;
             this.isBulkCreating = true;
@@ -226,30 +226,30 @@ const app = Vue.createApp({
                 this.fetchGamesAndCompare();
             }
         },
-        
+
         filterGames() {
             if (!this.allGames || this.allGames.length === 0) {
                 this.filteredGames = [];
                 return;
             }
-        
+
             if (this.selectedTeams.length === 0) {
                 this.filteredGames = [];
                 return;
             }
-        
+
             // Filter games based on selected teams
             let filtered = this.allGames.filter(game =>
                 this.selectedTeams.includes(String(game['Team ID']))
             );
-        
+
             // Further filter out played games if `showPlayedGames` is false
             if (!this.showPlayedGames) {
                 filtered = filtered.filter(game => {
                     try {
                         const gameDateTime = new Date(game.SortableDate); // Use SortableDate for comparison
                         const now = new Date();
-        
+
                         // Compare only the day (ignore time)
                         const gameDateWithoutTime = new Date(
                             gameDateTime.getFullYear(),
@@ -261,7 +261,7 @@ const app = Vue.createApp({
                             now.getMonth(),
                             now.getDate()
                         );
-        
+
                         return gameDateWithoutTime >= nowWithoutTime; // Include only current and future games
                     } catch (error) {
                         console.error('Error filtering game by date:', game, error);
@@ -269,20 +269,20 @@ const app = Vue.createApp({
                     }
                 });
             }
-        
+
             this.filteredGames = filtered;
         },
-        
+
         toggleGameDetails(gameId) {
             this.expandedGameId = this.expandedGameId === gameId ? null : gameId;
-        },    
-        
+        },
+
         showReason(reason) {
             if (reason) {
                 alert(reason); // Display the reason for yellow or red status
             }
         },
-    
+
         getButtonColor(teamName) {
             const colorMap = {
                 musta: '#282828', // Light Gray
@@ -292,7 +292,7 @@ const app = Vue.createApp({
                 valkoinen: '#cccccc', // Light White
                 vihreä: '#137f13', // Light Green
             };
-        
+
             const lowerCaseName = teamName.toLowerCase();
             for (const [key, value] of Object.entries(colorMap)) {
                 if (lowerCaseName.includes(key)) {
@@ -301,25 +301,25 @@ const app = Vue.createApp({
             }
             return '#E0E0E0'; // Default light gray
         },
-        
+
         getTextColor(backgroundColor, isSelected) {
             // Explicit override for very dark colors like black
             if (backgroundColor === '#282828') {
                 return isSelected ? 'white' : '#E0E0E0'; // White text when selected, light gray when unselected
             }
-        
+
             // Calculate contrast for other colors
             const color = backgroundColor.replace('#', '');
             const r = parseInt(color.substring(0, 2), 16);
             const g = parseInt(color.substring(2, 4), 16);
             const b = parseInt(color.substring(4, 6), 16);
             const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-        
+
             // If unselected, always use darker text for visibility
             if (!isSelected) {
                 return brightness > 155 ? 'black' : '#444444'; // Use slightly darker gray for better contrast
             }
-        
+
             // Return white for dark backgrounds and black for light backgrounds when selected
             return brightness > 155 ? 'black' : 'white';
         },
@@ -327,7 +327,7 @@ const app = Vue.createApp({
             // Check if the game belongs to a managed team
             const isManaged = this.managedTeams.some(team => team.team_id === game['Team ID']);
             const isFollowed = this.followedTeams.some(team => team.team_id === game['Team ID']);
-            
+
             const isBetweenManagedTeams =
                 this.managedTeams.some(team => team.team_id === game['Home Team ID']) &&
                 this.managedTeams.some(team => team.team_id === game['Away Team ID']);
@@ -354,7 +354,7 @@ const app = Vue.createApp({
                     color: '#000000', // Black text for better contrast
                 };
             }
-        
+
             // Default styles if no match
             return {
                 backgroundColor: 'transparent',
@@ -366,7 +366,7 @@ const app = Vue.createApp({
             if (!sortableDate || typeof sortableDate !== 'string') {
                 return 'Invalid Day';
             }
-        
+
             // Map English day abbreviations to Finnish
             const dayMap = {
                 Sat: 'La', // Saturday
@@ -377,7 +377,7 @@ const app = Vue.createApp({
                 Thu: 'To', // Thursday
                 Fri: 'Pe', // Friday
             };
-        
+
             // Extract the day abbreviation (first three characters)
             const englishDay = sortableDate.split(',')[0];
             return dayMap[englishDay] || 'Invalid Day'; // Use the map or return a fallback
@@ -387,7 +387,7 @@ const app = Vue.createApp({
             try {
                 const date = new Date(sortableDate); // Parse SortableDate
                 const now = new Date();
-        
+
                 // Compare days only
                 const dateWithoutTime = new Date(
                     date.getFullYear(),
@@ -399,15 +399,15 @@ const app = Vue.createApp({
                     now.getMonth(),
                     now.getDate()
                 );
-                
+
                 return dateWithoutTime < nowWithoutTime;
             } catch (error) {
                 console.error('Error parsing SortableDate:', sortableDate, error);
                 return false; // Default to "not past" in case of an error
             }
         },
-                          
-                
+
+
         isTeamSelected(teamName) {
             // Check if a team is selected
             return this.selectedTeams.includes(teamName);
@@ -423,17 +423,17 @@ const app = Vue.createApp({
                 this.showReasonPopup = true; // Show modal
             }
         },
-        
+
         showModal(event, reason) {
             if (!reason) {
                 console.error("No reason provided for modal");
                 return;
             }
             this.popupReason = reason;
-        
+
             this.$nextTick(() => {
                 const modal = document.querySelector(".modal-window");
-        
+
                 if (!modal) {
                     console.error("Modal element not found");
                     return;
@@ -443,40 +443,40 @@ const app = Vue.createApp({
                     this.closeModal();
                     return;
                 }
-            
-        
+
+
                 // Hanki kursorin sijainti
                 const cursorX = event.clientX;
                 const cursorY = event.clientY;
-        
+
                 // Näytä modal-ikkuna tilapäisesti mittojen laskemista varten
                 modal.style.visibility = "hidden";
                 modal.style.display = "block";
-        
+
                 const modalWidth = modal.offsetWidth;
                 const modalHeight = modal.offsetHeight;
-        
+
                 // Lasketaan modalin sijainti
                 const scrollX = window.scrollX || window.pageXOffset;
                 const scrollY = window.scrollY || window.pageYOffset;
-        
+
                 const arrowOffsetX = 0.05 * modalWidth; // Nuolen 5% offset modalin oikeasta reunasta
                 const arrowOffsetY = 0.2 * modalHeight; // Nuolen 10% offset modalin alareunasta
                 const topPosition = cursorY + scrollY + arrowOffsetY + 8 ; // Modalin alareuna siirtyy ylöspäin
                 const leftPosition = cursorX + scrollX - (modalWidth - arrowOffsetX); // Modalin sijainti suhteessa nuoleen
-                
+
                 modal.style.position = "absolute";
                 modal.style.top = `${topPosition}px`;
                 modal.style.left = `${leftPosition}px`;
-        
+
                 // Näytä modal
                 modal.style.visibility = "visible";
                 modal.style.display = "block";
                 this.showReasonPopup = true;
-        
+
             });
         },
-        
+
         toggleModal(event, reason) {
             // Jos modal on jo auki ja syy on sama, sulje modal
             if (this.showReasonPopup && this.popupReason === reason) {
@@ -485,18 +485,18 @@ const app = Vue.createApp({
                 // Muuten avaa modal uudelleen
                 this.showModal(event, reason);
             }
-        },             
-                
-       
+        },
+
+
 
         closeModal() {
             this.showReasonPopup = false; // Hide the modal
             this.popupReason = ''; // Clear the reason text
         },
-        
+
         openUpdateModal(game) {
             this.selectedGame = game; // Tallenna valittu peli
-        
+
             // Lähetä backendiin pyyntö hakea olemassa olevat jopox-tiedot best matchin uid:llä
             const uid = game.best_match.uid;
             console.log('haetaan tietoja uid:llä:', uid);
@@ -549,7 +549,7 @@ const app = Vue.createApp({
                 console.log('Fetched Jopox data:', data);
                 this.showUpdateJopoxModal = true; // Näytä Päivitä Jopox -modal
                 this.compareUpdates(game, data);
-                
+
                 this.$nextTick(() => {
                     const contentDiv = document.getElementById("public_info");
                     if (contentDiv) {
@@ -559,7 +559,7 @@ const app = Vue.createApp({
             })
 
              // Käytetään nextTick asettamaan sisältö oikein contenteditable-kenttään
-            
+
 
             .catch(error => {
                 console.error('Error fetching Jopox data:', error);
@@ -567,7 +567,7 @@ const app = Vue.createApp({
 
 
         },
-    
+
         compareUpdates(game, data) {
             console.log('compareUpdates called with:', game, data);
             const tp = game || {};
@@ -651,13 +651,13 @@ const app = Vue.createApp({
             }
             },
 
-          
+
 
           // Kun käyttäjä muokkaa sisältöä, päivitetään Vue data
         syncContent(event) {
             event.target.innerHTML = this.form.game_public_info; // Kopioidaan alkuperäinen sisältö DOMiin
         },
-        
+
 
         // Lähetä tiedot backendille päivitystä varten
         updateJopox() {
@@ -679,11 +679,11 @@ const app = Vue.createApp({
                 ...this.form,
                 AwayCheckbox: this.form.AwayCheckbox ? 'on' : '',
                 game_groups: gameGroupsPayload,
-                
-                
+
+
             };
 
-            
+
 
 
             // Pari tulee fuzzy-täsmäytyksestä, ei käyttäjän valinnasta, joten sitä ei saa
@@ -787,13 +787,13 @@ const app = Vue.createApp({
         showToast(message, type = 'success', ms = 3000) {
             // pysy reaktiivisena: päivitä kentät, älä korvaa koko objektia
             if (this.toastTimer) clearTimeout(this.toastTimer);
-          
+
             // sulje, jotta animaatio ja ajastin varmasti resetöityvät
             this.toast.show = false;
-          
+
             this.toast.message = message;
             this.toast.type = type;
-          
+
             // odota yksi "tick" ja näytä
             this.$nextTick(() => {
               this.toast.show = true;
@@ -806,13 +806,13 @@ const app = Vue.createApp({
 
 
 
-        
+
     },
-    
+
     computed: {
         groupedGames() {
             const groups = {};
-        
+
             this.filteredGames.forEach(game => {
                 const date = game.SortableDate; // Use SortableDate for grouping
                 if (!groups[date]) {
@@ -820,7 +820,7 @@ const app = Vue.createApp({
                 }
                 groups[date].push(game);
             });
-        
+
             return groups;
         },
 
@@ -858,8 +858,8 @@ const app = Vue.createApp({
             return !this.hasJopox || this.isBulkCreating || this.bulkEligibleCount === 0;
           }
     },
-    
-    
+
+
     mounted() {
 
         fetch('/api/jopox_status')
@@ -868,24 +868,24 @@ const app = Vue.createApp({
             this.hasJopox = !!(s && s.active);
             if (!this.hasJopox) {
               this.showToast(
-                'Jopox ei ole aktivoitu. ' + 
-                '<br><a href="/dashboard" style="color: lightblue; font-weight: bold;">Aktivoi Jopox täällä</a>.', 
-                'warning', 
+                'Jopox ei ole aktivoitu. ' +
+                '<br><a href="/dashboard" style="color: lightblue; font-weight: bold;">Aktivoi Jopox täällä</a>.',
+                'warning',
                 7000
               );
             }
         })
-        
+
         .finally(() => {
           // 2) hae loput normaalisti
           this.fetchTeams();
           this.fetchGamesAndCompare();
         });
-    
-    
+
+
     },
 
-template: 
+template:
 
 
 
@@ -898,9 +898,9 @@ template:
     </div>
 </div>
 
-    
+
     <!-- Sticky Team Selector -->
-<div class="sticky-team-selector">              
+<div class="sticky-team-selector">
     <!-- Managed Teams -->
     <h1>Hallinnoimasi joukkueet</h1>
     <div class="btn-group">
@@ -918,8 +918,8 @@ template:
         </button>
     </div>
 
-   
-    
+
+
     <!-- Followed Teams -->
     <h1 v-if="followedTeams.length > 0">Seuraamasi joukkueet</h1>
     <div class="btn-group">
@@ -935,7 +935,7 @@ template:
         >
             {{ team.team_name }} - {{ team.stat_group}}
         </button>
-    </div> 
+    </div>
     <div>
         <button class toggle-played-button @click="togglePlayedGames">
             {{ showPlayedGames ? "Piilota pelatut" : "Näytä pelatut" }}
@@ -996,7 +996,7 @@ template:
     class="game-window"
 >
     <!-- Card Header -->
-    <div 
+    <div
         class="window-header"
         :class="{ 'past-day': isPastDay(date) }"
     >
@@ -1013,14 +1013,14 @@ template:
         :style="getRowStyle(game)"
         @click="toggleGameDetails(game['Game ID'])"
     >
-    
+
         <div class="gameInfo1">
             <div class="topRow">
                 <p class="gameTeams">
                     {{ game['Home Team'] }} - {{ game['Away Team'] }}
                     <span v-if="game['Small Area Game'] === '1'">(Pienpeli)</span>
                 </p>
-                
+
                 <button class="update-jopox-btn"
                     v-if="hasJopox && !isPastDay(date) && !isNotManagedTeam(game)"
                     @click.stop="game.match_status === 'red' ? createJopox(game) : openUpdateModal(game)">
@@ -1058,11 +1058,11 @@ template:
                 <p><strong>Paikka:</strong> {{ game.best_match?.paikka || 'Not available' }}</p>
                 <p><strong>Pvm:</strong> {{ game.best_match?.pvm || 'Not available' }}</p>
                 <p><strong>Klo:</strong> {{ game.best_match?.aika || 'Not available' }}</p>
-                <p><strong>Lisätiedot:</strong> 
-                 {{ 
-                    game.best_match 
-                    ? (game.best_match.Lisätiedot || 'Lisätiedot eivät ole tässä kentässä saatavilla toistaiseksi. Voit tarkastaa lisätiedot painamalla "Päivitä Jopox" -painiketta.') 
-                    : 'No additional details available' 
+                <p><strong>Lisätiedot:</strong>
+                 {{
+                    game.best_match
+                    ? (game.best_match.Lisätiedot || 'Lisätiedot eivät ole tässä kentässä saatavilla toistaiseksi. Voit tarkastaa lisätiedot painamalla "Päivitä Jopox" -painiketta.')
+                    : 'No additional details available'
                 }}
                 </p>
 
@@ -1093,9 +1093,9 @@ template:
             <div>
                 <label for="league">Sarja:</label>
                 <select id="league" v-model="form.league_selected">
-                    <option 
-                        v-for="option in form.league_options" 
-                        :key="option.value" 
+                    <option
+                        v-for="option in form.league_options"
+                        :key="option.value"
                         :value="option"
                     >
                         {{ option.text }}
@@ -1171,12 +1171,12 @@ template:
 
             <!-- Ennakkoinfo -->
             <label for="public_info">Ennakkoinfo:</label>
-            <div 
+            <div
                 id="public_info"
                 contenteditable="true"
                 class="editable-content"
             >
-            </div>          
+            </div>
             <div class="button-container">
                 <button class="cancel-button" type="button" @click="closeUpdateModal">Peruuta</button>
                 <button class="action-button" type="button" @click="submitForm">Päivitä</button>

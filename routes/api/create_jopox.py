@@ -1,19 +1,17 @@
-import logging
 
 from flask import jsonify, request
-from flask_login import login_required, current_user
+from flask_login import current_user, login_required
 from fuzzywuzzy import fuzz
 
-from models import user
 from extensions import db
-from security import cipher_suite
 from helpers.game_templates import GAME_INFO_MESSAGE, render_public_info
 from helpers.jopox_links import set_link
 from helpers.jopox_scraper import JopoxScraper
 from logging_config import logger
-
+from security import cipher_suite
 
 from . import api_bp
+
 
 @api_bp.route('/create_jopox', methods=['POST'])
 @login_required
@@ -111,14 +109,14 @@ def define_away_game(items):
 
     for item in items:
         game = item.get("game")
-        
+
         t_home_team = game.get("Home Team", "")
         t_away_team = game.get("Away Team", "")
         j_home_team = game.get("Team Name", "")
 
         home_team_score = fuzz.ratio(t_home_team, j_home_team)
         away_team_score = fuzz.ratio(t_away_team, j_home_team)
-    
+
 
 
         if home_team_score < away_team_score:

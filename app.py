@@ -1,5 +1,6 @@
 import os
 import sys
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from dotenv import load_dotenv
@@ -9,19 +10,17 @@ load_dotenv()
 from flask import Flask
 from flask_migrate import Migrate
 
-from extensions import bcrypt, mail, login_manager, session, db
-from models.user import User 
-from routes.route import routes_bp
+from extensions import bcrypt, db, login_manager, mail, session
+from logging_config import logger
+from models.user import User
 from routes.api import api_bp
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
-from logging_config import logger
-
-
+from routes.route import routes_bp
 
 
 def create_app():
-    
+
     basedir = os.path.abspath(os.path.dirname(__file__))
     instance_path = os.path.join(basedir, 'instance')  # 👈 tämä
 

@@ -6,11 +6,11 @@
             <form method="POST" class="p-4 border rounded bg-light">
                 {{ form.hidden_tag() }}
                 <div class="form-group">
-                    {{ form.username.label }} 
+                    {{ form.username.label }}
                     {{ form.username(class="form-control", autocomplete="username") }}
                 </div>
                 <div class="form-group">
-                    {{ form.password.label }} 
+                    {{ form.password.label }}
                     {{ form.password(class="form-control", autocomplete="current-password") }}
                 </div>
                 <div class="form-group form-check">
@@ -22,7 +22,7 @@
                         {{ form.submit(class="btn btn-primary") }}
                         <a href="{{ url_for('auth.forgot_password') }}" class="btn btn-secondary">Salasana unohtunut</a>
                     </div>
-                </div>        
+                </div>
             </form>
         </div>
     </div>

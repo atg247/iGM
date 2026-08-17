@@ -1,14 +1,16 @@
-from flask import session, render_template, redirect, url_for, flash
-from flask_login import login_user, current_user
 from datetime import datetime
 
+from flask import flash, redirect, render_template, session, url_for
+from flask_login import current_user, login_user
+
 from extensions import bcrypt, db
-from models.user import User
-from models.team import Team
-from models.userteam import UserTeam
 from forms.login_form import LoginForm
+from models.team import Team
+from models.user import User
+from models.userteam import UserTeam
 
 from . import auth_bp
+
 
 # Login route
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -40,8 +42,8 @@ def login():
             if managed_teams or followed_teams:
                 return redirect(url_for('routes.schedule'))
             else:
-                return redirect(url_for('routes.dashboard')) 
-            
+                return redirect(url_for('routes.dashboard'))
+
         else:
             flash('Login failed. Check your username and password.', 'danger')
 

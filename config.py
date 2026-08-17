@@ -1,6 +1,6 @@
 import os
-
 from datetime import timedelta
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -13,7 +13,7 @@ sqlite_path = os.path.join(instance_dir, 'hockey_data.db')
 class Config:
 
     uri = os.getenv('DATABASE_URL')
-    
+
     if uri and uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql://", 1)
 

@@ -23,5 +23,3 @@ def update_jopox_credentials():
     db.session.commit()
 
     return True
-
-

@@ -9,8 +9,8 @@ from models.user import User
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 
+from .forgot_password import *
 from .login import *
-from .register import *
 from .logout import *
 from .password_reset import *
-from .forgot_password import *
+from .register import *

@@ -2,24 +2,24 @@ $(document).ready(function () {
 
     (function() {
         const $loading = $('#loadingIndicator');
-      
+
         function showLoading()  { $loading.addClass('is-visible'); }
         function hideLoading()  { $loading.removeClass('is-visible'); }
-      
+
         // Näytä kun ensimmäinen AJAX starttaa, piilota kun KAIKKI ovat valmiit
         $(document).ajaxStart(showLoading);
         $(document).ajaxStop(hideLoading);
-      
+
         // (valinnainen) jos haluat varmuudeksi piilottaa virheissäkin:
         $(document).ajaxError(() => { /* ei piiloteta tässä, ajaxStop hoitaa kun kaikki päättyy */ });
-      
+
         // Jos overlaylle on joskus jäänyt is-visible (esim. edeltävältä sivulta cached DOM)
         $(hideLoading);
       })();
 
-    
 
-    
+
+
     // Fetch levels based on season selection
     $('#season').change(function () {
         const season = $(this).val();
@@ -68,31 +68,31 @@ $(document).ready(function () {
         const statGroupId = $(this).val();
         const season = $('#season').val();
         let selectedStatGroupName = $('#statgroups option:selected').text(); // Get selected stat group name
-    
+
         if (statGroupId) {
             $.get(`api/gamefetcher/get_teams/${season}/${statGroupId}`, function (data) {
                 if (Array.isArray(data.Teams)) {
                     let teamOptions = '';
-                    
+
                     // Generate each <option> with the necessary data attributes
                     data.Teams.forEach(function (team) {
-                        teamOptions += `<option value="${team.TeamID}" 
-                                        data-abbrv="${team.TeamAbbrv || ''}" 
-                                        data-association="${team.TeamAssociation || ''}" 
+                        teamOptions += `<option value="${team.TeamID}"
+                                        data-abbrv="${team.TeamAbbrv || ''}"
+                                        data-association="${team.TeamAssociation || ''}"
                                         data-img="${team.TeamImg || ''}"
-                                        data-name="${team.TeamAbbrv || ''}" 
+                                        data-name="${team.TeamAbbrv || ''}"
                                         data-statgroup="${selectedStatGroupName || ''}">
                                         ${team.TeamAbbrv}</option>`;
                     });
-                        
+
                     // Populate the teams dropdown
                     $('#teams').html(teamOptions);
                 }
             });
         }
     });
-    
-    
+
+
 // Function to load the latest teams data from the server
 function loadTeams() {
     return $.ajax({
@@ -118,7 +118,7 @@ function loadTeams() {
             const jopoxManagedTeam = response.jopox_managed_team;
             const jopox_url = response.jopox_url;
             const jopox_username = response.jopox_username;
-            
+
             // Update the HTML element with the jopox managed team
             // Update the HTML element with the jopox managed team
             if (jopoxManagedTeam) {
@@ -177,7 +177,7 @@ $('#dashboardForm button[type="submit"]').on('click', function () {
     selectedAction = $(this).val(); // Aseta valittu action-arvo
 });
 
-    
+
 
 // Lomakkeen lähetys JSON-muotoisena
 $('#dashboardForm').on('submit', function (e) {
@@ -237,7 +237,7 @@ $(document).ready(function () {
         $('#jopoxAuthModal').modal('show');  // Näytä modaalinen ikkuna
     });
 
-   
+
     $('#clearJopox').click(function () {
 
         // Kysy käyttäjältä vahvistus
@@ -260,7 +260,7 @@ $(document).ready(function () {
     // Tietojen tallentaminen Jopoxiin
     $('#jopoxAuthForm').submit(function (e) {
         e.preventDefault();
-        
+
         const jopoxLoginUrl = 'https://login.jopox.fi';
         const jopoxUsername = $('#jopoxUsername').val();
         const jopoxPassword = $('#jopoxPassword').val();
@@ -282,7 +282,7 @@ $(document).ready(function () {
             complete: function () {
                 $('#loadingIndicator').hide();
             },
-            
+
             success: function (response) {
                 console.log('Jopox-tiedot tallennettu:', response);
                 $('#jopoxAuthModal').modal('hide');  // Sulje modaalinen ikkuna
@@ -334,4 +334,3 @@ $('#removeTeamsModal').on('show.bs.modal', function () {
     loadTeams(); // Fetch the latest data to populate the modal
 });
 });
-

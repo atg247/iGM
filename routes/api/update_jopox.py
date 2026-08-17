@@ -1,16 +1,16 @@
-import logging
 
 from flask import jsonify, request
-from flask_login import login_required, current_user
+from flask_login import current_user, login_required
 
-from security import cipher_suite
+from extensions import db
 from helpers.game_templates import GAME_INFO_MESSAGE
 from helpers.jopox_links import set_link
 from helpers.jopox_scraper import JopoxScraper
 from logging_config import logger
-from extensions import db
+from security import cipher_suite
 
 from . import api_bp
+
 
 @api_bp.route('/update_jopox', methods=['POST'])
 @login_required
@@ -40,7 +40,7 @@ def update_jopox():
             game_data = {
                 "SeasonId": "547",
                 "SubSiteId": "8787",
-                "LeagueDropdownList": form.get("league_selected", {}).get("value", ""), 
+                "LeagueDropdownList": form.get("league_selected", {}).get("value", ""),
                 "EventDropDownList": form.get("event_selected", {}).get("value", ""),
                 "HomeTeamTextBox": form.get("HomeTeamTextbox", ""),#muokattu S-kiekko Punainen muotoon Punainen - pitää keksiä joku logiikka
                 "GuestTeamTextBox": form.get("guest_team", ""),
@@ -63,7 +63,7 @@ def update_jopox():
                 "GameDeadLineTextBox": form.get("deadline_date", ""),
                 "GameDeadLineTimeTextBox": form.get("deadline_time", ""),
                 }
-            
+
             game_data["GameGroups"] = form.get("selected_game_group_ids", []) or []
 
             logger.debug(f"GameGroups: {game_data['GameGroups']}")
@@ -88,17 +88,15 @@ def update_jopox():
             db.session.commit()
 
 
-            user = current_user
-            
             return jsonify({"message": "Pelin tiedot muokattu"}), 200
-        
+
         except Exception as e:
             return jsonify({"error": str(e)}), 500
-        
+
 def define_game_groups(form):
     game_groups_selected = form.get("selected_game_group_ids", [])
 
-    
+
     #selected groups are in format ['1234', '5678'], then we check if id is in game_groups
     # for each selected group, we find list_num from game_groups
     game_group_modification = []
@@ -109,8 +107,3 @@ def define_game_groups(form):
                 break
     logger.debug(f"Defined game groups to be modified: {game_group_modification}")
     return game_group_modification
-
-
-
-
-        

@@ -1,16 +1,13 @@
 #route.py
 
-from flask import Blueprint, render_template, jsonify, session
-from flask_login import login_required, current_user
+from flask import Blueprint, jsonify, render_template, session
 from flask import current_app as app
+from flask_login import current_user, login_required
 
-from models.team import Team
-from models.userteam import UserTeam
 from extensions import db
 from logging_config import logger
-from helpers import update_jopox_credentials
-
-
+from models.team import Team
+from models.userteam import UserTeam
 
 routes_bp = Blueprint('routes', __name__, static_folder="static", template_folder="templates")
 
@@ -24,7 +21,7 @@ def test_session():
 def schedule():
     #update_jopox_credentials()
     return render_template('otteluhaku.html')
-  
+
 @routes_bp.route('/')
 def index():
     logger.debug('Index route')
@@ -71,4 +68,3 @@ def dashboard():
 @routes_bp.route('/simulator')
 def simulator():
     return render_template('simulator.html')
-

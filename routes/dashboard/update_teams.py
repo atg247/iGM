@@ -1,13 +1,14 @@
-from flask import request, jsonify, flash
+from flask import flash, jsonify, request
+from flask_login import current_user, login_required
 from sqlalchemy import and_
-from flask_login import login_required, current_user
 
 from extensions import db
+from logging_config import logger
 from models.team import Team
 from models.userteam import UserTeam
 
 from . import dashboard_bp
-from logging_config import logger
+
 
 @dashboard_bp.route('/dashboard/update_teams', methods=['POST'])
 @login_required
@@ -34,7 +35,7 @@ def update_teams():
 
             # Check if the team exists in the Team table for this team_id + stat_group
             team = Team.query.filter_by(team_id=team_id, stat_group=stat_group).first()
-            
+
             if not team:
                 # Create new team if it doesn't exist
                 team = Team(

@@ -1,6 +1,5 @@
 from flask import jsonify
-from flask_login import login_required, current_user
-from flask import current_app as app
+from flask_login import current_user, login_required
 
 from extensions import db
 from helpers.game_fetcher import GameFetcher
@@ -10,6 +9,7 @@ from models.tgames import TGamesdb
 from models.userteam import UserTeam
 
 from . import api_bp
+
 
 @api_bp.route('/schedules')
 @login_required
@@ -67,7 +67,7 @@ def get_all_schedules():
         # Sort all games by sortable date and time
         managed_games = sorted(managed_games, key=lambda game: (game['SortableDate'], game['Time']))
         logger.debug(f"Managed games fetched: {len(managed_games)} games")
-        
+
         # Store the games in the database if not already there based on game id
         updated_games = []  # List of updated games
         added_games = []  # List of added games
@@ -137,7 +137,7 @@ def get_all_schedules():
                         })
 
                     db.session.add(new_game)
-            
+
             except Exception as e:
                 logger.error(f"Error processing game {game['Game ID']}: {str(e)}")
 
@@ -152,7 +152,7 @@ def get_all_schedules():
             logger.debug(f"Updated games: {updated_games}")
         if added_games:
             logger.debug(f"Added games: {added_games}")
-        
+
         #for i in range(4):
         #Create one simulated game and include it in the DataFrame
         #    simulated_game = {

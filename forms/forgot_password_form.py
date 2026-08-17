@@ -5,6 +5,8 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, Email
 
 from extensions import mail
+
+
 class ForgotPasswordForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     submit = SubmitField('Request Password Reset')
@@ -16,7 +18,7 @@ def send_reset_email(user):
     msg = Message('Password Reset Request',
                   sender='noreply@yourapp.com',
                   recipients=[user.email])
-    
+
     # Construct the reset URL with the generated token
     msg.body = f'''To reset your password, visit the following link:
     {url_for('auth.reset_token', token=token, _external=True)}

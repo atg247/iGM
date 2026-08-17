@@ -1,0 +1,42 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = [
+    ".venv",
+    "migrations",      # Alembicin generoimaa koodia, ei käsin ylläpidettävää
+    "flask_session",
+    "instance",
+    "logs",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+# Aloitettu suppealla joukolla, joka saadaan nollaan: virheet, käyttämättömät nimet,
+# importtien järjestys ja tyhjätila. Laajennetaan vasta kun tämä pysyy vihreänä.
+select = ["E", "F", "I", "W"]
+ignore = [
+    "E501",  # Rivin pituus - formatoija hoitaa tämän, eikä vanhoja rivejä katkota takautuvasti.
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Blueprintit rekisteröityvät importin sivuvaikutuksena: `from .x import *` on tarkoituksellinen
+# eikä importteja saa siivota pois, vaikka nimiä ei käytetä tiedostossa.
+"routes/**/__init__.py" = ["F401", "F403", "F405", "E402"]
+"models/__init__.py" = ["F401"]
+"helpers/__init__.py" = ["F401"]
+# app.py lataa .env:n ennen muita importteja, koska config.py ja security.py lukevat
+# ympäristömuuttujat moduulitasolla.
+"app.py" = ["E402"]
+# wsgi.py säätää sys.pathin ja käynnistää logituksen ennen muita importteja.
+"wsgi.py" = ["E402"]
+# conftest asettaa ympäristömuuttujat ennen sovelluksen importtia - siinä on koko pointti.
+"tests/conftest.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["helpers", "models", "routes", "forms", "extensions"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+filterwarnings = ["ignore::DeprecationWarning"]

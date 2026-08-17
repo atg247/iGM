@@ -1,6 +1,7 @@
 # UserTeam Association Table
 from extensions import db
 
+
 class UserTeam(db.Model):
     __tablename__ = 'user_team'
     id = db.Column(db.Integer, primary_key=True)

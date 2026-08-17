@@ -1,10 +1,11 @@
-import logging
-from flask import jsonify, current_app as app
-from flask_login import login_required, current_user
+from flask import jsonify
+from flask_login import current_user, login_required
+
 from extensions import db
 from models.user import User
-from security import cipher_suite
+
 from . import api_bp
+
 
 @api_bp.route("/jopox_status", methods=["GET"])
 @login_required

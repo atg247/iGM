@@ -1,10 +1,10 @@
-from flask import render_template, redirect, url_for, flash
+from flask import flash, redirect, render_template, url_for
 
-from forms.forgot_password_form import ForgotPasswordForm
-from forms.forgot_password_form import send_reset_email
+from forms.forgot_password_form import ForgotPasswordForm, send_reset_email
 from models.user import User
 
 from . import auth_bp
+
 
 @auth_bp.route("/forgot_password", methods=['GET', 'POST'])
 def forgot_password():

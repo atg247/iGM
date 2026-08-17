@@ -4,8 +4,7 @@ Linkin korvaaminen on se kohta, jossa virhe jää pysyväksi: väärä uid ei ko
 koska vertailu luottaa linkkiin arvauksen sijaan. Siksi jokainen haara testataan erikseen.
 """
 
-from helpers.jopox_links import (
-    CONFLICT, KEPT_EXISTING, LINKED, NOT_FOUND, UNCHANGED, set_link)
+from helpers.jopox_links import CONFLICT, KEPT_EXISTING, LINKED, NOT_FOUND, UNCHANGED, set_link
 
 
 def test_unlinked_game_gets_the_link(make_game):

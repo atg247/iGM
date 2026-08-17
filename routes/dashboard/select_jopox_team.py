@@ -1,10 +1,11 @@
-from flask import request, jsonify
-from flask_login import login_required, current_user
+from flask import jsonify, request
+from flask_login import current_user, login_required
 
 from extensions import db
+from logging_config import logger
 
 from . import dashboard_bp
-from logging_config import logger
+
 
 #select the jopox team id for user account
 @dashboard_bp.route('/dashboard/select_jopox_team', methods=['POST'])

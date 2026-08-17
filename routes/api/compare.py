@@ -1,4 +1,5 @@
-from flask import jsonify, request, current_app as app
+from flask import current_app as app
+from flask import jsonify, request
 from flask_login import login_required
 
 from helpers.game_comparison import compare_games

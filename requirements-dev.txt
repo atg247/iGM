@@ -1,3 +1,9 @@
-# Kehitys- ja testiriippuvuudet. Tuotantoon asennetaan vain requirements.txt.
+# Kehitys- ja testiriippuvuudet. Tuotantoon (Procfile) asennetaan vain requirements.txt.
+#
+# Käyttöönotto:
+#   pip install -r requirements-dev.txt
+#   pre-commit install
 -r requirements.txt
 pytest==9.1.1
+ruff==0.16.3
+pre-commit==4.6.2
