@@ -245,7 +245,34 @@ def compare_games(jopox_games, tulospalvelu_games, jopox_links=None):
             entry['t_game'].get('Game ID'), linked_match.get('uid'), scored_link[2]
         )
 
-    # Toinen kierros: tulokset alkuperäisessä järjestyksessä.
+    # Toinen kierros: fuzzy-täsmäytys lopuille. Kaikki ottelu-Jopox-parit pisteytetään ensin,
+    # ja vasta sitten jaetaan parhaasta alkaen. Aiemmin jokainen ottelu nappasi parhaan vapaan
+    # rivin omalla vuorollaan, jolloin listalla aiempi ottelu saattoi viedä rivin 30 pisteellä
+    # vaikka myöhemmällä ottelulla olisi ollut siihen 150 pisteen osuma.
+    candidates = []
+    for idx, entry in enumerate(entries):
+        if entry['state'] != 'ok' or 'claim' in entry:
+            continue
+        for j_game in jopox_games:
+            scored = score_candidate(entry['t_fields'], j_game)
+            if scored is None:
+                continue
+            score, reason, color_score = scored
+            candidates.append((score, idx, j_game, reason, color_score))
+
+    # Paras ensin. idx tasapelin ratkaisijana, jotta tulos on toistettava.
+    candidates.sort(key=lambda c: (-c[0], c[1]))
+
+    taken_entries = set()
+    taken_uids = set()
+    for score, idx, j_game, reason, color_score in candidates:
+        if idx in taken_entries or id(j_game) in taken_uids:
+            continue
+        entries[idx]['match'] = (j_game, score, reason, color_score)
+        taken_entries.add(idx)
+        taken_uids.add(id(j_game))
+
+    # Kolmas kierros: tulokset alkuperäisessä järjestyksessä.
     for entry in entries:
         t_game = entry['t_game']
 
@@ -261,93 +288,37 @@ def compare_games(jopox_games, tulospalvelu_games, jopox_links=None):
         if entry['state'] == 'past':
             continue
 
-        t_fields = entry['t_fields']
-
-        best_match = None
-        best_matches = []
-        best_score = 0
-        best_reason = ""
-        color_score = 0  # Track discrepancies for color scoring
-        warning_reason = ""
-        match_status = 'red'
-
-        # Linkitetty pari on jo varattu ensimmäisellä kierroksella. Sisältö on pisteytetty
+        # Linkitetty pari on varattu ensimmäisellä kierroksella. Sisältö on pisteytetty
         # normaalisti, jotta päivämäärä-, aika- ja paikkapoikkeamat raportoidaan kuten ennen -
-        # vain parin arvaaminen jää pois.
+        # vain parin arvaaminen jää pois, eikä epävarmuusvaroitusta tarvita.
         claim = entry.get('claim')
-
         if claim is not None:
             best_match, (best_score, best_reason, color_score) = claim
-            warning_reason = None  # Pari on varma, joten epävarmuusvaroitusta ei tarvita.
-
-            if color_score == 0:
-                match_status = 'green'
-                best_reason = "Ottelu löytyy Jopoxista. Ei huomioita."
-            else:
-                match_status = 'yellow'
-
+            warning_reason = None
+        elif 'match' in entry:
+            best_match, best_score, best_reason, color_score = entry['match']
+            warning_reason = None if best_score >= 105 else (
+                "En ole varma löysinkö oikean ottelun."
+                "Tarkista Jopoxista, että päivämäärä, joukkueiden nimet ja alkamisaika vastaavat tulospalvelua. "
+                "Esimerkiksi joukkueiden nimien tai pelipaikan lyhentäminen voi aiheuttaa ongelmia. "
+                "Jos ottelun alkamisaikaa ei ole merkitty, käytä Jopoxissa oletusaikaa 07:00. "
+                "Löydän parhaiten ottelun jos Jopoxissa on merkitty alkamisajaksi todellinen ottelun alkamisaika."
+            )
+        else:
             results.append({
                 'game': t_game,
-                'match_status': match_status,
-                'reason': best_reason.strip(),
+                'match_status': 'red',
+                'reason': "En löytänyt ottelua Jopoxista.",
                 'warning': None,
-                'best_match': best_match,
+                'best_match': None,
             })
             continue
 
-        for j_game in jopox_games:
-            scored = score_candidate(t_fields, j_game)
-            if scored is None:
-                continue
-
-            score, reason, color_score_temp = scored
-
-            # Update the best match
-            if score > best_score:
-                best_score = score
-                best_match = j_game
-                best_reason = reason
-                color_score = color_score_temp
-
-
-                if best_match is None or best_score < 105 :
-                    warning_reason = (
-                        "En ole varma löysinkö oikean ottelun."
-                        "Tarkista Jopoxista, että päivämäärä, joukkueiden nimet ja alkamisaika vastaavat tulospalvelua. "
-                        "Esimerkiksi joukkueiden nimien tai pelipaikan lyhentäminen voi aiheuttaa ongelmia. "
-                        "Jos ottelun alkamisaikaa ei ole merkitty, käytä Jopoxissa oletusaikaa 07:00. "
-                        "Löydän parhaiten ottelun jos Jopoxissa on merkitty alkamisajaksi todellinen ottelun alkamisaika."
-
-                    )
-
-                elif best_match and best_score > 1:
-                    warning_reason = None
-
-                best_matches.append({'match': best_match, 'score': best_score, 'reason': reason, 'color_score': color_score, 'warning': warning_reason})
-
-
-        #pick the best match from best_matches and append it to results with color_score, reason and warning_reason
-
-        if best_matches:
-            best_match = max(best_matches, key=lambda x: x['score'])['match']
-            best_score = max(best_matches, key=lambda x: x['score'])['score']
-            best_reason = max(best_matches, key=lambda x: x['score'])['reason']
-            color_score = max(best_matches, key=lambda x: x['score'])['color_score']
-            warning_reason = max(best_matches, key=lambda x: x['score'])['warning']
-
-            # Determine match status
-            if color_score == 0 and best_match:
-                match_status = 'green'
-                best_reason = "Ottelu löytyy Jopoxista. Ei huomioita."
-                jopox_games.remove(best_match)
-
-            elif color_score > 0 and best_match:
-                match_status = 'yellow'
-                jopox_games.remove(best_match)
+        if color_score == 0:
+            match_status = 'green'
+            best_reason = "Ottelu löytyy Jopoxista. Ei huomioita."
         else:
-            match_status = 'red'
-            best_reason = "En löytänyt ottelua Jopoxista."
-
+            match_status = 'yellow'
 
         results.append({
             'game': t_game,
