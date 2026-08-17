@@ -8,6 +8,7 @@ from models import user
 from models.tgames import TGamesdb
 from extensions import db
 from security import cipher_suite
+from helpers.game_templates import render_game_texts
 from helpers.jopox_scraper import JopoxScraper
 from logging_config import logger
 
@@ -73,6 +74,13 @@ def create_jopox():
             "GameNotificationTextBox": "",
             "SaveGameButton": "Tallenna"
         }
+
+        # Vapaat tekstit renderöidään täällä, ei scraperissa. Templaattiargumentit jäävät
+        # toistaiseksi pois, jolloin käytetään oletuksia - käyttäjän omat templaatit
+        # kytketään tähän kun asetukset on toteutettu.
+        public_info, game_info = render_game_texts(game, game_data)
+        game_data["GamePublicInfoTextBox"] = public_info
+        game_data["GameInfoTextBox"] = game_info
 
         games_to_add.append({
             "game": game,

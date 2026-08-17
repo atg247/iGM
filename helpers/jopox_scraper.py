@@ -676,6 +676,11 @@ class JopoxScraper:
             team_name = game.get('Team Name')
             HomeTeamTextBox = self.homeTeamTextBox(response, team_name)
 
+            # Tekstit tulevat valmiina kutsujalta (routes/api/create_jopox.py), joka renderöi ne
+            # helpers/game_templates.py:n templaateista. Täällä ei päätetä sisällöstä mitään.
+            public_info = game_data.get("GamePublicInfoTextBox", "")
+            game_info = game_data.get("GameInfoTextBox", "")
+
             # Build payload
             payload = {
                 "__EVENTTARGET": "",
@@ -698,31 +703,9 @@ class JopoxScraper:
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$GameStartTimeTextBox": game_data.get("GameStartTimeTextBox", ""),
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$GameDurationTextBox": game_data.get("GameDurationTextBox", "120"),
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", "0"),
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": f"""
-                {game.get('Home Team')} - {game.get('Away Team')}<br>
-                {'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli'}<br>
-                <br>
-                {game.get('Location')}<br>
-                <br>
-                <br>                    
-                Kokoontuminen tuntia ennen ottelun alkua.<br>
-                <br>
-                Joukkue:
-                <br>
-                """,#Tähän kenttään logiikka, jolla määritetään tarvitaanko toimitsijoita ja niin, että huomioi pienpelit,
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": public_info,
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
-                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": f"""
-                Ottelu {game_data.get('GameDateTextBox', '')} klo {game_data.get('GameStartTimeTextBox', '')}<br>
-                {game.get('Home Team')} - {game.get('Away Team')}<br>
-                {game.get('Location')}<br>
-                <br>
-                {'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli'}<br>
-                <br>                    
-                Kokoontuminen tuntia ennen ottelun alkua.<br>
-                <br>
-                Joukkue:
-                <br>
-                """,#Tähän kenttään logiikka, jolla määritetään tarvitaanko toimitsijoita ja niin, että huomioi pienpelit
+                "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": game_info,
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$GameNotificationTextBox": "",
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
             }
