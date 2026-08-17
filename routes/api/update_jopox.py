@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 
 from security import cipher_suite
 from helpers.game_templates import GAME_INFO_MESSAGE
+from helpers.jopox_links import set_link
 from helpers.jopox_scraper import JopoxScraper
 from logging_config import logger
 from extensions import db
@@ -70,10 +71,21 @@ def update_jopox():
             logger.info(f"STARTING scraper to modify game: {uid}")
             logger.info(f"Scraping with data: {game_data}")
             scraper.modify_game(game_data, uid)
-            
+
+            # Linkki tallennetaan vain jos vertailu oli varma parista. Modalin uid tulee
+            # fuzzy-täsmäytyksestä eikä käyttäjän valinnasta, ja epävarma osuma voi osoittaa
+            # eri päivän samaan otteluun - väärä linkki lukitsisi virheen pysyväksi.
+            # known_uids_before jätetään pois: ilman tilannekuvaa vanhaa linkkiä ei korvata.
+            if data.get('pairing_confident'):
+                set_link(game.get('Game ID') if game else None, uid)
+            else:
+                logger.info(
+                    "update_jopox: paria ei tallenneta linkiksi (epävarma täsmäys), uid %s", uid
+                )
+
             if scraper.modify_game:
                 current_user.edited_jopox_entries = (current_user.edited_jopox_entries or 0) + 1
-                db.session.commit()
+            db.session.commit()
 
 
             user = current_user

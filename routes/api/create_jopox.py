@@ -5,10 +5,10 @@ from flask_login import login_required, current_user
 from fuzzywuzzy import fuzz
 
 from models import user
-from models.tgames import TGamesdb
 from extensions import db
 from security import cipher_suite
 from helpers.game_templates import GAME_INFO_MESSAGE, render_public_info
+from helpers.jopox_links import set_link
 from helpers.jopox_scraper import JopoxScraper
 from logging_config import logger
 
@@ -91,43 +91,10 @@ def create_jopox():
         results, known_uids_before_batch = scraper.add_game(games_to_add)
 
         for r in results:
-            if r.get('status') != 'ok' or not r.get('jopox_uid'):
+            if r.get('status') != 'ok':
                 continue
 
-            row = TGamesdb.query.filter_by(game_id=r['game_id']).first()
-            if not row:
-                continue
-
-            if row.jopox_uid and row.jopox_uid != r['jopox_uid']:
-                # known_uids_before_batch is None when the initial scrape failed - treat that the
-                # same as "still exists" (safe default) rather than risk overwriting a valid link.
-                if known_uids_before_batch is None or row.jopox_uid in known_uids_before_batch:
-                    logger.info(
-                        "create_jopox: game_id %s already linked to jopox_uid %s (still valid or "
-                        "unconfirmed) - not replacing it with new jopox_uid %s",
-                        row.game_id, row.jopox_uid, r['jopox_uid']
-                    )
-                    continue
-                # Old uid no longer existed right before this creation - Jopox never reissues a
-                # deleted uid, so the old event was hard-deleted and it's safe to repoint the link.
-                logger.info(
-                    "create_jopox: updating stale jopox_uid %s -> %s for game_id %s",
-                    row.jopox_uid, r['jopox_uid'], row.game_id
-                )
-
-            conflict = TGamesdb.query.filter(
-                TGamesdb.jopox_uid == r['jopox_uid'],
-                TGamesdb.team_id == row.team_id,
-                TGamesdb.game_id != row.game_id,
-            ).first()
-            if conflict:
-                logger.warning(
-                    "Refusing to link jopox_uid %s to game_id %s: already linked to game_id %s",
-                    r['jopox_uid'], row.game_id, conflict.game_id
-                )
-                continue
-
-            row.jopox_uid = r['jopox_uid']
+            set_link(r.get('game_id'), r.get('jopox_uid'), known_uids_before_batch)
 
         created_count = sum(1 for r in results if r.get('status') == 'ok')
         if created_count:

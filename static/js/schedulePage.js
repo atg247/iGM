@@ -686,10 +686,17 @@ const app = Vue.createApp({
             
 
 
+            // Pari tulee fuzzy-täsmäytyksestä, ei käyttäjän valinnasta, joten sitä ei saa
+            // tallentaa pysyväksi linkiksi kuin silloin kun täsmäys oli varma. Keltainen tai
+            // varoituksella merkitty osuma voi olla väärä ottelu.
+            const pairingConfident = this.selectedGame.match_status === 'green'
+                && !this.selectedGame.warning;
+
             const payload = {
                 game: this.selectedGame, // Tulospalvelun tiedot
                 best_match: this.selectedGame.best_match, // Jopoxin tiedot
                 updatedFields: this.updatedFields, // Päivitetyt kentät
+                pairing_confident: pairingConfident, // Saako parin tallentaa linkiksi
                 form: formWithStringCheckbox // Lomakkeen tiedot with string AwayCheckbox
             };
             console.log('Payload:', payload)
