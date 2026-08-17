@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Read `docs/paatokset.md` before changing anything in `helpers/game_comparison.py`,
+`helpers/jopox_links.py`, `helpers/game_templates.py` or the Jopox write paths.** It records
+decisions whose reasoning is not visible in the code — several were found by inspecting
+Jopox's own HTML, not by reading this repo, and undoing one silently reintroduces a bug that
+writes to a real club calendar.
+
 ## What this app does
 
 iGM ("Ottelunhaku") is a Flask web app for Finnish youth hockey team managers. It:
