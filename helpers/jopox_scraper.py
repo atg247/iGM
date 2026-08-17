@@ -429,7 +429,9 @@ class JopoxScraper:
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameMaxParticipatesTextBox": game_data.get("GameMaxParticipatesTextBox", ""),
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GamePublicInfoTextBox": f"<p>{game_data.get('GamePublicInfoTextBox')}</p>",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
-            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": f"<p>{game_data.get('GamePublicInfoTextbox')}</p>",
+            # Huom. oma avaimensa, ei GamePublicInfoTextBox: kutsuja päättää menevätkö kentät
+            # samalla sisällöllä. Tyhjä oletus, jottei kenttään päädy "None".
+            "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": f"<p>{game_data.get('GameInfoTextBox', '')}</p>",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$GameNotificationTextBox": "",
             "ctl00$MainContentPlaceHolder$GamesBasicForm$SaveGameButton": "Tallenna"
         }
@@ -710,9 +712,9 @@ class JopoxScraper:
                 """,#Tähän kenttään logiikka, jolla määritetään tarvitaanko toimitsijoita ja niin, että huomioi pienpelit,
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$FeedGameDropdown": "0",
                 "ctl00$MainContentPlaceHolder$GamesBasicForm$GameInfoTextBox": f"""
-                Ottelu {game.get('GameDateTextBox')} klo {game.get('GameStartTimeTextBox')}<br>
-                {game.get('HomeTeamTextBox')} - {game.get('GuestTeamTextBox')}<br>
-                {game.get('GameLocationTextBox')}<br>
+                Ottelu {game_data.get('GameDateTextBox', '')} klo {game_data.get('GameStartTimeTextBox', '')}<br>
+                {game.get('Home Team')} - {game.get('Away Team')}<br>
+                {game.get('Location')}<br>
                 <br>
                 {'Pienpeli' if game.get('Small Area Game') == '1' else 'Ison kentän peli'}<br>
                 <br>                    
