@@ -43,11 +43,17 @@ DEFAULT_PUBLIC_INFO = """
                 <br>
                 """
 
-# GameInfoTextBox jätetään tarkoituksella tyhjäksi. Jopoxin lomakkeella sen otsikko on
-# "Viesti (näkyy tapahtuman osallistujille Jopox pukukopissa ilmoituksena sekä Jopox+
-# sovelluksessa notifikaationa)" - eli kyseessä ei ole infokenttä vaan joukkueelle lähtevä
-# ilmoitus. Ottelun luonti ei saa notifioida ketään, ja massaluonti lähettäisi kymmeniä
-# ilmoituksia peräkkäin. Älä täytä tätä kenttää ilman että se on nimenomaisesti haluttu.
+# GameInfoTextBox jätetään tarkoituksella tyhjäksi.
+#
+# Kenttä on Jopoxin vanha viestitoiminto: sen label on "Viesti (näkyy tapahtuman
+# osallistujille Jopox pukukopissa ilmoituksena sekä Jopox+ sovelluksessa notifikaationa)".
+# Jopox on kuitenkin poistanut sen käyttöliittymästä - textarea on kahden sisäkkäisen
+# display:none -paneelin (NotificationPanel, GameNotificationPanel) sisällä, eikä
+# ottelulomakkeella näy kuin Ennakkoinfo. Siksi kenttään aiemmin kirjoitettu teksti ei ole
+# näkynyt eikä lähettänyt ilmoituksia kenellekään.
+#
+# Lähetetään silti tyhjänä mukana, koska selainkin postittaa piilotetun kentän ja poisjättö
+# voisi kaataa ASP.NET-postbackin. Älä täytä tätä: näkyvä teksti kuuluu ennakkoinfoon.
 GAME_INFO_MESSAGE = ''
 
 

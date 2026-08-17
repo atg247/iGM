@@ -53,8 +53,8 @@ def update_jopox():
                 "GameMaxParticipatesTextBox": "",
                 "GamePublicInfoTextBox": f"""{form.get("game_public_info")}""",
                 "FeedGameDropdown": "0",
-                # Tyhjä tarkoituksella: tämä kenttä lähtee osallistujille notifikaationa, eikä
-                # ottelun tietojen korjaaminen saa ilmoittaa joukkueelle. Ks. GAME_INFO_MESSAGE.
+                # Tyhjä tarkoituksella: Jopoxin vanha viestikenttä, joka on piilotettu
+                # käyttöliittymästä. Näkyvä teksti kuuluu ennakkoinfoon. Ks. GAME_INFO_MESSAGE.
                 "GameInfoTextBox": GAME_INFO_MESSAGE,
                 "GameNotificationTextBox": "",
                 "SaveGameButton": "Tallenna",

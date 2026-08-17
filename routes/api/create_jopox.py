@@ -79,8 +79,7 @@ def create_jopox():
         # toistaiseksi pois, jolloin käytetään oletusta - käyttäjän oma templaatti
         # kytketään tähän kun asetukset on toteutettu.
         game_data["GamePublicInfoTextBox"] = render_public_info(game, game_data)
-        # Viestikenttä tyhjäksi: se lähtee osallistujille notifikaationa, eikä ottelun
-        # luonnin kuulu ilmoittaa kenellekään.
+        # Viestikenttä tyhjäksi: Jopoxin vanha, käyttöliittymästä piilotettu kenttä.
         game_data["GameInfoTextBox"] = GAME_INFO_MESSAGE
 
         games_to_add.append({
