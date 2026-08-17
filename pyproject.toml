@@ -34,6 +34,10 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["helpers", "models", "routes", "forms", "extensions"]
+# flask_session on kirjasto, mutta työhakemistoon syntyy samanniminen hakemisto istuntojen
+# tallennuspaikaksi (SESSION_FILE_DIR). Ilman tätä ruff luokittelee sen omaksi moduuliksi
+# paikallisesti ja kirjastoksi CI:ssä, jolloin importtien järjestys on eri eri koneilla.
+known-third-party = ["flask_session"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
